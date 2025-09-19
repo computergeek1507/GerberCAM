@@ -3,3 +3,4 @@ GerberCAM.pro.user.*
 *.bak
 /build
 *.tmp
+*.autosave
