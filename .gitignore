@@ -1,0 +1,5 @@
+GerberCAM.pro.user
+GerberCAM.pro.user.*
+*.bak
+/build
+*.tmp
