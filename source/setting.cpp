@@ -22,6 +22,9 @@ SOFTWARE.
 
 #include "setting.h"
 #include <qdebug.h>
+
+#define DEFAULT_TOOL_LIBRARY_FILENAME "tool_library.con"
+
 inline QDataStream &operator <<(QDataStream &out,const struct tool &toolBit)
 {
     out<<toolBit.name<<toolBit.unitType<<toolBit.toolType<<toolBit.diameter
@@ -75,13 +78,13 @@ inline QDataStream &operator >>(QDataStream &in,struct holeRule &holeRule)
 
 bool setting::readTool()
 {
-    QFile file("tool library.con");
+    QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
     QDataStream in(&file);
     in.setVersion(QDataStream::Qt_5_4);
     if(!file.open(QIODevice::ReadOnly))
     {
         QMessageBox msgBox;
-        msgBox.setText("Error!Cannot open library!");
+        msgBox.setText("Error!Cannot open tool library!");
         msgBox.exec();
         return false;
     }
@@ -154,7 +157,7 @@ setting::replaceTool(int index,struct tool t)
 
 void setting::saveLibrary()
 {
-    QFile file("tool library.con");
+    QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
     if(!file.open(QIODevice::WriteOnly))
     {
         QMessageBox msgBox;

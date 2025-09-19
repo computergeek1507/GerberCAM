@@ -49,4 +49,14 @@ FORMS    += mainwindow.ui \
 RESOURCES += \
     resources.qrc
 
+TOOL_FILE = "tool_library.con"
+
+win32{
+    QMAKE_POST_LINK +=$$quote(cmd /c copy /y $${TOOL_FILE} $${DESTDIR_WIN}$$escape_expand(\n\t))
+}
+
+unix{
+    QMAKE_POST_LINK += $$quote(cp $${TOOL_FILE} $${DESTDIR}$$escape_expand(\n\t))
+}
+
 INCLUDEPATH += $$PWD/source
