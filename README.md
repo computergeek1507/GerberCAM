@@ -1,3 +1,12 @@
+> [!NOTE]
+> @claus007
+> 
+> Current State:
+>  * It Compiles (Qt 6.9.2)
+>  * I removed lots of compiler warnings
+>  * There are currently no binaries to download
+
+
 # GerberCAM
 **What is GerberCAM?**  
 GerberCAM is an opensource software to convert a PCB gerber file to a CNC machine manufacture file(G-code).The following picture shows GerberCAM’s role in PCB prototyping process.
