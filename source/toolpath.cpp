@@ -308,6 +308,7 @@ bool toolpath::segmentCollision(struct element e1,struct element e2)
 
 bool toolpath::toolpathIntersects(QList<netPath> nPList,QList<collisionToolpath> &cTList)
 {
+    Q_UNUSED(cTList)
     int i,j;
     for(i=0;i<nPList.size();i++)
     {

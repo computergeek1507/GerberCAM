@@ -158,7 +158,8 @@ QPainterPath drawPCB::shape() const
 
 void drawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    Q_UNUSED(widget);
+    Q_UNUSED(widget)
+    Q_UNUSED(option)
 
     //QColor fillColor = (option->state & QStyle::State_Selected) ? color.dark(135) : color;
     QColor fillColor = (componentType=='p' ? color.darker(120) : color);
