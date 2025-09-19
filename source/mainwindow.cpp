@@ -47,9 +47,10 @@ MainWindow::MainWindow(QWidget *parent) :
      * Allow press and drag to view the gerber file.
      * Allow mouse wheele to zoom in and out the view.
      * */
-    QMatrix matrix;
-    matrix.scale(1, -1);
-    ui->graphicsView->setMatrix(matrix);
+    //QMatrix matrix;
+    //matrix.scale(1, -1);
+    //ui->graphicsView->setMatrix(matrix);
+    ui->graphicsView->scale(1,-1);
     ui->graphicsView->setInteractive(true);
     //ui->graphicsView->setRenderHint(QPainter::Antialiasing, true);
     ui->graphicsView->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -227,9 +228,7 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,toolpath &t)
 
 void MainWindow::drawLayer(QGraphicsScene *scene,gerber *gerberfile,QColor color)
 {
-
     int i;
-    QPointF center;
 
     struct track tempTrack;
     for(i=0;i<gerberfile->trackNum;i++)
@@ -274,7 +273,7 @@ void MainWindow::on_actionOpen_triggered()
 {
     fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                   tr("Top Layer (*.gtl);;Bottom Layer (*.gbl);;Gerber File(*.gbr *.gbl *gtl);;All types (*.*)"));
-    if(fileName==NULL)
+    if(fileName.isEmpty())
         return;
     gerber1=new gerber(fileName);
     gerberFileName=fileName.mid(fileName.lastIndexOf('/')+1,fileName.size()-fileName.lastIndexOf('/'));
@@ -327,7 +326,7 @@ void MainWindow::on_actionAdd_layer_triggered()
     {
         fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
-        if(fileName==NULL)
+        if(fileName.isEmpty())
             return;
         gerberFileName=fileName.mid(fileName.lastIndexOf('/')+1,fileName.size()-fileName.lastIndexOf('/'));
 
@@ -359,7 +358,7 @@ void MainWindow::on_actionAdd_layer_triggered()
     {
         fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
-        if(fileName==NULL)
+        if(fileName.isEmpty())
             return;
 
         gerber2=new gerber(fileName);
@@ -385,7 +384,7 @@ void MainWindow::on_actionAdd_layer_triggered()
     {
         fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
-        if(fileName==NULL)
+        if(fileName.isEmpty())
             return;
 
         gerber1=new gerber(fileName);
@@ -497,7 +496,9 @@ void MainWindow::on_actionZoom_out_triggered()
 
 void MainWindow::wheelEvent(QWheelEvent *event)
 {
-    double numDegrees = event->delta() / 8.0;
+    // not sure about this change though
+    //double numDegrees = event->delta() / 8.0;
+    double numDegrees = event->angleDelta().y() / 8.0;
     double numSteps = numDegrees / 15.0;
     double factor =pow(1.125, numSteps);
     ui->graphicsView->scale(factor,factor);
@@ -540,6 +541,7 @@ void MainWindow::on_actionLayer2_triggered()
 
 void MainWindow::timerEvent(QTimerEvent *event)
 {
+    Q_UNUSED(event)
     QPoint p1 = QCursor::pos();
     p1=ui->graphicsView->mapFromGlobal(QCursor::pos());
     QPointF p2=ui->graphicsView->mapToScene(p1);

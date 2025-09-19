@@ -398,12 +398,12 @@ void settingwindow::on_tlUnitMMRadio_clicked()
 
 void settingwindow::on_tlTypeComboBox_currentIndexChanged(int index)
 {
-
-
+    Q_UNUSED(index)
 }
 
 void settingwindow::on_tlTypeComboBox_activated(int index)
 {
+    Q_UNUSED(index)
     QString filename = ":/jpg/Conical.jpg";
     QImage imageConical(filename);
     filename = ":/jpg/Drill.jpg";
@@ -436,7 +436,7 @@ void settingwindow::on_tlTypeComboBox_activated(int index)
 
 void settingwindow::on_treeView_clicked(const QModelIndex &index)
 {
-
+    Q_UNUSED(index)
 }
 
 void settingwindow::on_treeView_doubleClicked(const QModelIndex &index)
@@ -712,7 +712,7 @@ void settingwindow::on_mREUpButton_clicked()
     if(index.row()<1||index.row()>hr.ruleList.size()-1)
         return;
 
-    hr.ruleList.swap(index.row(),index.row()-1);
+    hr.ruleList.swapItemsAt(index.row(),index.row()-1);
 
     updateMTreeView(hr);
 
@@ -727,7 +727,7 @@ void settingwindow::on_mREDownButton_clicked()
     QModelIndex index=ui->mTreeView->currentIndex();
     if(index.row()<0||index.row()>hr.ruleList.size()-2)
         return;
-    hr.ruleList.swap(index.row(),index.row()+1);
+    hr.ruleList.swapItemsAt(index.row(),index.row()+1);
 
     updateMTreeView(hr);
 
@@ -1004,10 +1004,10 @@ void settingwindow::on_mRECancelButton_clicked()
 
 void settingwindow::on_tabWidget_tabBarClicked(int index)
 {
+    Q_UNUSED(index)
     ui->mSelectRuleComboBox->clear();
     for(int i=0;i<settings->holeRuleList.size();i++)
      ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
-
 }
 
 void settingwindow::on_mSelectRuleComboBox_activated(int index)
@@ -1030,11 +1030,10 @@ void settingwindow::on_mSelectRuleComboBox_activated(int index)
 
 void settingwindow::on_mREDrillComboBox_activated(int index)
 {
-
-
+    Q_UNUSED(index)
 }
 
 void settingwindow::on_mSelectRuleComboBox_activated(const QString &arg1)
 {
-
+    Q_UNUSED(arg1)
 }

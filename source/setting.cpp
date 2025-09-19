@@ -136,14 +136,14 @@ setting::setting()
     readTool();
     readHoleRule();
 }
-setting::appendTool(struct tool t)
+void setting::appendTool(struct tool t)
 {
     toolList.append(t);
     if(t.toolType=="Drill")
         drillList.append(t);
 }
 
-setting::replaceTool(int index,struct tool t)
+void setting::replaceTool(int index,struct tool t)
 {
     toolList.replace(index,t);
     if(t.toolType=="Drill")

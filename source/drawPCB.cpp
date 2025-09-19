@@ -24,6 +24,7 @@ SOFTWARE.
 
 drawPCB::drawPCB(pad component,int layerOrder,QColor c)
 {
+    Q_UNUSED(layerOrder)
     componentType='p';
     tempPad=component;
     setZValue(AT_TOP);
@@ -43,6 +44,7 @@ drawPCB::drawPCB(pad component,int layerOrder,QColor c)
 }
 drawPCB::drawPCB(pad component,char hole,int layerOrder,QColor c)
 {
+    Q_UNUSED(layerOrder)
     if(hole=='h')
     componentType='h';
     tempPad=component;
@@ -64,6 +66,7 @@ drawPCB::drawPCB(pad component,char hole,int layerOrder,QColor c)
 
 drawPCB::drawPCB(track component,char type,int layerOrder,QColor c)
 {
+    Q_UNUSED(layerOrder)
     if(type=='T')
         componentType='t';
     else if(type=='C')
@@ -119,25 +122,28 @@ drawPCB::drawPCB(track component,char type,int layerOrder,QColor c)
 
 drawPCB::drawPCB(myPath component, int layerOrder, QColor c)
 {
-        componentType='s';
-        tempPath=component;
-        setZValue(AT_BOTTOM);
+    Q_UNUSED(layerOrder)
+    componentType='s';
+    tempPath=component;
+    setZValue(AT_BOTTOM);
 
-        color=c;
+    color=c;
 
-        //setFlags(ItemIsSelectable);
-        //setAcceptHoverEvents(true);
+    //setFlags(ItemIsSelectable);
+    //setAcceptHoverEvents(true);
 }
+
 drawPCB::drawPCB(Paths component, int layerOrder, QColor c)
 {
-        componentType='l';
-        tempCPath=component;
-        setZValue(AT_BOTTOM);
+    Q_UNUSED(layerOrder)
+    componentType='l';
+    tempCPath=component;
+    setZValue(AT_BOTTOM);
 
-        color=c;
+    color=c;
 
-        //setFlags(ItemIsSelectable);
-        //setAcceptHoverEvents(true);
+    //setFlags(ItemIsSelectable);
+    //setAcceptHoverEvents(true);
 }
 
 QRectF drawPCB::boundingRect() const
@@ -155,7 +161,7 @@ void drawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     Q_UNUSED(widget);
 
     //QColor fillColor = (option->state & QStyle::State_Selected) ? color.dark(135) : color;
-    QColor fillColor = (componentType=='p' ? color.dark(120) : color);
+    QColor fillColor = (componentType=='p' ? color.darker(120) : color);
     //QColor fillColor =color;
 
     /*

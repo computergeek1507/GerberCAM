@@ -89,10 +89,10 @@ public:
     QList<struct holeRule> holeRuleList;
     int selectedRule=0;
 
-    appendTool(tool t);
+    void appendTool(tool t);
     void saveLibrary();
     void saveHoleRule();
-    replaceTool(int index, tool t);
+    void replaceTool(int index, tool t);
 protected:
 
     bool readHoleRule();

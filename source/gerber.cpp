@@ -463,7 +463,9 @@ bool gerber::process_line(QByteArray line)
         }
         else if(line.at(1)=='M')
         {
-            ModeofUnit=line.at(3)+line.at(4)+'\0';
+            ModeofUnit=line.at(3);
+            ModeofUnit+=line.at(4);
+            ModeofUnit+='\0';
         }
 
     }
@@ -764,7 +766,7 @@ struct boundingRect gerber::boundingRect(struct pad pad)
                 r.left=pad.point.x()-x;
             }
         }
-        else if(pad.shape='O')
+        else if(pad.shape=='O')
         {
             if(pad.angle==0)
             {
