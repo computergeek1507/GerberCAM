@@ -1,10 +1,12 @@
 > [!NOTE]
-> @claus007
+> From: @claus007
 > 
 > Current State:
 >  * It Compiles (Qt 6.9.2)
 >  * I removed lots of compiler warnings
 >  * There are currently no binaries to download
+>  * If you want to use it, the easiest way is to install Qt community edition and select Desktop Variante
+>  * BTW Help is appreciated
 
 
 # GerberCAM
