@@ -380,7 +380,7 @@ void drawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
 
         p1.setX(0);
         p1.setY(0);
-        int i;
+        qsizetype i;
         for(i=0;i<tempPath.segmentList.size();i++)
         {
             QPoint point1,point2;
@@ -411,10 +411,9 @@ void drawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
 
         p1.setX(0);
         p1.setY(0);
-        int i;
-        for(i=0;i<tempCPath.size();i++)
+        for(size_t i=0;i<tempCPath.size();i++)
         {
-            int j;
+            size_t j;
             Path path=tempCPath.at(i);
             QPoint point1,point2;
             for(j=0;j<path.size();j++)

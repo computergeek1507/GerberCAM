@@ -595,7 +595,7 @@ toolpath::toolpath(preprocess &p)
     for(i=0;i<netPathList.size();i++)
         if(netPathList.at(i).toolpath.size()>1)
         {
-            for(j=1;j<netPathList.at(i).toolpath.size();j++)
+            for(size_t j=1;j<netPathList.at(i).toolpath.size();j++)
             totalToolpath.push_back(netPathList.at(i).toolpath.at(j));
         }
 
