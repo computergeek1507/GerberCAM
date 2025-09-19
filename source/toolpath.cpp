@@ -20,7 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _USE_MATH_DEFINES
+
 #include "toolpath.h"
+#include <math.h>
 
 struct myRect toolpath::trackToMyRect(struct track t, qint64 offset)
 {
@@ -75,7 +78,7 @@ struct myRect toolpath::trackToMyRect(struct track t, qint64 offset)
         ki=-1/k;
         angle=qAtan(ki);
         //if(angle<0)
-            //angle+=3.1415926;//3.1415926
+            //angle+=M_PI;//M_PI
         p1.setX(t.width/2*qCos(angle));
         p1.setY(t.width/2*qSin(angle));
 
@@ -223,20 +226,19 @@ struct track toolpath::obroundToTrack(struct pad o1)
 
 void toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
 {
-    double angle;
+    double angle = 0.0f;
+
     if((p1.x()-p2.x())==0)
     {
         if(p1.y()>p2.y())
-            angle=3.1415926/2;
+            angle=M_PI_2;
         else
-            angle=3.1415926*3/2;
+            angle=M_PI_2*3;
     }
     else if((p1.y()-p2.y())==0)
     {
-        if(p1.x()>p2.x())
-            angle=0;
-        else
-            angle=3.1415926;
+        if ((p1.x()>p2.x()) == false )
+            angle=M_PI;
     }
     else
     {
@@ -245,20 +247,16 @@ void toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
         if(angle<0)
         {
             if(p1.y()>p2.y())
-                angle=angle+3.1415926;
-            else
-                angle=angle;
+                angle=angle+M_PI;
         }
         else
         {
-            if(p2.y()<p1.y())
-                angle=angle;
-            else
-                angle=angle+3.1415926;
+            if( (p2.y()<p1.y()) == false )
+                angle=angle+M_PI;
         }
     }
     double startAngle = angle;
-    double spanAngle =3.1415926;
+    double spanAngle =M_PI;
 
     QPoint c=(p1+p2)/2;
     double r=qSqrt(double(p2.x()-p1.x())*double(p2.x()-p1.x())+double(p2.y()-p1.y())*double(p2.y()-p1.y()))/2;
