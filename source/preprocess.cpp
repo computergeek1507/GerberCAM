@@ -261,6 +261,8 @@ qint32 preprocess::judgeDirection(QPoint p1,QPoint p2,QPoint p)
         return 1;
     if(D<0)
         return -1;
+    // just for compiler warning
+    return 0;
 }
 
 
@@ -652,7 +654,7 @@ bool preprocess::trackPadCollision(struct track t1,struct pad p1)
     {
         return false;
     }
-
+    return true;
 }
 bool preprocess::padCollision(struct pad p1,struct pad p2)
 {
@@ -783,6 +785,8 @@ bool preprocess::elementCollision(struct element e1,struct element e2)
         return trackPadCollision(e2.track,e1.pad);
     if(e1.elementType=='P'&&e2.elementType=='P')
         return padCollision(e1.pad,e2.pad);
+    Q_ASSERT_X(false,"elementCollision","Unexpected result");
+    return false;
 }
 
 struct boundingRect preprocess::mergeRect(struct boundingRect r1,struct boundingRect r2)
