@@ -265,7 +265,6 @@ void toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
     double temp=(r-arcError)*1.0/r;//for debug
     double stepAngle=2*acos(temp);
     if(stepAngle==0)stepAngle=0.12566;//50 steps
-    double stepNum=2*3.1415926/stepAngle;
     for(double a=startAngle;a>startAngle-spanAngle;a-=stepAngle)
     {
         IntPoint t;

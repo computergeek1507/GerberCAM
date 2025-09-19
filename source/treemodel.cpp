@@ -203,9 +203,6 @@ void TreeModel::setupModelData(const holeRule r, TreeItem *parent)
     parents << parent;
     indentations << 0;
 
-    int number = 0;
-    int position;
-
     for(int i=0;i<r.ruleList.size();i++)
     {
         QList<QVariant> columnData;

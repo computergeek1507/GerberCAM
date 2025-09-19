@@ -545,7 +545,7 @@ void gerber::find_border(struct boundingRect r)
  * */
 bool gerber::transform_data()
 {
-    int i,j;
+    int i;
     QString line;
     QString currentParameter;
     char currentShape;
