@@ -52,10 +52,17 @@ RESOURCES += \
 TOOL_FILE = "tool_library.con"
 
 win32{
-    QMAKE_POST_LINK +=$$quote(cmd /c copy /y $${TOOL_FILE} $${DESTDIR_WIN}$$escape_expand(\n\t))
+    # quick and dirty sorry - especially that the file is empty
+    win32:dir ~= s,/,\\,g
+    FROM_FILE=..\..\tool_library.con
+    TO_FILE = debug\tool_library.con
+    QMAKE_POST_LINK +="copy /y $$FROM_FILE $$TO_FILE" $$escape_expand(\n\t)
+
+    export(QMAKE_POST_LINK)
 }
 
 unix{
+    #untested
     QMAKE_POST_LINK += $$quote(cp $${TOOL_FILE} $${DESTDIR}$$escape_expand(\n\t))
 }
 
