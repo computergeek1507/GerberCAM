@@ -25,6 +25,8 @@ SOFTWARE.
 
 #define DEFAULT_TOOL_LIBRARY_FILENAME "tool_library.con"
 
+#define DEFAULT_HOLE_RULE_FILENAME "hole_rule.con"
+
 inline QDataStream &operator <<(QDataStream &out,const struct tool &toolBit)
 {
     out<<toolBit.name<<toolBit.unitType<<toolBit.toolType<<toolBit.diameter
@@ -109,7 +111,7 @@ bool setting::readTool()
 bool setting::readHoleRule()
 {
     int num;
-    QFile file1("hole rule.con");
+    QFile file1(DEFAULT_HOLE_RULE_FILENAME);
     QDataStream in1(&file1);
     in1.setVersion(QDataStream::Qt_5_4);
     if(!file1.open(QIODevice::ReadOnly))
@@ -197,7 +199,7 @@ void setting::saveLibrary()
 
 void setting::saveHoleRule()
 {
-    QFile file("hole rule.con");
+    QFile file(DEFAULT_HOLE_RULE_FILENAME);
     if(!file.open(QIODevice::WriteOnly))
     {
         QMessageBox msgBox;
