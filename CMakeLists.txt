@@ -12,17 +12,10 @@ include(windeployqt)
 
 include(FetchContent)
 
-FetchContent_Declare(
-        spdlog
-        GIT_REPOSITORY https://github.com/gabime/spdlog.git
-        GIT_TAG        v1.x
-)
+include(cmake/CPM.cmake)
 
-FetchContent_GetProperties(spdlog)
-if (NOT spdlog_POPULATED)
-    FetchContent_Populate(spdlog)
-    add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR})
-endif()
+CPMAddPackage("gh:nlohmann/json@3.12.0")
+CPMAddPackage("gh:gabime/spdlog@1.17.0")
 
 #set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -79,7 +72,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Xml spdlog::spdlog)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Xml spdlog nlohmann_json::nlohmann_json)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

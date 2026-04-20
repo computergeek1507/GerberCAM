@@ -21,11 +21,17 @@ SOFTWARE.
 */
 
 #include "setting.h"
-#include <qdebug.h>
 
-#define DEFAULT_TOOL_LIBRARY_FILENAME "tool_library.con"
+#include "config.h"
 
-#define DEFAULT_HOLE_RULE_FILENAME "hole_rule.con"
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+#define BINARY_TOOL_LIBRARY_FILENAME "tool_library.con"
+#define JSON_TOOL_LIBRARY_FILENAME "tool_library.json"
+
+#define BINARY_HOLE_RULE_FILENAME "hole_rule.con"
+#define JSON_HOLE_RULE_FILENAME "hole_rule.json"
 
 inline QDataStream &operator <<(QDataStream &out,const Tool &toolBit)
 {
@@ -80,60 +86,134 @@ inline QDataStream &operator >>(QDataStream &in,HoleRule &holeRule)
 
 bool Setting::readTool()
 {
-    QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
-    QDataStream in(&file);
-    in.setVersion(QDataStream::Qt_5_4);
-    if(!file.open(QIODevice::ReadOnly))
+    if (QFile::exists(JSON_TOOL_LIBRARY_FILENAME))
     {
-        QMessageBox msgBox;
-        msgBox.setText("Error!Cannot open tool library!");
-        msgBox.exec();
-        return false;
+        try 
+        {
+			std::ifstream in(JSON_TOOL_LIBRARY_FILENAME);
+			nlohmann::json j;
+			in >> j;
+			toolList.clear();
+            if (j.contains("toolList") && j["toolList"].is_array()) {
+                for (const auto& item : j["toolList"]) {
+                    Tool t(item);
+                    toolList.append(t);
+                    if (t.toolType == "Drill")
+                    {
+                        drillList.append(t);
+                    }
+                }
+            }
+            return true;
+        }
+        catch (std::exception &ex) 
+        {
+			m_logger->error("Error reading tool library: {}", ex.what());
+            return false;
+        }
     }
-
-    int num;
-
-    in>>num;
-    toolList.clear();
-    drillList.clear();
-    for(int i=0;i<num;i++)
+    else if(QFile::exists(BINARY_TOOL_LIBRARY_FILENAME))
     {
-        Tool t;
-        in>>t;
-        toolList.append(t);
-        if(t.toolType=="Drill")
-            drillList.append(t);
+        QFile file(BINARY_TOOL_LIBRARY_FILENAME);
+        QDataStream in(&file);
+        in.setVersion(QDataStream::Qt_5_4);
+        if (!file.open(QIODevice::ReadOnly))
+        {
+			m_logger->error("Error reading tool library, cannot open file");
+            QMessageBox msgBox;
+            msgBox.setText("Error!Cannot open tool library!");
+            msgBox.exec();
+            return false;
+        }
+
+        int num;
+
+        in >> num;
+        toolList.clear();
+        drillList.clear();
+        for (int i = 0; i < num; i++)
+        {
+            Tool t;
+            in >> t;
+            toolList.append(t);
+            if (t.toolType == "Drill")
+                drillList.append(t);
+        }
+        file.close();
+        return true;
     }
-    file.close();
-    return true;
+    else
+    {
+        m_logger->error("Error reading tool library, File not found");
+		QMessageBox msgBox;
+		msgBox.setText("Error!Tool library not found!");
+		msgBox.exec();
+		
+    }
+    return false;
 }
 
 bool Setting::readHoleRule()
 {
-    int num;
-    QFile file1(DEFAULT_HOLE_RULE_FILENAME);
-    QDataStream in1(&file1);
-    in1.setVersion(QDataStream::Qt_5_4);
-    if(!file1.open(QIODevice::ReadOnly))
+    if (QFile::exists(JSON_HOLE_RULE_FILENAME))
     {
-        QMessageBox msgBox;
-        msgBox.setText("Error!Cannot open hole identification rule!");
-        msgBox.exec();
-        return false;
-    }
+        try
+        {
+            std::ifstream in(JSON_HOLE_RULE_FILENAME);
+            nlohmann::json j;
+            in >> j;
 
-    in1>>num;
-    for(int i=0;i<num;i++)
-    {
-        HoleRule t;
-        in1>>t;
-        holeRuleList.append(t);
+			holeRuleList.clear();
+
+			if (j.contains("holeRuleList") && j["holeRuleList"].is_array()) {
+				for (const auto& item : j["holeRuleList"]) {
+					HoleRule h(item);
+					holeRuleList.append(h);
+				}
+			}
+			return true;
+		}
+        catch (std::exception& ex)
+        {
+			m_logger->error("Error reading hole identification rule: {}", ex.what());
+        }
     }
-    file1.close();
-    return true;
+    else if (QFile::exists(BINARY_HOLE_RULE_FILENAME))
+    {
+        holeRuleList.clear();
+        int num;
+        QFile file1(BINARY_HOLE_RULE_FILENAME);
+        QDataStream in1(&file1);
+        in1.setVersion(QDataStream::Qt_5_4);
+        if (!file1.open(QIODevice::ReadOnly))
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Error!Cannot open hole identification rule!");
+            msgBox.exec();
+            return false;
+        }
+
+        in1 >> num;
+        for (int i = 0; i < num; i++)
+        {
+            HoleRule t;
+            in1 >> t;
+            holeRuleList.append(t);
+        }
+        file1.close();
+        return true;
+    }
+    else
+    {
+		m_logger->error("Error reading hole identification rule, File not found");
+		QMessageBox msgBox;
+		msgBox.setText("Error!Hole identification rule not found!");
+		msgBox.exec();
+    }
+    return false;
 }
 
-Setting::Setting()
+Setting::Setting() : m_logger(spdlog::get(PROJECT_NAME))
 {
     readTool();
     readHoleRule();
@@ -159,6 +239,21 @@ void Setting::replaceTool(int index,Tool t)
 
 void Setting::saveLibrary()
 {
+    try
+    {
+        nlohmann::json j;
+		j["toolList"] = nlohmann::json::array();
+		for (const auto& tool : toolList) {
+			j["toolList"].push_back(tool.toJson());
+		}
+        std::ofstream out(JSON_TOOL_LIBRARY_FILENAME);
+        out << j.dump(4); // Pretty print with 4 spaces indentation
+    }
+    catch (std::exception& ex)
+    {
+        m_logger->error("Error saving hole identification rule: {}", ex.what());
+    }
+    /*
     QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
     if(!file.open(QIODevice::WriteOnly))
     {
@@ -192,33 +287,47 @@ void Setting::saveLibrary()
     }
     file.flush();
     file.close();
-
+    */
     toolList.clear();
     readTool();
 }
 
 void Setting::saveHoleRule()
 {
-    QFile file(DEFAULT_HOLE_RULE_FILENAME);
-    if(!file.open(QIODevice::WriteOnly))
+    try
     {
-        QMessageBox msgBox;
-        msgBox.setText("Error!Cannot save hole identification rule!");
-        msgBox.exec();
-        return;
+		nlohmann::json j;
+		j["holeRuleList"] = nlohmann::json::array();
+		for (const auto& rule : holeRuleList) {
+			j["holeRuleList"].push_back(rule.toJson());
+		}
+		std::ofstream out(JSON_HOLE_RULE_FILENAME);
+		out << j.dump(4); // Pretty print with 4 spaces indentation
     }
-    QDataStream out(&file);
-    out.setVersion(QDataStream::Qt_5_4);
-    out<<holeRuleList.size();
-    for(int i=0;i<holeRuleList.size();i++)
+    catch(std::exception &ex)
     {
-        HoleRule t=holeRuleList.at(i);
-        out<<t;
+        m_logger->error("Error saving hole identification rule: {}", ex.what());
     }
-
-    file.flush();
-    file.close();
-
+    //QFile file(DEFAULT_HOLE_RULE_FILENAME);
+    //if(!file.open(QIODevice::WriteOnly))
+    //{
+    //    QMessageBox msgBox;
+    //    msgBox.setText("Error!Cannot save hole identification rule!");
+    //    msgBox.exec();
+    //    return;
+    //}
+    //QDataStream out(&file);
+    //out.setVersion(QDataStream::Qt_5_4);
+    //out<<holeRuleList.size();
+    //for(int i=0;i<holeRuleList.size();i++)
+    //{
+    //    HoleRule t=holeRuleList.at(i);
+    //    out<<t;
+    //}
+    //
+    //file.flush();
+    //file.close();
+    //
 }
 
 Setting::~Setting()
