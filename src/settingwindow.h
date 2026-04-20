@@ -32,22 +32,22 @@ namespace Ui {
 class settingwindow;
 }
 
-class settingwindow : public QDialog
+class Settingwindow : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit settingwindow(QWidget *parent = 0);
-    ~settingwindow();
+    explicit Settingwindow(QWidget *parent = 0);
+    ~Settingwindow();
 
-    setting *settings;
+    Setting *settings;
 
 protected:
-    void updateWindow(tool t);
+    void updateWindow(Tool t);
     void updateWindow();
-    bool checkValue(tool &t);
-    bool checkHoleRuleValue(holeCondition &c);
-    void updateMTreeView(holeRule r);
+    bool checkValue(Tool &t);
+    bool checkHoleRuleValue(HoleCondition &c);
+    void updateMTreeView(HoleRule r);
     void holeDrillCheck();
 private slots:
     void on_tlAddButton_clicked();
@@ -112,7 +112,7 @@ private:
     Ui::settingwindow *ui;
 
     TreeModel *tlModel,*hrModel;
-    holeRule hr;
+    HoleRule hr;
     QString unitType="Inch";
     bool editFlag=false;
     int editIndex=0;

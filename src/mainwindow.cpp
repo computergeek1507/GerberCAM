@@ -102,7 +102,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::drawNet(QGraphicsScene *scene,preprocess &t,QColor color,QColor colorError)
+void MainWindow::drawNet(QGraphicsScene *scene,Preprocess &t,QColor color,QColor colorError)
 {
     if(t.netList.size()==0)
         return;
@@ -126,7 +126,7 @@ void MainWindow::drawNet(QGraphicsScene *scene,preprocess &t,QColor color,QColor
                 c=color;
             if(t.netList.at(i).elements.at(j).elementType=='T')
             {
-                QGraphicsItem *item = new drawPCB(t.netList.at(i).elements.at(j).track,'T', AT_TOP,c);
+                QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).track,'T', AT_TOP,c);
                 item->setPos(t.netList.at(i).elements.at(j).track.pointstart);
                 scene->addItem(item);
             }
@@ -145,7 +145,7 @@ void MainWindow::drawNet(QGraphicsScene *scene,preprocess &t,QColor color,QColor
                 x1=t.netList.at(i).elements.at(j).pad.point.x();
                 y1=t.netList.at(i).elements.at(j).pad.point.y();
 
-                QGraphicsItem *item = new drawPCB(t.netList.at(i).elements.at(j).pad, AT_TOP,c);
+                QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).pad, AT_TOP,c);
                 item->setPos(x1,y1);
                 scene->addItem(item);
             }
@@ -163,7 +163,7 @@ void MainWindow::drawNet(QGraphicsScene *scene,preprocess &t,QColor color,QColor
                 x1=t.elementList.at(j).pad.point.x();
                 y1=t.elementList.at(j).pad.point.y();
 
-                QGraphicsItem *item = new drawPCB(t.elementList.at(j).pad,'h', AT_TOP,c);
+                QGraphicsItem *item = new DrawPCB(t.elementList.at(j).pad,'h', AT_TOP,c);
                 item->setPos(x1,y1);
                 scene->addItem(item);
             }
@@ -172,18 +172,18 @@ void MainWindow::drawNet(QGraphicsScene *scene,preprocess &t,QColor color,QColor
     }
     for(i=0;i<t.contourList.size();i++)
     {
-        struct net n=t.contourList.at(i);
+        Net n=t.contourList.at(i);
         for(int j=0;j<n.elements.size();j++)
         {
-            struct track tempTrack=n.elements.at(j).track;
-            QGraphicsItem *item = new drawPCB(tempTrack,'C', AT_TOP,Qt::black);
+            Track tempTrack=n.elements.at(j).track;
+            QGraphicsItem *item = new DrawPCB(tempTrack,'C', AT_TOP,Qt::black);
             item->setPos(tempTrack.pointstart);
             scene->addItem(item);
         }
     }
 }
 
-void MainWindow::drawToolpath(QGraphicsScene *scene,toolpath &t)
+void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
 {
     /*
     int i;
@@ -192,14 +192,14 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,toolpath &t)
         int j;
         QColor color(Qt::cyan);
 
-        struct netPath np=t.netPathList.at(i);
+        struct NetPath np=t.netPathList.at(i);
 
         for(j=0;j<np.pathList.size();j++)
         {
             QPoint point;
 
-            struct myPath p=np.pathList.at(j);
-            QGraphicsItem *item = new drawPCB(p, AT_TOP,color);
+            struct MyPath p=np.pathList.at(j);
+            QGraphicsItem *item = new DrawPCB(p, AT_TOP,color);
 
             //Paths p=np.toolpath;
             //QGraphicsItem *item=new drawPCB(p,AT_TOP,color);
@@ -216,7 +216,7 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,toolpath &t)
     QColor color(255,170,32);
     //color.setGreen(150);
     Paths p=t.totalToolpath;
-    QGraphicsItem *item=new drawPCB(p,AT_TOP,color);
+    QGraphicsItem *item=new DrawPCB(p,AT_TOP,color);
     QPoint point;
     point.setX(p.at(0).at(0).X);
     point.setY(p.at(0).at(0).Y);
@@ -226,20 +226,20 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,toolpath &t)
 }
 
 
-void MainWindow::drawLayer(QGraphicsScene *scene,gerber *gerberfile,QColor color)
+void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color)
 {
     int i;
 
-    struct track tempTrack;
+    Track tempTrack;
     for(i=0;i<gerberfile->trackNum;i++)
     {
         tempTrack=gerberfile->tracksList.at(i);
-        QGraphicsItem *item = new drawPCB(tempTrack,'T', AT_TOP,color);
+        QGraphicsItem *item = new DrawPCB(tempTrack,'T', AT_TOP,color);
         item->setPos(tempTrack.pointstart);
         scene->addItem(item);
     }
 
-    struct pad tempPad;
+    Pad tempPad;
     double x1,y1;
 
     for(i=0;i<gerberfile->padNum;i++)
@@ -248,7 +248,7 @@ void MainWindow::drawLayer(QGraphicsScene *scene,gerber *gerberfile,QColor color
         x1=tempPad.point.rx();
         y1=tempPad.point.ry();
 
-        QGraphicsItem *item = new drawPCB(tempPad, AT_TOP,color);
+        QGraphicsItem *item = new DrawPCB(tempPad, AT_TOP,color);
         item->setPos(x1,y1);
         scene->addItem(item);
     }
@@ -257,7 +257,7 @@ void MainWindow::drawLayer(QGraphicsScene *scene,gerber *gerberfile,QColor color
 
 }
 
-void MainWindow::showMessage(gerber &g,preprocess &p)
+void MainWindow::showMessage(Gerber &g,Preprocess &p)
 {
     this->setWindowTitle(gerberFileName+" ┅ "+version);
     ui->messageBrowser->append("\""+gerberFileName+"\""+" read success");
@@ -275,7 +275,7 @@ void MainWindow::on_actionOpen_triggered()
                   tr("Top Layer (*.gtl);;Bottom Layer (*.gbl);;Gerber File(*.gbr *.gbl *gtl);;All types (*.*)"));
     if(fileName.isEmpty())
         return;
-    gerber1=new gerber(fileName);
+    gerber1=new Gerber(fileName);
     gerberFileName=fileName.mid(fileName.lastIndexOf('/')+1,fileName.size()-fileName.lastIndexOf('/'));
     if(gerber1->readingFlag==false)
     {
@@ -299,7 +299,7 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
 
-    preprocessfile1=new preprocess(*gerber1,settingWindow.settings);
+    preprocessfile1=new Preprocess(*gerber1,settingWindow.settings);
 
     ui->messageBrowser->clear();
     showMessage(*gerber1,*preprocessfile1);
@@ -330,14 +330,14 @@ void MainWindow::on_actionAdd_layer_triggered()
             return;
         gerberFileName=fileName.mid(fileName.lastIndexOf('/')+1,fileName.size()-fileName.lastIndexOf('/'));
 
-        gerber2=new gerber(fileName);
+        gerber2=new Gerber(fileName);
         if(gerber2->readingFlag==false)
         {
             ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
-        preprocessfile2=new preprocess(*gerber2,settingWindow.settings);
+        preprocessfile2=new Preprocess(*gerber2,settingWindow.settings);
 
 
         showMessage(*gerber2,*preprocessfile2);
@@ -361,14 +361,14 @@ void MainWindow::on_actionAdd_layer_triggered()
         if(fileName.isEmpty())
             return;
 
-        gerber2=new gerber(fileName);
+        gerber2=new Gerber(fileName);
         if(gerber2->readingFlag==false)
         {
             ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
-        preprocessfile2=new preprocess(*gerber2,settingWindow.settings);
+        preprocessfile2=new Preprocess(*gerber2,settingWindow.settings);
 
         showMessage(*gerber2,*preprocessfile2);
 
@@ -387,14 +387,14 @@ void MainWindow::on_actionAdd_layer_triggered()
         if(fileName.isEmpty())
             return;
 
-        gerber1=new gerber(fileName);
+        gerber1=new Gerber(fileName);
         if(gerber1->readingFlag==false)
         {
             ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
-        preprocessfile1=new preprocess(*gerber1,settingWindow.settings);
+        preprocessfile1=new Preprocess(*gerber1,settingWindow.settings);
 
         showMessage(*gerber1,*preprocessfile1);
 
@@ -436,11 +436,11 @@ void MainWindow::on_actionToolpath_generat_triggered()
 {
     if(recalculateFlag==true)
     {
-        toolpath1=new toolpath(*preprocessfile1);
+        toolpath1=new Toolpath(*preprocessfile1);
 
         if(layerNum==2)
         {
-            toolpath2=new toolpath(*preprocessfile2);
+            toolpath2=new Toolpath(*preprocessfile2);
             scenePath12=new QGraphicsScene(this);
             drawNet(scenePath12,*preprocessfile2,*colorBlue2,*Error2);
             drawNet(scenePath12,*preprocessfile1,*colorRed1,*Error1);

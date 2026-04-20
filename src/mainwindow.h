@@ -44,6 +44,8 @@ SOFTWARE.
 #include "clipper.hpp"
 using namespace ClipperLib;
 
+#include "config.h"
+
 
 namespace Ui {
 class MainWindow;
@@ -65,9 +67,9 @@ public:
 
 
 protected:
-    void drawNet(QGraphicsScene *scene, preprocess &t, QColor color, QColor colorError);
-    void drawToolpath(QGraphicsScene *scene, toolpath &t);
-    void showMessage(gerber &g, preprocess &p);
+    void drawNet(QGraphicsScene *scene, Preprocess &t, QColor color, QColor colorError);
+    void drawToolpath(QGraphicsScene *scene, Toolpath &t);
+    void showMessage(Gerber &g, Preprocess &p);
 private slots:
     void on_actionOpen_triggered();
 
@@ -92,11 +94,11 @@ private:
     QString fileName;
     double scale=1;
     void wheelEvent(QWheelEvent *event);
-    void drawLayer(QGraphicsScene *scene, gerber *gerberfile, QColor color);
+    void drawLayer(QGraphicsScene *scene, Gerber *gerberfile, QColor color);
     double scaleFactor=250;
     int layerNum=0;
     int currentLayer=1;
-    gerber *gerber1,*gerber2;
+    Gerber *gerber1,*gerber2;
     QGraphicsScene *scene1,*scene12,*scene2,*scene21;
     QGraphicsScene *sceneNet1,*sceneNet2,*sceneNet12,*sceneNet21;
     QGraphicsScene *scenePath1,*scenePath2,*scenePath12,*scenePath21;
@@ -115,15 +117,15 @@ private:
     void timerEvent(QTimerEvent *event);
     QLabel *coordinateLabel;
 
-    preprocess *preprocessfile1,*preprocessfile2;
-    toolpath *toolpath1,*toolpath2;
+    Preprocess *preprocessfile1,*preprocessfile2;
+    Toolpath *toolpath1,*toolpath2;
 
-    QString version="gerberCAM v0.71";
+    QString version = PROJECT_NAME " v" PROJECT_VER;
     QString gerberFileName;
 
     bool recalculateFlag=false;
 
-    settingwindow settingWindow;
+    Settingwindow settingWindow;
 
     QString alertHtml = "<font color=\"red\">";
     QString endHtml = "</font>";

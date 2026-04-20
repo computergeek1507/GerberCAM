@@ -41,7 +41,7 @@ using namespace ClipperLib;
 /*
  * A rectangle border of a element,for quick collision check.
  * */
-struct boundingRect
+struct BoundingRect
 {
     qint64 top;
     qint64 bottom;
@@ -51,16 +51,16 @@ struct boundingRect
 };
 
 
-struct track
+struct Track
 {
     QPoint pointstart,pointend;
     qint64 width;
     qint32 block;
     qint32 totalBlock;
-    struct boundingRect boundingRect;
+    BoundingRect boundingRect;
 };
 
-struct pad
+struct Pad
 {
     QPoint point;
     qint32 parameterNum;
@@ -71,29 +71,29 @@ struct pad
     qint32 block;
     qint32 totalBlock;
     QString ADNum;
-    struct boundingRect boundingRect;
+    BoundingRect boundingRect;
 };
 
 
 
-class gerber
+class Gerber
 {
 public:
-    gerber(QString &fileName);
-    ~gerber();
+    Gerber(QString &fileName);
+    ~Gerber();
 
     qint32 padNum=0;
     qint32 trackNum=0;
     qint32 blockNum=0;
     qint32 totalLine=0;
 
-    QList<struct pad> padsList;
-    QList<struct track> tracksList;
+    QList<Pad> padsList;
+    QList<Track> tracksList;
 
     QString LayerName;
     QRect borderRect;
-    QRect getBoundingRect(track t);
-    QRect getBoundingRect(pad p);
+    QRect getBoundingRect(Track t);
+    QRect getBoundingRect(Pad p);
 
     /*
      * Be consistent,use either of these settings!
@@ -114,7 +114,7 @@ public:
 protected:
     void blockCount();
 
-    void inverseTrack(struct track &t);
+    void inverseTrack(Track &t);
     void macroToPad(int AMNum, QString AMName);
 private:
 
@@ -145,13 +145,13 @@ private:
     qint64 convertNumber(QString line, QString c, qint32 integerDigit, qint32 decimalDigit);
 
     qint64 maxX,maxY,minX,minY;
-    void find_border(boundingRect r);
+    void find_border(BoundingRect r);
 
     bool polygonFillMode=false;
     qint32 block=0;
 
-    struct boundingRect boundingRect(pad pad);
-    struct boundingRect boundingRect(track t);
+    BoundingRect boundingRect(Pad pad);
+    BoundingRect boundingRect(Track t);
 
 };
 

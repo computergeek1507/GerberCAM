@@ -24,14 +24,14 @@ SOFTWARE.
 #include "settingwindow.h"
 #include "ui_settingwindow.h"
 
-settingwindow::settingwindow(QWidget *parent) :
+Settingwindow::Settingwindow(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::settingwindow)
 {
     Q_INIT_RESOURCE(resources);
     ui->setupUi(this);
     this->setWindowTitle("Setting");
-    settings=new setting();
+    settings=new Setting();
 
     //Tool Library setup
     tlModel =new TreeModel(*settings);
@@ -51,13 +51,13 @@ settingwindow::settingwindow(QWidget *parent) :
 
     if(settings->holeRuleList.size()>0)
     {
-        holeRule rule=settings->holeRuleList.at(0);
+        HoleRule rule=settings->holeRuleList.at(0);
         updateMTreeView(rule);
     }
     ui->mREDrillComboBox->clear();
     for(int i=0;i<settings->drillList.size();i++)
     {
-        tool t=settings->drillList.at(i);
+        Tool t=settings->drillList.at(i);
         QString s=t.name+"  "+QString::number(t.width,'f',3);
         ui->mREDrillComboBox->addItem(s);
     }
@@ -86,17 +86,17 @@ settingwindow::settingwindow(QWidget *parent) :
 
 }
 
-void settingwindow::holeDrillCheck()
+void Settingwindow::holeDrillCheck()
 {
     QString errorToolMiss,errorToolIncorrect;
     int error=0;//0 no error,1 toolMiss,2 toolIncorrect
     for(int i=0;i<settings->holeRuleList.size();i++)
     {
-        holeRule h=settings->holeRuleList.at(i);
+        HoleRule h=settings->holeRuleList.at(i);
         for(int j=0;j<h.ruleList.size();j++)
         {
-            holeCondition c=h.ruleList.at(j);
-            tool t=c.drill;
+            HoleCondition c=h.ruleList.at(j);
+            Tool t=c.drill;
             error=1;
             for(int k=0;k<settings->drillList.size();k++)
             {
@@ -136,11 +136,11 @@ void settingwindow::holeDrillCheck()
     }
 }
 
-void settingwindow::updateWindow()
+void Settingwindow::updateWindow()
 {
     if(settings->toolList.size()>0)
     {
-        tool t=settings->toolList.at(0);
+        Tool t=settings->toolList.at(0);
         QString filename = ":/jpg/Conical.jpg";
         QImage imageConical(filename);
         filename = ":/jpg/Drill.jpg";
@@ -198,7 +198,7 @@ void settingwindow::updateWindow()
     }
 }
 
-void settingwindow::updateWindow(struct tool t)
+void Settingwindow::updateWindow(Tool t)
 {
     QString filename = ":/jpg/Conical.jpg";
     QImage imageConical(filename);
@@ -260,12 +260,12 @@ void settingwindow::updateWindow(struct tool t)
 
 
 
-settingwindow::~settingwindow()
+Settingwindow::~Settingwindow()
 {
     delete ui;
 }
 
-bool settingwindow::checkValue(struct tool &t)
+bool Settingwindow::checkValue(Tool &t)
 {
     t.name=ui->tlName->text();
     for(int i=0;i<settings->toolList.size();i++)
@@ -362,9 +362,9 @@ bool settingwindow::checkValue(struct tool &t)
     return true;
 }
 
-void settingwindow::on_tlAddButton_clicked()
+void Settingwindow::on_tlAddButton_clicked()
 {
-    tool t;
+    Tool t;
     if(checkValue(t)==false)
         return;
     settings->appendTool(t);
@@ -380,28 +380,28 @@ void settingwindow::on_tlAddButton_clicked()
     ui->mREDrillComboBox->update();
     for(int i=0;i<settings->drillList.size();i++)
     {
-        tool t=settings->drillList.at(i);
+        Tool t=settings->drillList.at(i);
         QString s=t.name+"  "+QString::number(t.width,'f',3);
         ui->mREDrillComboBox->addItem(s);
     }
 }
 
-void settingwindow::on_tlUnitInchRadio_clicked()
+void Settingwindow::on_tlUnitInchRadio_clicked()
 {
     unitType="Inch";
 }
 
-void settingwindow::on_tlUnitMMRadio_clicked()
+void Settingwindow::on_tlUnitMMRadio_clicked()
 {
     unitType="Milimeter";
 }
 
-void settingwindow::on_tlTypeComboBox_currentIndexChanged(int index)
+void Settingwindow::on_tlTypeComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index)
 }
 
-void settingwindow::on_tlTypeComboBox_activated(int index)
+void Settingwindow::on_tlTypeComboBox_activated(int index)
 {
     Q_UNUSED(index)
     QString filename = ":/jpg/Conical.jpg";
@@ -434,18 +434,18 @@ void settingwindow::on_tlTypeComboBox_activated(int index)
 
 }
 
-void settingwindow::on_treeView_clicked(const QModelIndex &index)
+void Settingwindow::on_treeView_clicked(const QModelIndex &index)
 {
     Q_UNUSED(index)
 }
 
-void settingwindow::on_treeView_doubleClicked(const QModelIndex &index)
+void Settingwindow::on_treeView_doubleClicked(const QModelIndex &index)
 {
-    tool t=settings->toolList.at(index.row());
+    Tool t=settings->toolList.at(index.row());
     updateWindow(t);
 }
 
-void settingwindow::on_tlDeleteButton_clicked()
+void Settingwindow::on_tlDeleteButton_clicked()
 {
     if(settings->toolList.size()==0)
         return;
@@ -464,13 +464,13 @@ void settingwindow::on_tlDeleteButton_clicked()
     ui->mREDrillComboBox->clear();
     for(int i=0;i<settings->drillList.size();i++)
     {
-        tool t=settings->drillList.at(i);
+        Tool t=settings->drillList.at(i);
         QString s=t.name+"  "+QString::number(t.width,'f',3);
         ui->mREDrillComboBox->addItem(s);
     }
 }
 
-void settingwindow::on_tlEditButton_clicked()
+void Settingwindow::on_tlEditButton_clicked()
 {
     ui->tlDeleteButton->setEnabled(false);
     ui->tlEditButton->setEnabled(false);
@@ -479,13 +479,13 @@ void settingwindow::on_tlEditButton_clicked()
     ui->tlCancelButton->setEnabled(true);
     editIndex=ui->treeView->currentIndex().row();
 
-    tool t=settings->toolList.at(editIndex);
+    Tool t=settings->toolList.at(editIndex);
     updateWindow(t);
 }
 
-void settingwindow::on_tlSaveButton_clicked()
+void Settingwindow::on_tlSaveButton_clicked()
 {
-    tool t=settings->toolList.at(editIndex);
+    Tool t=settings->toolList.at(editIndex);
     if(checkValue(t)==false)
         return;
     settings->replaceTool(editIndex,t);
@@ -506,13 +506,13 @@ void settingwindow::on_tlSaveButton_clicked()
     ui->mREDrillComboBox->update();
     for(int i=0;i<settings->drillList.size();i++)
     {
-        tool t=settings->drillList.at(i);
+        Tool t=settings->drillList.at(i);
         QString s=t.name+"  "+QString::number(t.width,'f',3);
         ui->mREDrillComboBox->addItem(s);
     }
 }
 
-void settingwindow::on_tlCancelButton_clicked()
+void Settingwindow::on_tlCancelButton_clicked()
 {
     tlModel =new TreeModel(*settings);
     ui->treeView->setModel(tlModel);
@@ -526,18 +526,18 @@ void settingwindow::on_tlCancelButton_clicked()
     ui->tlCancelButton->setEnabled(false);
 }
 
-void settingwindow::on_buttonYes_clicked()
+void Settingwindow::on_buttonYes_clicked()
 {
     this->close();
 }
 
-void settingwindow::on_buttonNo_clicked()
+void Settingwindow::on_buttonNo_clicked()
 {
     this->close();
 }
 
 
-void settingwindow::updateMTreeView(holeRule r)
+void Settingwindow::updateMTreeView(HoleRule r)
 {
     hrModel =new TreeModel(r);
     ui->mTreeView->setModel(hrModel);
@@ -546,7 +546,7 @@ void settingwindow::updateMTreeView(holeRule r)
     ui->mTreeView->show();
 }
 
-void settingwindow::on_mNewButton_clicked()
+void Settingwindow::on_mNewButton_clicked()
 {
     ui->mSaveButton->setEnabled(true);
     ui->mCancelButton->setEnabled(true);
@@ -572,7 +572,7 @@ void settingwindow::on_mNewButton_clicked()
 
 }
 
-void settingwindow::on_mDeleteButton_clicked()
+void Settingwindow::on_mDeleteButton_clicked()
 {
     ui->mSaveButton->setEnabled(false);
     ui->mCancelButton->setEnabled(false);
@@ -614,7 +614,7 @@ void settingwindow::on_mDeleteButton_clicked()
         ui->mEditButton->setEnabled(true);
 }
 
-void settingwindow::on_mEditButton_clicked()
+void Settingwindow::on_mEditButton_clicked()
 {
     ui->mSaveButton->setEnabled(true);
     ui->mCancelButton->setEnabled(true);
@@ -643,7 +643,7 @@ void settingwindow::on_mEditButton_clicked()
     updateMTreeView(hr);
 }
 
-void settingwindow::on_mSaveButton_clicked()
+void Settingwindow::on_mSaveButton_clicked()
 {
     ui->mSaveButton->setEnabled(false);
     ui->mCancelButton->setEnabled(false);
@@ -678,7 +678,7 @@ void settingwindow::on_mSaveButton_clicked()
     ui->mSelectRuleComboBox->adjustSize();
 }
 
-void settingwindow::on_mCancelButton_clicked()
+void Settingwindow::on_mCancelButton_clicked()
 {
     ui->mSaveButton->setEnabled(false);
     ui->mCancelButton->setEnabled(false);
@@ -705,7 +705,7 @@ void settingwindow::on_mCancelButton_clicked()
     updateMTreeView(hr);
 }
 
-void settingwindow::on_mREUpButton_clicked()
+void Settingwindow::on_mREUpButton_clicked()
 {
 
     QModelIndex index=ui->mTreeView->currentIndex();
@@ -722,7 +722,7 @@ void settingwindow::on_mREUpButton_clicked()
     ui->mTreeView->selectionModel()->select(i, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 }
 
-void settingwindow::on_mREDownButton_clicked()
+void Settingwindow::on_mREDownButton_clicked()
 {
     QModelIndex index=ui->mTreeView->currentIndex();
     if(index.row()<0||index.row()>hr.ruleList.size()-2)
@@ -737,7 +737,7 @@ void settingwindow::on_mREDownButton_clicked()
     ui->mTreeView->selectionModel()->select(i, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 }
 
-bool settingwindow::checkHoleRuleValue(struct holeCondition &c)
+bool Settingwindow::checkHoleRuleValue( HoleCondition &c)
 {
     /*
     for(int i=0;i<settings->holeRuleList.size();i++)
@@ -901,9 +901,9 @@ bool settingwindow::checkHoleRuleValue(struct holeCondition &c)
     return true;
 }
 
-void settingwindow::on_mREAddButton_clicked()
+void Settingwindow::on_mREAddButton_clicked()
 {
-    holeCondition c;
+    HoleCondition c;
     if(checkHoleRuleValue(c)==false)
         return;
     hr.name=ui->mRENameInput->text();
@@ -912,7 +912,7 @@ void settingwindow::on_mREAddButton_clicked()
     updateMTreeView(hr);
 }
 
-void settingwindow::on_mREDeleteButton_clicked()
+void Settingwindow::on_mREDeleteButton_clicked()
 {
     hr.ruleList.removeAt(ui->mTreeView->currentIndex().row());
     hrModel =new TreeModel(hr);
@@ -920,7 +920,7 @@ void settingwindow::on_mREDeleteButton_clicked()
     updateMTreeView(hr);
 }
 
-void settingwindow::on_mREEditButton_clicked()
+void Settingwindow::on_mREEditButton_clicked()
 {
     mREEditIndex=ui->mTreeView->currentIndex().row();
     mREEditFlag=true;
@@ -931,7 +931,7 @@ void settingwindow::on_mREEditButton_clicked()
         msgBox.exec();
         return;
     }
-    holeCondition c=hr.ruleList.at(mREEditIndex);
+    HoleCondition c=hr.ruleList.at(mREEditIndex);
     ui->mRENameInput->setText(hr.name);
 
     ui->mRESaveButton->setEnabled(true);
@@ -970,9 +970,9 @@ void settingwindow::on_mREEditButton_clicked()
 
 }
 
-void settingwindow::on_mRESaveButton_clicked()
+void Settingwindow::on_mRESaveButton_clicked()
 {
-    holeCondition c;
+    HoleCondition c;
     if(checkHoleRuleValue(c)==false)
         return;
     mREEditFlag=false;
@@ -989,7 +989,7 @@ void settingwindow::on_mRESaveButton_clicked()
     ui->mREDownButton->setEnabled(true);
 }
 
-void settingwindow::on_mRECancelButton_clicked()
+void Settingwindow::on_mRECancelButton_clicked()
 {
     ui->mRESaveButton->setEnabled(false);
     ui->mRECancelButton->setEnabled(false);
@@ -1002,7 +1002,7 @@ void settingwindow::on_mRECancelButton_clicked()
     mREEditFlag=false;
 }
 
-void settingwindow::on_tabWidget_tabBarClicked(int index)
+void Settingwindow::on_tabWidget_tabBarClicked(int index)
 {
     Q_UNUSED(index)
     ui->mSelectRuleComboBox->clear();
@@ -1010,7 +1010,7 @@ void settingwindow::on_tabWidget_tabBarClicked(int index)
      ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
 }
 
-void settingwindow::on_mSelectRuleComboBox_activated(int index)
+void Settingwindow::on_mSelectRuleComboBox_activated(int index)
 {
     hrModel =new TreeModel(settings->holeRuleList.at(index));
     ui->mTreeView->setModel(hrModel);
@@ -1028,12 +1028,12 @@ void settingwindow::on_mSelectRuleComboBox_activated(int index)
 
 
 
-void settingwindow::on_mREDrillComboBox_activated(int index)
+void Settingwindow::on_mREDrillComboBox_activated(int index)
 {
     Q_UNUSED(index)
 }
 
-void settingwindow::on_mSelectRuleComboBox_activated(const QString &arg1)
+void Settingwindow::on_mSelectRuleComboBox_activated(const QString &arg1)
 {
     Q_UNUSED(arg1)
 }

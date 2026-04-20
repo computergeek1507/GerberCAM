@@ -37,25 +37,25 @@ SOFTWARE.
 #include "clipper.hpp"
 using namespace ClipperLib;
 
-class drawPCB : public QGraphicsItem
+class DrawPCB : public QGraphicsItem
 {
 public:
     #define AT_TOP 2
     #define AT_BOTTOM 1
-    drawPCB();
-    ~drawPCB();
+    DrawPCB();
+    ~DrawPCB() = default;
 
-    drawPCB(pad component, int layerOrder, QColor c);
-    drawPCB(track component, char type, int layerOrder, QColor c);
-    drawPCB(myPath component, int layerOrder, QColor c);
-    drawPCB(Paths component, int layerOrder, QColor c);
+    DrawPCB(Pad component, int layerOrder, QColor c);
+    DrawPCB(Track component, char type, int layerOrder, QColor c);
+    DrawPCB(MyPath component, int layerOrder, QColor c);
+    DrawPCB(Paths component, int layerOrder, QColor c);
 
     QRectF boundingRect() const Q_DECL_OVERRIDE;
     QPainterPath shape() const Q_DECL_OVERRIDE;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) Q_DECL_OVERRIDE;
 
 
-    drawPCB(pad component, char hole, int layerOrder, QColor c);
+    DrawPCB(Pad component, char hole, int layerOrder, QColor c);
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) Q_DECL_OVERRIDE;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) Q_DECL_OVERRIDE;
@@ -68,9 +68,9 @@ private:
     QColor color;
     QVector<QPointF> stuff;
     char componentType;//p(pad) t(track) h(hole) c(contour) s(path) l(clipperPath)
-    pad tempPad;
-    track tempTrack;
-    myPath tempPath;
+    Pad tempPad;
+    Track tempTrack;
+    MyPath tempPath;
     Paths tempCPath;
     QPoint center;
     QRect area;

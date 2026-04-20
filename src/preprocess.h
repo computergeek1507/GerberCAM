@@ -33,25 +33,25 @@ SOFTWARE.
 #include "setting.h"
 using namespace ClipperLib;
 
-struct myRect
+struct MyRect
 {
     QPoint p1,p2,p3,p4;//clockwise vertex
 };
 
 
-struct element
+struct Element
 {
-    struct pad pad;
-    struct track track;
+    Pad pad;
+    Track track;
     qint32 block;
     qint32 netNum=0;
     QString ADNum;
     char elementType;//P T C
-    struct boundingRect boundingRect;
+    BoundingRect boundingRect;
     qint32 elementNum;
 };
 
-struct padManage
+struct PadManage
 {
     QString ADNum;
     double angle;
@@ -61,15 +61,15 @@ struct padManage
     int parameter[4];
 };
 
-struct net
+struct Net
 {
-   QList<struct element> elements;
+   QList<Element> elements;
    qint32 netNum;
-   struct boundingRect boundingRect;
+   BoundingRect boundingRect;
    bool collisionFlag;
 };
 
-struct contourSegment
+struct ContourSegment
 {
     QPoint point1,point2;
     int block;
@@ -77,58 +77,58 @@ struct contourSegment
     int pointer;
 };
 
-class preprocess
+class Preprocess
 {
 
 public:
-    ~preprocess();
+    ~Preprocess();
 
-    QList<struct net> netList;
-    QList<element> elementList;
-    QList<struct net> contourList;
-    QList<struct padManage> padList;
+    QList<Net> netList;
+    QList<Element> elementList;
+    QList<Net> contourList;
+    QList<PadManage> padList;
     qint64 time;
     int padNum;
 
-    preprocess(gerber &g, const setting *s);
-    void clearEccentricHole(QList<pad> pads);
+    Preprocess(Gerber &g, const Setting *s);
+    void clearEccentricHole(QList<Pad> pads);
 protected:
 
-    bool trackCollision(track tt1, track tt2);
-    bool rectCollision(myRect r1, myRect r2);
-    void checkSameNet(gerber g);
-    myRect trackToMyRect(track t);
+    bool trackCollision(Track tt1, Track tt2);
+    bool rectCollision(MyRect r1, MyRect r2);
+    void checkSameNet(Gerber g);
+    MyRect trackToMyRect(Track t);
 
-    myRect rectToMyRect(pad p1);
-    bool trackPadCollision(track t1, pad p1);
-    track obroundToTrack(pad o1);
-    bool padCollision(pad p1, pad p2);
-    bool elementCollision(element e1, element e2);
-
-
-    bool elementCollision1(element e1, element e2);
-    struct boundingRect boundingRect(pad pad);
-    struct boundingRect boundingRect(track t);
+    MyRect rectToMyRect(Pad p1);
+    bool trackPadCollision(Track t1, Pad p1);
+    Track obroundToTrack(Pad o1);
+    bool padCollision(Pad p1, Pad p2);
+    bool elementCollision(Element e1, Element e2);
 
 
-    QList<contourSegment> searchList;
+    bool elementCollision1(Element e1, Element e2);
+    BoundingRect boundingRect(Pad pad);
+    BoundingRect boundingRect(Track t);
 
 
-    bool bondingRecIntersect(struct boundingRect r1, struct boundingRect r2);
+    QList<ContourSegment> searchList;
+
+
+    bool bondingRecIntersect(BoundingRect r1, BoundingRect r2);
     bool pointInCircle(QPoint c, qint64 diameter, QPoint p);
     bool lineIntersection(QPoint p1Start, QPoint p1End, QPoint p2Start, QPoint p2End);
     bool lineIntersection(QPoint p1Start, QPoint p1End, QPoint p2Start, QPoint p2End, QPoint *qint32ersect);
     qint32 judgeDirection(QPoint p1, QPoint p2, QPoint p);
-    bool pointInRect(myRect r1, QPoint p);
-    struct boundingRect mergeRect(struct boundingRect r1,struct boundingRect r2);
+    bool pointInRect(MyRect r1, QPoint p);
+    BoundingRect mergeRect(BoundingRect r1,BoundingRect r2);
     void findContour();
     qint64 contourThreshold=13950027900;//3x3mm,10e6 precision
     //qint64 contourThreshold=5629921259842;//13x11mm,10e6 precision
     bool searchLoop(int n, QPoint originPoint, QPoint currentPoint, int deepth);
-    bool searchContour(net &n);
-    void padPreprocess(gerber &g, const setting *s);
+    bool searchContour(Net &n);
+    void padPreprocess(Gerber &g, const Setting *s);
 private:
-    QList<struct net> nets;
+    QList<Net> nets;
 };
 
 #endif // PREPROCESS_H

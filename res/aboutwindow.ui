@@ -57,6 +57,23 @@
      </widget>
     </item>
     <item>
+     <widget class="QLabel" name="label_About2026">
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>2026 Updates by Scott Hanson</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QLabel" name="label_CopyRight">
       <property name="font">
        <font>

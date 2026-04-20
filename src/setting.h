@@ -34,7 +34,7 @@ SOFTWARE.
 
 
 
-struct tool
+struct Tool
 {
     QString name;
     QString unitType;
@@ -50,49 +50,49 @@ struct tool
     double feedrate;
 };
 
-struct holeCondition
+struct HoleCondition
 {
-    tool drill;
+    Tool drill;
     QString condition;
     double value;
     double value1;
     QString text;
 };
 
-struct holeRule
+struct HoleRule
 {
     QString name;
-    QList<struct holeCondition> ruleList;
+    QList<HoleCondition> ruleList;
 };
 
-QDataStream &operator <<(QDataStream &out,const struct tool &toolBit);
-QDataStream &operator >>(QDataStream &in,struct tool &toolBit);
+QDataStream &operator <<(QDataStream &out,const Tool &toolBit);
+QDataStream &operator >>(QDataStream &in, Tool &toolBit);
 
-QDataStream &operator <<(QDataStream &out,const struct holeCondition &holeCondition);
-QDataStream &operator >>(QDataStream &in,struct holeCondition &holeCondition);
+QDataStream &operator <<(QDataStream &out,const HoleCondition &holeCondition);
+QDataStream &operator >>(QDataStream &in, HoleCondition &holeCondition);
 
-QDataStream &operator <<(QDataStream &out,const struct holeRule &holeRule);
-QDataStream &operator >>(QDataStream &in,struct holeRule &holeRule);
+QDataStream &operator <<(QDataStream &out,const HoleRule &holeRule);
+QDataStream &operator >>(QDataStream &in, HoleRule &holeRule);
 
 
-class setting
+class Setting
 {
 public:
-    setting();
-    ~setting();
-    struct tool engravingTool;
-    struct tool hatchingTool;
-    struct tool drillTool;
-    struct tool centeringTool;
-    QList<struct tool> toolList;
-    QList<struct tool> drillList;
-    QList<struct holeRule> holeRuleList;
+    Setting();
+    ~Setting();
+    Tool engravingTool;
+    Tool hatchingTool;
+    Tool drillTool;
+    Tool centeringTool;
+    QList<Tool> toolList;
+    QList<Tool> drillList;
+    QList<HoleRule> holeRuleList;
     int selectedRule=0;
 
-    void appendTool(tool t);
+    void appendTool(Tool t);
     void saveLibrary();
     void saveHoleRule();
-    void replaceTool(int index, tool t);
+    void replaceTool(int index, Tool t);
 protected:
 
     bool readHoleRule();

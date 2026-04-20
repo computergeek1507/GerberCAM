@@ -20,9 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "drawPCB.h"
+#include "DrawPCB.h"
 
-drawPCB::drawPCB(pad component,int layerOrder,QColor c)
+DrawPCB::DrawPCB(Pad component,int layerOrder,QColor c)
 {
     Q_UNUSED(layerOrder)
     componentType='p';
@@ -42,7 +42,7 @@ drawPCB::drawPCB(pad component,int layerOrder,QColor c)
     setFlags(ItemIsSelectable);
     setAcceptHoverEvents(true);
 }
-drawPCB::drawPCB(pad component,char hole,int layerOrder,QColor c)
+DrawPCB::DrawPCB(Pad component,char hole,int layerOrder,QColor c)
 {
     Q_UNUSED(layerOrder)
     if(hole=='h')
@@ -64,7 +64,7 @@ drawPCB::drawPCB(pad component,char hole,int layerOrder,QColor c)
     setAcceptHoverEvents(true);
 }
 
-drawPCB::drawPCB(track component,char type,int layerOrder,QColor c)
+DrawPCB::DrawPCB(Track component,char type,int layerOrder,QColor c)
 {
     Q_UNUSED(layerOrder)
     if(type=='T')
@@ -120,7 +120,7 @@ drawPCB::drawPCB(track component,char type,int layerOrder,QColor c)
     setAcceptHoverEvents(true);
 }
 
-drawPCB::drawPCB(myPath component, int layerOrder, QColor c)
+DrawPCB::DrawPCB(MyPath component, int layerOrder, QColor c)
 {
     Q_UNUSED(layerOrder)
     componentType='s';
@@ -133,7 +133,7 @@ drawPCB::drawPCB(myPath component, int layerOrder, QColor c)
     //setAcceptHoverEvents(true);
 }
 
-drawPCB::drawPCB(Paths component, int layerOrder, QColor c)
+DrawPCB::DrawPCB(Paths component, int layerOrder, QColor c)
 {
     Q_UNUSED(layerOrder)
     componentType='l';
@@ -146,17 +146,17 @@ drawPCB::drawPCB(Paths component, int layerOrder, QColor c)
     //setAcceptHoverEvents(true);
 }
 
-QRectF drawPCB::boundingRect() const
+QRectF DrawPCB::boundingRect() const
 {
     return area;
 }
 
-QPainterPath drawPCB::shape() const
+QPainterPath DrawPCB::shape() const
 {
     return path;
 }
 
-void drawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(widget)
     Q_UNUSED(option)
@@ -454,7 +454,7 @@ void drawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
 }
 
 
-void drawPCB::drawPie(QPainter *painter, QPoint p1, QPoint p2 )
+void DrawPCB::drawPie(QPainter *painter, QPoint p1, QPoint p2 )
 {
     QPoint c=(p1+p2)/2;
     double d=qSqrt(qint64(p2.x()-p1.x())*qint64(p2.x()-p1.x())+qint64(p2.y()-p1.y())*qint64(p2.y()-p1.y()));
@@ -507,13 +507,13 @@ void drawPCB::drawPie(QPainter *painter, QPoint p1, QPoint p2 )
 }
 
 
-void drawPCB::mousePressEvent(QGraphicsSceneMouseEvent *event)
+void DrawPCB::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     QGraphicsItem::mousePressEvent(event);
     update();
 }
 
-void drawPCB::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+void DrawPCB::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
 
     if (event->modifiers() & Qt::ShiftModifier) {
@@ -525,16 +525,8 @@ void drawPCB::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 }
 
-void drawPCB::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+void DrawPCB::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     QGraphicsItem::mouseReleaseEvent(event);
     update();
 }
-
-drawPCB::~drawPCB()
-{
-
-}
-
-
-

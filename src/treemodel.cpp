@@ -74,7 +74,7 @@ SOFTWARE.
 #include <QStringList>
 
 
-TreeModel::TreeModel(preprocess &pFile, QObject *parent)
+TreeModel::TreeModel(Preprocess &pFile, QObject *parent)
     : QAbstractItemModel(parent)
 {
     QList<QVariant> rootData;
@@ -83,7 +83,7 @@ TreeModel::TreeModel(preprocess &pFile, QObject *parent)
     setupModelData(pFile, rootItem);
 }
 
-TreeModel::TreeModel(setting &sFile, QObject *parent)
+TreeModel::TreeModel(Setting &sFile, QObject *parent)
     : QAbstractItemModel(parent)
 {
     QList<QVariant> rootData;
@@ -93,7 +93,7 @@ TreeModel::TreeModel(setting &sFile, QObject *parent)
     setupModelData(sFile, rootItem);
 }
 
-TreeModel::TreeModel(holeRule r, QObject *parent)
+TreeModel::TreeModel(HoleRule r, QObject *parent)
     : QAbstractItemModel(parent)
 {
     QList<QVariant> rootData;
@@ -196,7 +196,7 @@ int TreeModel::rowCount(const QModelIndex &parent) const
 }
 
 
-void TreeModel::setupModelData(const holeRule r, TreeItem *parent)
+void TreeModel::setupModelData(const HoleRule r, TreeItem *parent)
 {
     QList<TreeItem*> parents;
     QList<int> indentations;
@@ -206,13 +206,13 @@ void TreeModel::setupModelData(const holeRule r, TreeItem *parent)
     for(int i=0;i<r.ruleList.size();i++)
     {
         QList<QVariant> columnData;
-        holeCondition c=r.ruleList.at(i);
+        HoleCondition c=r.ruleList.at(i);
         columnData<<QString::number(i+1)<<c.text;
         parents.last()->appendChild(new TreeItem(columnData, parents.last()));
     }
 }
 
-void TreeModel::setupModelData(const setting &sFile, TreeItem *parent)
+void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
 {
     QList<TreeItem*> parents;
     QList<int> indentations;
@@ -224,7 +224,7 @@ void TreeModel::setupModelData(const setting &sFile, TreeItem *parent)
     //              << "Step Depth"<< "pluge Speed"<< "Spindle Speed"<< "Feedrate";
     for(int i=0;i<sFile.toolList.size();i++)
     {
-        struct tool t=sFile.toolList.at(i);
+        Tool t=sFile.toolList.at(i);
         if(t.toolType!="Conical")
             continue;
         QList<QVariant> columnData;
@@ -242,7 +242,7 @@ void TreeModel::setupModelData(const setting &sFile, TreeItem *parent)
     }
     for(int i=0;i<sFile.toolList.size();i++)
     {
-        struct tool t=sFile.toolList.at(i);
+        Tool t=sFile.toolList.at(i);
         if(t.toolType!="Cylindrical")
             continue;
         QList<QVariant> columnData;
@@ -260,7 +260,7 @@ void TreeModel::setupModelData(const setting &sFile, TreeItem *parent)
     }
     for(int i=0;i<sFile.toolList.size();i++)
     {
-        struct tool t=sFile.toolList.at(i);
+        Tool t=sFile.toolList.at(i);
         if(t.toolType!="Drill")
             continue;
         QList<QVariant> columnData;
@@ -276,12 +276,9 @@ void TreeModel::setupModelData(const setting &sFile, TreeItem *parent)
         columnData<<QString::number(t.feedrate,'f',3);
         parents.last()->appendChild(new TreeItem(columnData, parents.last()));
     }
-
-
 }
 
-
-void TreeModel::setupModelData(const preprocess &pFile, TreeItem *parent)
+void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)
 {
     QList<TreeItem*> parents;
     QList<int> indentations;
@@ -312,7 +309,7 @@ void TreeModel::setupModelData(const preprocess &pFile, TreeItem *parent)
                 indentations.pop_back();
             }
         }
-        net n=pFile.contourList.at(number);
+        Net n=pFile.contourList.at(number);
         QList<QVariant> columnData;
         columnData<<"paths"+QString::number(number)<<QString::number(n.elements.size());
         parents.last()->appendChild(new TreeItem(columnData, parents.last()));
@@ -369,7 +366,7 @@ void TreeModel::setupModelData(const preprocess &pFile, TreeItem *parent)
                 indentations.pop_back();
             }
         }
-        padManage pM=pFile.padList.at(number);
+        PadManage pM=pFile.padList.at(number);
         QList<QVariant> columnData;
         columnData<<pM.ADNum<<QString::number(pM.index.size());
         parents.last()->appendChild(new TreeItem(columnData, parents.last()));

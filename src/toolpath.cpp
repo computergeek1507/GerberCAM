@@ -22,12 +22,12 @@ SOFTWARE.
 
 #define _USE_MATH_DEFINES
 
-#include "toolpath.h"
+#include "Toolpath.h"
 #include <math.h>
 
-struct myRect toolpath::trackToMyRect(struct track t, qint64 offset)
+MyRect Toolpath::trackToMyRect(Track t, qint64 offset)
 {
-    struct myRect r;
+    MyRect r;
     QPoint p1;
     double k,ki;
     double angle;
@@ -102,7 +102,7 @@ struct myRect toolpath::trackToMyRect(struct track t, qint64 offset)
     return r;
 }
 
-struct boundingRect toolpath::expandBoundingRect(struct boundingRect r,qint64 offset)
+BoundingRect Toolpath::expandBoundingRect(BoundingRect r,qint64 offset)
 {
     r.top+=offset;
     r.right+=offset;
@@ -111,9 +111,9 @@ struct boundingRect toolpath::expandBoundingRect(struct boundingRect r,qint64 of
     return r;
 }
 
-struct myRect toolpath::rectToMyRect(struct pad p1,qint64 offset)
+MyRect Toolpath::rectToMyRect(Pad p1,qint64 offset)
 {
-    myRect r1;
+    MyRect r1;
     QPoint point;
     //offset/=2;
 
@@ -182,9 +182,9 @@ struct myRect toolpath::rectToMyRect(struct pad p1,qint64 offset)
     return r1;
 }
 
-struct track toolpath::obroundToTrack(struct pad o1)
+Track Toolpath::obroundToTrack(Pad o1)
 {
-    struct track t1;
+    Track t1;
     QPoint p1,p2;
     if(o1.angle==0)
     {
@@ -224,7 +224,7 @@ struct track toolpath::obroundToTrack(struct pad o1)
     return t1;
 }
 
-void toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
+void Toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
 {
     double angle = 0.0f;
 
@@ -273,7 +273,7 @@ void toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
 
 }
 
-bool toolpath::bondingRecIntersect(struct boundingRect r1, struct boundingRect r2)
+bool Toolpath::bondingRecIntersect(BoundingRect r1, BoundingRect r2)
 {
     //BE CAREFUL OF the DECIMAL 0.001!!
     //Be consit:5-100000-100!!
@@ -288,7 +288,7 @@ bool toolpath::bondingRecIntersect(struct boundingRect r1, struct boundingRect r
     return true;
 }
 
-bool toolpath::segmentCollision(struct element e1,struct element e2)
+bool Toolpath::segmentCollision(Element e1, Element e2)
 {
     if(!bondingRecIntersect(e1.boundingRect,e2.boundingRect))
         return false;
@@ -305,36 +305,36 @@ bool toolpath::segmentCollision(struct element e1,struct element e2)
     return true;
 }
 
-bool toolpath::toolpathIntersects(QList<netPath> nPList,QList<collisionToolpath> &cTList)
+bool Toolpath::toolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath> &cTList)
 {
     //TODO: fix return statement
     Q_UNUSED(cTList)
     int i,j;
     for(i=0;i<nPList.size();i++)
     {
-        netPath tNetPath=nPList.at(i);
+        NetPath tNetPath=nPList.at(i);
         for(j=i+1;j<nPList.size();j++)//netpath level compare
         {
-          netPath tNetPath1=nPList.at(j);
+          NetPath tNetPath1=nPList.at(j);
           if(bondingRecIntersect(tNetPath.boundingRect,tNetPath1.boundingRect)==false)
               continue;
           for(int k=0;k<tNetPath1.pathList.size();k++)//myPath level compare
           {
-              myPath tMyPath1=tNetPath1.pathList.at(k);
+              MyPath tMyPath1=tNetPath1.pathList.at(k);
               if(bondingRecIntersect(tMyPath1.boundingRect,tNetPath.boundingRect)==false)
                   continue;
               for(int l=0;l<tNetPath.pathList.size();l++)//segment level compare
               {
-                  myPath tMyPath=tNetPath.pathList.at(l);
+                  MyPath tMyPath=tNetPath.pathList.at(l);
                   if(bondingRecIntersect(tMyPath1.boundingRect,tMyPath.boundingRect)==false)
                       continue;
                   for(int m=0;m<tMyPath1.segmentList.size();m++)
                   {
-                      segment tSegment1=tMyPath1.segmentList.at(m);
+                      Segment tSegment1=tMyPath1.segmentList.at(m);
 
                       for(int n=0;n<tMyPath.segmentList.size();n++)
                       {
-                          segment tSegment=tMyPath.segmentList.at(n);
+                          Segment tSegment=tMyPath.segmentList.at(n);
                       }
 
                   }
@@ -345,17 +345,17 @@ bool toolpath::toolpathIntersects(QList<netPath> nPList,QList<collisionToolpath>
     }
 	return false;
 }
-bool toolpath::cToolpathIntersects(QList<netPath> nPList,QList<collisionToolpath> &cTList)
+bool Toolpath::cToolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath> &cTList)
 {
     for(int i=0;i<nPList.size();i++)
     {
-        netPath tNetPath=nPList.at(i);
+        NetPath tNetPath=nPList.at(i);
         Path tPath=tNetPath.toolpath.at(0);
-        collisionToolpath tcTList;
+        CollisionToolpath tcTList;
         tcTList.list.append(i);
         for(int j=i+1;j<nPList.size();j++)
         {
-            netPath tNetPath1=nPList.at(j);
+            NetPath tNetPath1=nPList.at(j);
             Path tPath1=tNetPath1.toolpath.at(0);
             Paths tPaths;
             Clipper c;
@@ -366,7 +366,7 @@ bool toolpath::cToolpathIntersects(QList<netPath> nPList,QList<collisionToolpath
             if(tPaths.size()>0)//collided
             {
                 tcTList.list.append(j);
-                collisionPair p;
+                CollisionPair p;
                 p.p1=i;
                 p.p2=j;
                 tcTList.pair.append(p);
@@ -380,7 +380,7 @@ bool toolpath::cToolpathIntersects(QList<netPath> nPList,QList<collisionToolpath
             int toolpathNum=0;
             for(int l=0;l<cTList.size();l++)
             {
-                collisionToolpath tcTList1=cTList.at(l);
+                CollisionToolpath tcTList1=cTList.at(l);
                 for(int k=0;k<tcTList.list.size();k++)
                 {
                     int toopathIndex=tcTList.list.at(k);
@@ -403,7 +403,7 @@ bool toolpath::cToolpathIntersects(QList<netPath> nPList,QList<collisionToolpath
                 if(collisionFlag==true)//collided with existed toolpath,merge
                 {
                     //merge two list
-                    collisionToolpath tcTList1=cTList.at(toolpathNum);
+                    CollisionToolpath tcTList1=cTList.at(toolpathNum);
                     for(int n=0;n<tcTList1.list.size();n++)
                     {
                         bool sameFlag=false;
@@ -436,31 +436,31 @@ bool toolpath::cToolpathIntersects(QList<netPath> nPList,QList<collisionToolpath
     return cTList.isEmpty() == false;
 }
 
-toolpath::toolpath(preprocess &p)
+Toolpath::Toolpath(Preprocess &p)
 {
     QElapsedTimer timer;
     timer.start();
 
     int i,j;
-    struct net tempPreprocessNetPath;
+    Net tempPreprocessNetPath;
 
     //produce toolpath for every element
     //method:offset the shape with the radius of the bit
     //then link the breaking points
     for(j=0;j<p.netList.size();j++)
     {
-        struct netPath tempToolPathNetPath;
+        NetPath tempToolPathNetPath;
         tempPreprocessNetPath=p.netList.at(j);
         Paths tempCPaths;
         for(i=0;i<tempPreprocessNetPath.elements.size();i++)
         {
-            struct myPath tempPath;
-            struct element e=tempPreprocessNetPath.elements.at(i);
-            struct segment s;
+            MyPath tempPath;
+            Element e=tempPreprocessNetPath.elements.at(i);
+            Segment s;
             tempPath.element=e;
             if(e.elementType=='T')//track
             {
-                struct myRect r=trackToMyRect(e.track,toolDiameter);
+                MyRect r=trackToMyRect(e.track,toolDiameter);
 
                 s.point=r.p1;
                 s.type='L';
@@ -507,7 +507,7 @@ toolpath::toolpath(preprocess &p)
                 }
                 else if(e.pad.shape=='R')
                 {
-                    struct myRect r=rectToMyRect(e.pad,toolDiameter);
+                    MyRect r=rectToMyRect(e.pad,toolDiameter);
                     s.point=r.p1;
                     s.type='L';
                     tempPath.segmentList.append(s);
@@ -533,8 +533,8 @@ toolpath::toolpath(preprocess &p)
                 }
                 else if(e.pad.shape=='O')
                 {
-                    struct track t=obroundToTrack(e.pad);
-                    struct myRect r=trackToMyRect(t,toolDiameter);
+                    Track t=obroundToTrack(e.pad);
+                    MyRect r=trackToMyRect(t,toolDiameter);
                     s.point=r.p1;
                     s.type='L';
                     tempPath.segmentList.append(s);
@@ -569,11 +569,11 @@ toolpath::toolpath(preprocess &p)
     int sum=0;
     for(int i=0;i<tpCollisionNum.size();i++)
     {
-        collisionToolpath temp=tpCollisionNum.at(i);
+        CollisionToolpath temp=tpCollisionNum.at(i);
         sum+=temp.pair.size();
         for(int j=0;j<temp.pair.size();j++)
         {
-            net n=p.netList.at(temp.pair.at(j).p1);
+            Net n=p.netList.at(temp.pair.at(j).p1);
             n.collisionFlag=true;
             p.netList.replace(temp.pair.at(j).p1,n);
 
@@ -602,9 +602,9 @@ toolpath::toolpath(preprocess &p)
 
 }
 
-toolpath::~toolpath()
+Toolpath::~Toolpath()
 {
-    struct track t;
+    //Track t;
 
 }
 

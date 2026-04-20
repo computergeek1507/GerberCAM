@@ -30,43 +30,43 @@ SOFTWARE.
 
 #include "clipper.hpp"
 using namespace ClipperLib;
-struct segment{
+struct Segment{
     QPoint point;
     char type;//L(line) C(circle)
 };
 
 //the path data of a element,ie,track,rect/obround/circle pad
-struct myPath{//right now all the path are generated in clockwise direction
-    struct element element;
-    QList<struct segment> segmentList;
-    struct boundingRect boundingRect;
+struct MyPath{//right now all the path are generated in clockwise direction
+    Element element;
+    QList<Segment> segmentList;
+    BoundingRect boundingRect;
     Path toolpath;//all the arc are turn into tiny lines and save in here
 };
 
 //the path data of a net
-struct netPath{
-    QList<myPath> pathList;
-    struct boundingRect boundingRect;
+struct NetPath{
+    QList<MyPath> pathList;
+    BoundingRect boundingRect;
     Paths toolpath;
 };
-struct collisionPair{
+struct CollisionPair{
     int p1,p2;
 };
 
-struct collisionToolpath{
+struct CollisionToolpath{
     QList<int> list;
-    QList<struct collisionPair> pair;
+    QList<struct CollisionPair> pair;
 };
 
-class toolpath//:public preprocess
+class Toolpath//:public preprocess
 {
 
 public:
 
-    toolpath(preprocess &p);
-    ~toolpath();
+    Toolpath(Preprocess &p);
+    ~Toolpath();
 
-    QList<netPath> netPathList;
+    QList<NetPath> netPathList;
     Paths totalToolpath;
     //consit with the precision 10e6!!!!
     qint64 toolDiameter=15748;//0.4mm bit
@@ -74,19 +74,19 @@ public:
     int collisionSum=0;
     qint64 time;
 
-    QList<struct collisionToolpath> tpCollisionNum;
+    QList<CollisionToolpath> tpCollisionNum;
 protected:
 
-    struct myRect trackToMyRect(track t, qint64 offset);
-    struct boundingRect expandBoundingRect(struct boundingRect r, qint64 offset);
-    struct myRect rectToMyRect(pad p1, qint64 offset);
+    MyRect trackToMyRect(Track t, qint64 offset);
+    BoundingRect expandBoundingRect(BoundingRect r, qint64 offset);
+    MyRect rectToMyRect(Pad p1, qint64 offset);
 
-    track obroundToTrack(pad o1);
+    Track obroundToTrack(Pad o1);
     void arcToSegments(QPoint p1, QPoint p2,Path &path);
-    bool bondingRecIntersect(boundingRect r1, boundingRect r2);
-    bool cToolpathIntersects(QList<netPath> nPList, QList<collisionToolpath> &cTList);
-    bool toolpathIntersects(QList<netPath> nPList, QList<collisionToolpath> &cTList);
-    bool segmentCollision(element e1, element e2);
+    bool bondingRecIntersect(BoundingRect r1, BoundingRect r2);
+    bool cToolpathIntersects(QList<NetPath> nPList, QList<CollisionToolpath> &cTList);
+    bool toolpathIntersects(QList<NetPath> nPList, QList<CollisionToolpath> &cTList);
+    bool segmentCollision(Element e1, Element e2);
 private:
       //the precision must be 10e6!!
      qint64 arcError=394;//0.01mm

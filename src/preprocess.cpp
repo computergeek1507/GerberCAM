@@ -22,7 +22,7 @@ SOFTWARE.
 
 #include "preprocess.h"
 
-preprocess::preprocess(gerber &g,const setting *s)
+Preprocess::Preprocess(Gerber &g,const Setting *s)
 {
 
     padNum=g.padNum;
@@ -33,18 +33,18 @@ preprocess::preprocess(gerber &g,const setting *s)
 
 }
 
-void preprocess::clearEccentricHole(QList<struct pad> pads)
+void Preprocess::clearEccentricHole(QList<Pad> pads)
 {
     for(int k=0;k<padNum;k++)
     {
-        element e=elementList.at(k);
+        Element e=elementList.at(k);
         bool ok=false;
         if(e.elementType=='P')
         {
-            pad p=e.pad;
+            Pad p=e.pad;
             for(int j=0;j<pads.size();j++)
             {
-                pad p1=pads.at(j);
+                Pad p1=pads.at(j);
                 if(p.point==p1.point&&p.shape==p1.shape)
                 {
                     ok=true;
@@ -61,13 +61,13 @@ void preprocess::clearEccentricHole(QList<struct pad> pads)
 
 }
 
-void preprocess::padPreprocess(gerber &g,const setting *s)
+void Preprocess::padPreprocess(Gerber &g,const Setting *s)
 {
-    holeRule rule=s->holeRuleList.at(s->selectedRule);
+    HoleRule rule=s->holeRuleList.at(s->selectedRule);
     //handle the default condition first
     for(int i=0;i<rule.ruleList.size();i++)
     {
-        holeCondition c=rule.ruleList.at(i);
+        HoleCondition c=rule.ruleList.at(i);
         c.drill.width=c.drill.width*1000000;
         c.value=c.value*1000000;
         c.value1=c.value1*1000000;
@@ -75,7 +75,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                pad p=g.padsList.at(j);
+                Pad p=g.padsList.at(j);
                 p.hole=c.drill.width;
                 g.padsList.replace(j,p);
             }
@@ -84,7 +84,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
 
     for(int i=0;i<rule.ruleList.size();i++)
     {
-        holeCondition c=rule.ruleList.at(i);
+        HoleCondition c=rule.ruleList.at(i);
         c.drill.width=c.drill.width*1000000;
         c.value=c.value*1000000;
         c.value1=c.value1*1000000;
@@ -92,7 +92,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                pad p=g.padsList.at(j);
+                Pad p=g.padsList.at(j);
                 if(p.shape=='C')
                 {
                     if(p.parameter[0]==c.value)
@@ -123,7 +123,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                pad p=g.padsList.at(j);
+                Pad p=g.padsList.at(j);
                 if(p.shape=='C')
                 {
                     if(p.parameter[0]>=c.value)
@@ -156,7 +156,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                pad p=g.padsList.at(j);
+                Pad p=g.padsList.at(j);
                 if(p.shape=='C')
                 {
                     if(p.parameter[0]<=c.value)
@@ -189,7 +189,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                pad p=g.padsList.at(j);
+                Pad p=g.padsList.at(j);
                 if(p.shape=='C')
                 {
                     if(p.parameter[0]>=c.value&&p.parameter[0]<=c.value1)
@@ -222,7 +222,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                pad p=g.padsList.at(j);
+                Pad p=g.padsList.at(j);
                 if(p.shape=='R')
                 {
                     if(p.parameter[0]==c.value&&p.parameter[1]==c.value1)
@@ -247,7 +247,7 @@ void preprocess::padPreprocess(gerber &g,const setting *s)
 //if D>0,p is on left side of the line
 //if D<0,p is on right side of the line
 //if D=0,p is on the line
-qint32 preprocess::judgeDirection(QPoint p1,QPoint p2,QPoint p)
+qint32 Preprocess::judgeDirection(QPoint p1,QPoint p2,QPoint p)
 {
     qint64 A,B,C,D;
     A =-(p2.y() - p1.y());
@@ -267,7 +267,7 @@ qint32 preprocess::judgeDirection(QPoint p1,QPoint p2,QPoint p)
 
 
 //the rectangle point order must be clockwise!!!
-bool preprocess::rectCollision(struct myRect r1,struct myRect r2)
+bool Preprocess::rectCollision( MyRect r1, MyRect r2)
 {
     if(pointInRect(r1,r2.p1))   return true;
     if(pointInRect(r1,r2.p2))   return true;
@@ -290,7 +290,7 @@ bool preprocess::rectCollision(struct myRect r1,struct myRect r2)
 
 // Returns 1 if the lines intersect, otherwise 0. In addition, if the lines
 // intersect the intersection point may be stored in the point intersect.
-bool preprocess::lineIntersection(QPoint p1Start,QPoint p1End,QPoint p2Start,QPoint p2End,QPoint *intersect)
+bool Preprocess::lineIntersection(QPoint p1Start,QPoint p1End,QPoint p2Start,QPoint p2End,QPoint *intersect)
 {
     qint64 p0_x,p0_y,p1_x,p1_y;
     qint64 p2_x,p2_y,p3_x,p3_y;
@@ -321,7 +321,7 @@ bool preprocess::lineIntersection(QPoint p1Start,QPoint p1End,QPoint p2Start,QPo
     return false; // No collision
 }
 
-bool preprocess::lineIntersection(QPoint p1Start,QPoint p1End,QPoint p2Start,QPoint p2End)
+bool Preprocess::lineIntersection(QPoint p1Start,QPoint p1End,QPoint p2Start,QPoint p2End)
 {
     qint64 p0_x,p0_y,p1_x,p1_y;
     qint64 p2_x,p2_y,p3_x,p3_y;
@@ -347,7 +347,7 @@ bool preprocess::lineIntersection(QPoint p1Start,QPoint p1End,QPoint p2Start,QPo
 }
 
 
-bool preprocess::pointInRect(struct myRect r1,QPoint p)
+bool Preprocess::pointInRect(MyRect r1,QPoint p)
 {
     int i=0;
     i+=judgeDirection(r1.p1,r1.p2,p);
@@ -360,7 +360,7 @@ bool preprocess::pointInRect(struct myRect r1,QPoint p)
     return false;
 }
 
-bool preprocess::pointInCircle(QPoint c,qint64 diameter,QPoint p)
+bool Preprocess::pointInCircle(QPoint c,qint64 diameter,QPoint p)
 {
     qint64 d1=(qint64)(p.x()-c.x())*(qint64)(p.x()-c.x());
     qint64 d2=(qint64)(p.y()-c.y())*(qint64)(p.y()-c.y());
@@ -377,12 +377,12 @@ bool preprocess::pointInCircle(QPoint c,qint64 diameter,QPoint p)
 //1.expand t1 with the width of t2
 //2.turn t1 into 1 rectangle & 2 circle
 //3.check if the startpoint & endpoint of t2 are in side the rect and circle
-bool preprocess::trackCollision(struct track tt1, struct track tt2)
+bool Preprocess::trackCollision(struct Track tt1, struct Track tt2)
 {
-    track t1=tt1,t2=tt2;
+    Track t1=tt1,t2=tt2;
 
     t1.width=(t1.width+t2.width);
-    struct myRect r1=trackToMyRect(t1);
+    MyRect r1=trackToMyRect(t1);
     if(pointInRect(r1,t2.pointend)==true)
         return true;
     if(pointInRect(r1,t2.pointstart)==true)
@@ -420,9 +420,9 @@ bool preprocess::trackCollision(struct track tt1, struct track tt2)
 }
 
 
-struct myRect preprocess::trackToMyRect(struct track t)
+MyRect Preprocess::trackToMyRect(Track t)
 {
-    struct myRect r;
+    MyRect r;
     QPoint p1;
     double k,ki;
     double angle;
@@ -496,9 +496,9 @@ struct myRect preprocess::trackToMyRect(struct track t)
 }
 
 
-struct myRect preprocess::rectToMyRect(struct pad p1)
+MyRect Preprocess::rectToMyRect(Pad p1)
 {
-    myRect r1;
+    MyRect r1;
     QPoint point;
     if(p1.angle==0)
     {
@@ -563,9 +563,9 @@ struct myRect preprocess::rectToMyRect(struct pad p1)
     return r1;
 }
 
-struct track preprocess::obroundToTrack(struct pad o1)
+Track Preprocess::obroundToTrack(Pad o1)
 {
-    struct track t1;
+    Track t1;
     QPoint p1,p2;
     if(o1.angle==0)
     {
@@ -606,15 +606,15 @@ struct track preprocess::obroundToTrack(struct pad o1)
 }
 
 
-bool preprocess::trackPadCollision(struct track t1,struct pad p1)
+bool Preprocess::trackPadCollision(Track t1, Pad p1)
 {
     //1.rect collision:If point in rect
     //2.rect collision:If lines intersect
     //3.circle of track:turn into point in rect problem
     if(p1.shape=='R')
     {
-        myRect r1=rectToMyRect(p1);
-        myRect r2=trackToMyRect(t1);
+        MyRect r1=rectToMyRect(p1);
+        MyRect r2=trackToMyRect(t1);
 
         if(rectCollision(r1,r2)) return true;
         //check track side point in rect
@@ -631,7 +631,7 @@ bool preprocess::trackPadCollision(struct track t1,struct pad p1)
     //totally a point in rect&circle problem
     if(p1.shape=='C')
     {
-        myRect r1;
+        MyRect r1;
         t1.width+=p1.parameter[0];
         r1=trackToMyRect(t1);
 
@@ -644,7 +644,7 @@ bool preprocess::trackPadCollision(struct track t1,struct pad p1)
     //turn obround to track,run tracktrackcollision
     if(p1.shape=='O')
     {
-        struct track t2=obroundToTrack(p1);
+        Track t2=obroundToTrack(p1);
         if(trackCollision(t1,t2)) return true;
         return false;
     }
@@ -656,20 +656,20 @@ bool preprocess::trackPadCollision(struct track t1,struct pad p1)
     }
     return true;
 }
-bool preprocess::padCollision(struct pad p1,struct pad p2)
+bool Preprocess::padCollision(Pad p1, Pad p2)
 {
     if(p1.shape=='O'&&p2.shape=='O')
     {
-        struct track t1=obroundToTrack(p1);
-        struct track t2=obroundToTrack(p2);
+        Track t1=obroundToTrack(p1);
+        Track t2=obroundToTrack(p2);
         if(trackCollision(t1,t2)) return true;
         return false;
     }
     if(p1.shape=='O'&&p2.shape=='R')
     {
-        struct track t1=obroundToTrack(p1);
-        myRect r1=trackToMyRect(t1);
-        myRect r2=rectToMyRect(p2);
+        Track t1=obroundToTrack(p1);
+        MyRect r1=trackToMyRect(t1);
+        MyRect r2=rectToMyRect(p2);
         if(rectCollision(r1,r2)) return true;
 
         //check track(t1) side point in rect(p2)
@@ -683,9 +683,9 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
     }
     if(p1.shape=='R'&&p2.shape=='O')
     {
-        struct track t1=obroundToTrack(p2);
-        myRect r1=trackToMyRect(t1);
-        myRect r2=rectToMyRect(p1);
+        Track t1=obroundToTrack(p2);
+        MyRect r1=trackToMyRect(t1);
+        MyRect r2=rectToMyRect(p1);
         if(rectCollision(r1,r2)) return true;
 
         //check track(t1) side point in rect(p1)
@@ -699,9 +699,9 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
     }
     if(p1.shape=='O'&&p2.shape=='C')
     {
-        struct track t1=obroundToTrack(p1);
+        Track t1=obroundToTrack(p1);
         t1.width+=p2.parameter[0];
-        myRect r1=trackToMyRect(t1);
+        MyRect r1=trackToMyRect(t1);
 
         if(pointInRect(r1,p2.point)) return true;
         if(pointInCircle(t1.pointend,t1.width,p2.point)
@@ -711,9 +711,9 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
     }
     if(p1.shape=='C'&&p2.shape=='O')
     {
-        struct track t1=obroundToTrack(p2);
+        Track t1=obroundToTrack(p2);
         t1.width+=p1.parameter[0];
-        myRect r1=trackToMyRect(t1);
+        MyRect r1=trackToMyRect(t1);
 
         if(pointInRect(r1,p1.point)) return true;
         if(pointInCircle(t1.pointend,t1.width,p1.point)
@@ -723,8 +723,8 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
     }
     if(p1.shape=='R'&&p2.shape=='R')
     {
-        myRect r1=rectToMyRect(p1);
-        myRect r2=rectToMyRect(p2);
+        MyRect r1=rectToMyRect(p1);
+        MyRect r2=rectToMyRect(p2);
         if(rectCollision(r1,r2)) return true;
         return false;
     }
@@ -732,7 +732,7 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
     {
         p1.parameter[0]+=p2.parameter[0];
         p1.parameter[1]+=p2.parameter[0];
-        myRect r1=rectToMyRect(p1);
+        MyRect r1=rectToMyRect(p1);
         if(pointInRect(r1,p2.point)||pointInRect(r1,p2.point))
             return true;
         return false;
@@ -741,7 +741,7 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
     {
         p2.parameter[0]+=p1.parameter[0];
         p2.parameter[1]+=p1.parameter[0];
-        myRect r1=rectToMyRect(p2);
+        MyRect r1=rectToMyRect(p2);
         if(pointInRect(r1,p1.point)||pointInRect(r1,p1.point))
             return true;
         return false;
@@ -758,7 +758,7 @@ bool preprocess::padCollision(struct pad p1,struct pad p2)
 
 }
 
-bool preprocess::bondingRecIntersect(struct boundingRect r1, struct boundingRect r2)
+bool Preprocess::bondingRecIntersect(BoundingRect r1, BoundingRect r2)
 {
     //BE CAREFUL OF the DECIMAL 0.001!!
     //Be consit:5-100000-100!!
@@ -773,7 +773,7 @@ bool preprocess::bondingRecIntersect(struct boundingRect r1, struct boundingRect
     return true;
 }
 
-bool preprocess::elementCollision(struct element e1,struct element e2)
+bool Preprocess::elementCollision(Element e1, Element e2)
 {
     if(!bondingRecIntersect(e1.boundingRect,e2.boundingRect))
         return false;
@@ -789,9 +789,9 @@ bool preprocess::elementCollision(struct element e1,struct element e2)
     return false;
 }
 
-struct boundingRect preprocess::mergeRect(struct boundingRect r1,struct boundingRect r2)
+BoundingRect Preprocess::mergeRect(BoundingRect r1, BoundingRect r2)
 {
-    struct boundingRect tempRect;
+    BoundingRect tempRect;
     tempRect.left=r1.left<r2.left?r1.left:r2.left;
     tempRect.right=r1.right>r2.right?r1.right:r2.right;
     tempRect.bottom=r1.bottom<r2.bottom?r1.bottom:r2.bottom;
@@ -799,12 +799,12 @@ struct boundingRect preprocess::mergeRect(struct boundingRect r1,struct bounding
     tempRect.area=(tempRect.top-tempRect.bottom)*(tempRect.right-tempRect.left);
     return tempRect;
 }
-void preprocess::findContour()
+void Preprocess::findContour()
 {
     int block=0;
     for(int i=0;i<elementList.size();i++)
     {
-        element e=elementList.at(i);
+        Element e=elementList.at(i);
         if(e.block!=block)
         {
             block=e.block;
@@ -823,7 +823,7 @@ void preprocess::findContour()
                 if(elementList.at(j).block!=block)
                     break;
             }
-            element e1=elementList.at(j-1);
+            Element e1=elementList.at(j-1);
             QPoint endPoint1=e1.track.pointstart;
             QPoint endPoint2=e1.track.pointend;
             if(j-i>2)
@@ -831,14 +831,14 @@ void preprocess::findContour()
                         startPoint2==endPoint1)
                 {
 
-                    struct boundingRect r=elementList.at(i).boundingRect;
+                    BoundingRect r=elementList.at(i).boundingRect;
                     for(int k=i;k<j;k++)
                     {
                         r=mergeRect(r,elementList.at(k).boundingRect);
                     }
                     if(r.area>contourThreshold)
                     {
-                        net temp;
+                        Net temp;
                         for(int k=i;k<j;k++)
                             temp.elements.append(elementList.at(k));
                         contourList.append(temp);
@@ -852,11 +852,11 @@ void preprocess::findContour()
     }
 }
 
-bool preprocess::searchLoop(int n,QPoint originPoint,QPoint currentPoint,int deepth)
+bool Preprocess::searchLoop(int n,QPoint originPoint,QPoint currentPoint,int deepth)
 {
     if(searchList.at(n).flag==true)
         return false;
-    contourSegment temp=searchList.at(n);
+    ContourSegment temp=searchList.at(n);
     bool successFlag=false;
     if(temp.point1==currentPoint)
     {
@@ -899,15 +899,15 @@ bool preprocess::searchLoop(int n,QPoint originPoint,QPoint currentPoint,int dee
     return false;
 }
 
-bool preprocess::searchContour(struct net &n)
+bool Preprocess::searchContour(Net &n)
 {
     searchList.clear();
     for(int i=0;i<n.elements.size();i++)
     {
-        element e=n.elements.at(i);
+        Element e=n.elements.at(i);
         if(e.elementType=='T')
         {
-            struct contourSegment temp;
+            ContourSegment temp;
             temp.flag=false;
             temp.block=e.block;
             temp.point1=e.track.pointstart;
@@ -919,7 +919,7 @@ bool preprocess::searchContour(struct net &n)
     if(searchList.size()<2)
         return false;
     bool successFlag=false;
-    contourSegment temp=searchList.at(0);
+    ContourSegment temp=searchList.at(0);
     temp.flag=true;
     searchList.replace(0,temp);
     for(int i=0;i<searchList.size();i++)
@@ -930,11 +930,11 @@ bool preprocess::searchContour(struct net &n)
     }
     if(successFlag==true)//we find a loop
     {
-        struct boundingRect r;
-        net temp;
+        BoundingRect r;
+        Net temp;
         for(int i=0;i<searchList.size();i++)
         {
-            element e=n.elements.at(searchList.at(i).pointer);
+            Element e=n.elements.at(searchList.at(i).pointer);
             if(searchList.at(i).flag==true)
             {
                 r=e.boundingRect;
@@ -943,7 +943,7 @@ bool preprocess::searchContour(struct net &n)
         }
         for(int i=0;i<searchList.size();i++)
         {
-            element e=n.elements.at(searchList.at(i).pointer);
+            Element e=n.elements.at(searchList.at(i).pointer);
             if(searchList.at(i).flag==true)
                 r=mergeRect(r,e.boundingRect);
         }
@@ -953,7 +953,7 @@ bool preprocess::searchContour(struct net &n)
             for(int i=0;i<searchList.size();i++)
                 if(searchList.at(i).flag==true)
                 {
-                    element e=n.elements.at(searchList.at(i).pointer);
+                    Element e=n.elements.at(searchList.at(i).pointer);
                     temp.elements.append(e);
                     e.elementType='C';
                     n.elements.replace(searchList.at(i).pointer,e);
@@ -975,12 +975,12 @@ bool preprocess::searchContour(struct net &n)
 
 }
 
-void preprocess::checkSameNet(gerber g)
+void Preprocess::checkSameNet(Gerber g)
 {
     QElapsedTimer timer;
     timer.start();
 
-    element e;
+    Element e;
     int i,j,k;
     j=0;
     for(i=0;i<g.trackNum;i++)
@@ -1004,7 +1004,7 @@ void preprocess::checkSameNet(gerber g)
     padNum=g.padNum;
     for(i=0;i<g.padNum;i++,index--)
     {
-        pad p=g.padsList.at(i);
+        Pad p=g.padsList.at(i);
         e.pad=p;
         e.elementType='P';
         e.block=p.block;
@@ -1015,7 +1015,7 @@ void preprocess::checkSameNet(gerber g)
         e.boundingRect=e.pad.boundingRect;
         elementList.prepend(e);
 
-        struct padManage pM;
+        PadManage pM;
         for(k=0;k<padList.size();k++)
         {
             if(e.ADNum==padList.at(k).ADNum)
@@ -1044,7 +1044,7 @@ void preprocess::checkSameNet(gerber g)
     if(elementList.size()==0)
         return;
 
-    struct net tempNet;
+    Net tempNet;
     e=elementList.at(0);
     e.netNum=1;
     tempNet.elements.append(e);
@@ -1066,7 +1066,7 @@ void preprocess::checkSameNet(gerber g)
                 continue;
             for(k=0;k<tempNet.elements.size();k++)
             {
-                element e1=tempNet.elements.at(k);
+                Element e1=tempNet.elements.at(k);
                 /* DEBUGGING
                 int x=elementCollision(e,e1);
                 int x1=elementCollision1(e,e1);
@@ -1113,7 +1113,7 @@ void preprocess::checkSameNet(gerber g)
                 int offset=0;//when we remove a net,the index shoud also decrease
                 for(j=1;j<sameNetNum.size();j++)
                 {
-                    struct net n=netList.at(sameNetNum.at(j)-offset);
+                    Net n=netList.at(sameNetNum.at(j)-offset);
                     for(k=0;k<n.elements.size();k++)
                     {
                         tempNet.elements.append(n.elements.at(k));
@@ -1128,7 +1128,7 @@ void preprocess::checkSameNet(gerber g)
         }
         else
         {
-            struct net n;
+            Net n;
             n.elements.append(e);
             n.boundingRect=e.boundingRect;
             n.collisionFlag=false;
@@ -1140,7 +1140,7 @@ void preprocess::checkSameNet(gerber g)
 
     for(int i=0;i<netList.size();i++)
     {
-        net n=netList.at(i);
+        Net n=netList.at(i);
         bool flag=searchContour(n);
         if(flag==true)
         {
@@ -1159,14 +1159,7 @@ void preprocess::checkSameNet(gerber g)
     qDebug() << "Net calculation took" << timer.elapsed() << "ms";
     time=timer.elapsed();
 }
-
-
-
-
-
-
-
-preprocess::~preprocess()
+Preprocess::~Preprocess()
 {
 
 }

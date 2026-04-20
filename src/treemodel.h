@@ -80,9 +80,9 @@ class TreeModel : public QAbstractItemModel
     Q_OBJECT
 
 public:
-    explicit TreeModel(preprocess &pFile, QObject *parent = 0);
-    explicit TreeModel(setting &sFile, QObject *parent=0);
-    TreeModel(holeRule r, QObject *parent=0);
+    explicit TreeModel(Preprocess &pFile, QObject *parent = 0);
+    explicit TreeModel(Setting &sFile, QObject *parent=0);
+    explicit TreeModel(HoleRule r, QObject *parent=0);
     ~TreeModel();
 
     QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE;
@@ -98,10 +98,10 @@ public:
 public slots:
 
 protected:
-    void setupModelData(const holeRule r, TreeItem *parent);
+    void setupModelData(const HoleRule r, TreeItem *parent);
 private:
-    void setupModelData(const preprocess &pFile, TreeItem *parent);
-    void setupModelData(const setting &sFile, TreeItem *parent);
+    void setupModelData(const Preprocess &pFile, TreeItem *parent);
+    void setupModelData(const Setting &sFile, TreeItem *parent);
     TreeItem *rootItem;
 };
 //! [0]

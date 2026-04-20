@@ -27,7 +27,7 @@ SOFTWARE.
 
 #define DEFAULT_HOLE_RULE_FILENAME "hole_rule.con"
 
-inline QDataStream &operator <<(QDataStream &out,const struct tool &toolBit)
+inline QDataStream &operator <<(QDataStream &out,const Tool &toolBit)
 {
     out<<toolBit.name<<toolBit.unitType<<toolBit.toolType<<toolBit.diameter
             <<toolBit.angle<<toolBit.width<<toolBit.overlap<<toolBit.maxPlungeSpeed
@@ -35,7 +35,7 @@ inline QDataStream &operator <<(QDataStream &out,const struct tool &toolBit)
     return out;
 }
 
-inline QDataStream &operator >>(QDataStream &in,struct tool &toolBit)
+inline QDataStream &operator >>(QDataStream &in,Tool &toolBit)
 {
     in>>toolBit.name>>toolBit.unitType>>toolBit.toolType>>toolBit.diameter
             >>toolBit.angle>>toolBit.width>>toolBit.overlap>>toolBit.maxPlungeSpeed
@@ -43,19 +43,19 @@ inline QDataStream &operator >>(QDataStream &in,struct tool &toolBit)
     return in;
 }
 
-inline QDataStream &operator <<(QDataStream &out,const struct holeCondition &holeCondition)
+inline QDataStream &operator <<(QDataStream &out,const HoleCondition &holeCondition)
 {
     out<<holeCondition.condition<<holeCondition.drill<<holeCondition.value<<holeCondition.value1<<holeCondition.text;
     return out;
 }
 
-inline QDataStream &operator >>(QDataStream &in,struct holeCondition &holeCondition)
+inline QDataStream &operator >>(QDataStream &in,HoleCondition &holeCondition)
 {
     in>>holeCondition.condition>>holeCondition.drill>>holeCondition.value>>holeCondition.value1>>holeCondition.text;
     return in;
 }
 
-inline QDataStream &operator <<(QDataStream &out,const struct holeRule &holeRule)
+inline QDataStream &operator <<(QDataStream &out,const HoleRule &holeRule)
 {
     out<<holeRule.name<<holeRule.ruleList.size();
     for(int i=0;i<holeRule.ruleList.size();i++)
@@ -65,20 +65,20 @@ inline QDataStream &operator <<(QDataStream &out,const struct holeRule &holeRule
     return out;
 }
 
-inline QDataStream &operator >>(QDataStream &in,struct holeRule &holeRule)
+inline QDataStream &operator >>(QDataStream &in,HoleRule &holeRule)
 {
     int num;
     in>>holeRule.name>>num;
     for(int i=0;i<num;i++)
     {
-        holeCondition temp;
+        HoleCondition temp;
         in>>temp;
         holeRule.ruleList.append(temp);
     }
     return in;
 }
 
-bool setting::readTool()
+bool Setting::readTool()
 {
     QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
     QDataStream in(&file);
@@ -98,7 +98,7 @@ bool setting::readTool()
     drillList.clear();
     for(int i=0;i<num;i++)
     {
-        struct tool t;
+        Tool t;
         in>>t;
         toolList.append(t);
         if(t.toolType=="Drill")
@@ -108,7 +108,7 @@ bool setting::readTool()
     return true;
 }
 
-bool setting::readHoleRule()
+bool Setting::readHoleRule()
 {
     int num;
     QFile file1(DEFAULT_HOLE_RULE_FILENAME);
@@ -125,7 +125,7 @@ bool setting::readHoleRule()
     in1>>num;
     for(int i=0;i<num;i++)
     {
-        holeRule t;
+        HoleRule t;
         in1>>t;
         holeRuleList.append(t);
     }
@@ -133,19 +133,19 @@ bool setting::readHoleRule()
     return true;
 }
 
-setting::setting()
+Setting::Setting()
 {
     readTool();
     readHoleRule();
 }
-void setting::appendTool(struct tool t)
+void Setting::appendTool(Tool t)
 {
     toolList.append(t);
     if(t.toolType=="Drill")
         drillList.append(t);
 }
 
-void setting::replaceTool(int index,struct tool t)
+void Setting::replaceTool(int index,Tool t)
 {
     toolList.replace(index,t);
     if(t.toolType=="Drill")
@@ -157,7 +157,7 @@ void setting::replaceTool(int index,struct tool t)
     }
 }
 
-void setting::saveLibrary()
+void Setting::saveLibrary()
 {
     QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
     if(!file.open(QIODevice::WriteOnly))
@@ -172,21 +172,21 @@ void setting::saveLibrary()
     out<<toolList.size();
     for(int i=0;i<toolList.size();i++)
     {
-        struct tool t=toolList.at(i);
+        Tool t=toolList.at(i);
         if(t.toolType=="Conical")
         out<<t;
     }
 
     for(int i=0;i<toolList.size();i++)
     {
-        struct tool t=toolList.at(i);
+        Tool t=toolList.at(i);
         if(t.toolType=="Cylindrical")
         out<<t;
     }
 
     for(int i=0;i<toolList.size();i++)
     {
-        struct tool t=toolList.at(i);
+        Tool t=toolList.at(i);
         if(t.toolType=="Drill")
         out<<t;
     }
@@ -197,7 +197,7 @@ void setting::saveLibrary()
     readTool();
 }
 
-void setting::saveHoleRule()
+void Setting::saveHoleRule()
 {
     QFile file(DEFAULT_HOLE_RULE_FILENAME);
     if(!file.open(QIODevice::WriteOnly))
@@ -212,7 +212,7 @@ void setting::saveHoleRule()
     out<<holeRuleList.size();
     for(int i=0;i<holeRuleList.size();i++)
     {
-        holeRule t=holeRuleList.at(i);
+        HoleRule t=holeRuleList.at(i);
         out<<t;
     }
 
@@ -221,7 +221,7 @@ void setting::saveHoleRule()
 
 }
 
-setting::~setting()
+Setting::~Setting()
 {
 
 }

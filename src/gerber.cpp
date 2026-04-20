@@ -81,7 +81,7 @@ track types:
 * -IN:Using imperial unit,default setting.
 *
 */
-void gerber::initParameters()
+void Gerber::initParameters()
 {
     FormatStatement='L';
     CoordinateMode='A';
@@ -99,7 +99,7 @@ void gerber::initParameters()
 }
 
 
-gerber::gerber(QString &fileName)
+Gerber::Gerber(QString &fileName)
 {
     initParameters();
     QFile file(fileName);
@@ -149,7 +149,7 @@ gerber::gerber(QString &fileName)
         if(transform_data()==true)
         {
             qDebug() << "gerber data transform success";
-            struct track temptrack;
+            Track temptrack;
             qDebug()<<"blockNum="+QString::number(blockNum);
             qDebug()<<"tackNum="+QString::number(trackNum);
             qDebug()<<"padNum="+QString::number(padNum);
@@ -187,7 +187,7 @@ gerber::gerber(QString &fileName)
  *
  * A good test case for AM is 'design1.gtl'
  * */
-void gerber::macroToPad(int AMNum,QString AMName)
+void Gerber::macroToPad(int AMNum,QString AMName)
 {
     int parameterNum;
     if(AMNum==1)//Octagon or rectangle
@@ -253,7 +253,7 @@ void gerber::macroToPad(int AMNum,QString AMName)
 // 1.Read the raw ASCII gerber data,check if there's any error,and put
 // data in different places.E.g.,Extract the aperture definition and put
 // them in Hash tables.This is what process_line() do.
-bool gerber::process_line(QByteArray line)
+bool Gerber::process_line(QByteArray line)
 {
     static bool AMFlag=false;
     static int AMNum=0;
@@ -487,7 +487,7 @@ bool gerber::process_line(QByteArray line)
     return true;
 }
 
-qint64 gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 decimalDigit)
+qint64 Gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 decimalDigit)
 {
     int i=0;
     int start,end,length;
@@ -528,7 +528,7 @@ qint64 gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 d
  * This function finds the border of the PCB.Later on this border information will
  * be used to automatically scale the PCB on screen.
  * */
-void gerber::find_border(struct boundingRect r)
+void Gerber::find_border(BoundingRect r)
 {
     if(r.left<minX)
         minX=r.left;
@@ -543,14 +543,17 @@ void gerber::find_border(struct boundingRect r)
 /*
  * Interpret the data alfter process_line() function.
  * */
-bool gerber::transform_data()
+bool Gerber::transform_data()
 {
-    int i;
+    int i{0};
     QString line;
     QString currentParameter;
     char currentShape;
-    double currentX,currentY,lastX,lastY;
-    int currentMode;//D01,D02,D03;
+    double currentX{ 0.0 };
+	double currentY{ 0.0 };
+    double lastX{ 0.0 };
+    double lastY{ 0.0 };
+    int currentMode{ 0 };//D01,D02,D03;
 
     //Find the first XY data
     for(i=0;i<DataList.size();i++)
@@ -640,7 +643,7 @@ bool gerber::transform_data()
             if(line.contains("Y"))
                 currentY=convertNumber(line,"Y",YInteger,YDecimal);
 
-            struct track newTrack;
+            Track newTrack;
             newTrack.pointstart.setX(lastX);
             newTrack.pointstart.setY(lastY);
             newTrack.pointend.setX(currentX);
@@ -676,7 +679,7 @@ bool gerber::transform_data()
             if(line.contains("Y"))
                 currentY=convertNumber(line,"Y",YInteger,YDecimal);
 
-            struct pad newPad;
+            Pad newPad;
             newPad.point.setX(currentX);
             newPad.point.setY(currentY);
             newPad.shape=currentShape;
@@ -712,7 +715,7 @@ bool gerber::transform_data()
 }
 
 
-gerber::~gerber()
+Gerber::~Gerber()
 {
 
 }
@@ -722,9 +725,9 @@ gerber::~gerber()
  * kind of shape the element is,it will generate a rectangle border for it.
  * This will largely decrease the time to check collision in later process.
  * */
-struct boundingRect gerber::boundingRect(struct pad pad)
+BoundingRect Gerber::boundingRect(Pad pad)
 {
-    struct boundingRect r;
+    BoundingRect r;
     if(pad.angle==0)
     {
         if(pad.shape=='C')
@@ -797,9 +800,9 @@ struct boundingRect gerber::boundingRect(struct pad pad)
  * kind of shape the element is,it will generate a rectangle border for it.
  * This will largely decrease the time to check collision in later process.
  * */
-struct boundingRect gerber::boundingRect(struct track t)
+BoundingRect Gerber::boundingRect(Track t)
 {
-    struct boundingRect r;
+    BoundingRect r;
     if(t.pointend.x()>t.pointstart.x())
     {
         if(t.pointend.y()>t.pointstart.y())
@@ -921,7 +924,7 @@ QRectF gerber::boundingRect(struct track t)
 /*
  * Exchange the start point and end point of the track.
  * */
-void gerber::inverseTrack(struct track &t)
+void Gerber::inverseTrack(Track &t)
 {
     QPoint p;
     p=t.pointend;
@@ -941,12 +944,12 @@ void gerber::inverseTrack(struct track &t)
  * there's no need to use collision detect algorithm to recognize them,which saves
  * lots of time.
  * */
-void gerber::blockCount()
+void Gerber::blockCount()
 {
     int i,j;
     bool sameBlock=false;
-    track t;
-    pad p;
+    Track t;
+    Pad p;
     if(trackNum!=0)
     {
         t=tracksList.at(0);
