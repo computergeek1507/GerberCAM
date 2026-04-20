@@ -28,6 +28,11 @@ SOFTWARE.
 #include <QFileDialog>
 using namespace ClipperLib;
 
+#include "spdlog/sinks/qt_sinks.h"
+#include "spdlog/sinks/rotating_file_sink.h"
+
+#include <filesystem>
+
 
 /*
  *The main GUI function.It contains mainly three parts:
@@ -39,7 +44,32 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    QCoreApplication::setApplicationName(PROJECT_NAME);
+    QCoreApplication::setApplicationVersion(PROJECT_VER);
     ui->setupUi(this);
+
+    auto const log_name{ "log.txt" };
+
+    m_appdir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    std::filesystem::create_directory(m_appdir.toStdString());
+    QString logdir = m_appdir + "/log/";
+    std::filesystem::create_directory(logdir.toStdString());
+
+    try
+    {
+        auto file{ std::string(logdir.toStdString() + log_name) };
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file, 1024 * 1024, 5, false);
+
+        m_logger = std::make_shared<spdlog::logger>(PROJECT_NAME, rotating);
+        m_logger->flush_on(spdlog::level::debug);
+        m_logger->set_level(spdlog::level::debug);
+        m_logger->set_pattern("[%D %H:%M:%S] [%L] %v");
+        spdlog::register_logger(m_logger);
+    }
+    catch (std::exception& /*ex*/)
+    {
+        QMessageBox::warning(this, "Logger Failed", "Logger Failed To Start.");
+    }
 
     /*
      * Initialize the graphicsview to show the gerber file.
@@ -257,35 +287,38 @@ void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color
 
 }
 
-void MainWindow::showMessage(Gerber &g,Preprocess &p)
+void MainWindow::showMessage(Gerber *g,Preprocess &p)
 {
-    this->setWindowTitle(gerberFileName+" ┅ "+version);
-    ui->messageBrowser->append("\""+gerberFileName+"\""+" read success");
-    ui->messageBrowser->append("   Total line         ="+QString::number(g.totalLine));
-    ui->messageBrowser->append("   Preprocessing time ="+QString::number(p.time)+"ms");
-    ui->messageBrowser->append("   Contour number     ="+QString::number(p.contourList.size()));
-    ui->messageBrowser->append("   Pad number         ="+QString::number(g.padNum));
-    ui->messageBrowser->append("   Track number       ="+QString::number(p.elementList.size()-g.padNum));
-    ui->messageBrowser->append("   Net number         ="+QString::number(p.netList.size()));
+    this->setWindowTitle(gerberFileName + " ┅ "+version);
+    ui->messageBrowser->append("\"" + gerberFileName + "\"" + " read success");
+    ui->messageBrowser->append("   Total line         =" + QString::number(g->totalLine));
+    ui->messageBrowser->append("   Preprocessing time =" + QString::number(p.time) + "ms");
+    ui->messageBrowser->append("   Contour number     =" + QString::number(p.contourList.size()));
+    ui->messageBrowser->append("   Pad number         =" + QString::number(g->padNum));
+    ui->messageBrowser->append("   Track number       =" + QString::number(p.elementList.size()-g->padNum));
+    ui->messageBrowser->append("   Net number         =" + QString::number(p.netList.size()));
 }
 
 void MainWindow::on_actionOpen_triggered()
 {
-    fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
-                  tr("Top Layer (*.gtl);;Bottom Layer (*.gbl);;Gerber File(*.gbr *.gbl *gtl);;All types (*.*)"));
-    if(fileName.isEmpty())
-        return;
-    gerber1=new Gerber(fileName);
-    gerberFileName=fileName.mid(fileName.lastIndexOf('/')+1,fileName.size()-fileName.lastIndexOf('/'));
-    if(gerber1->readingFlag==false)
+    auto fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), "",
+        tr("Top Layer (*.gtl);;Bottom Layer (*.gbl);;Gerber File(*.gbr *.gbl *gtl);;All types (*.*)"));
+    if (fileName.isEmpty())
     {
+        return;
+    }
+    gerber1 = std::make_unique<Gerber>(fileName);
+    gerberFileName = QFileInfo(fileName).fileName();
+    if(!gerber1->readingFlag)
+    {
+        m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
         ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
         ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
         return;
     }
 
     scene1=new QGraphicsScene(this);
-    drawLayer(scene1,gerber1,*colorRed1);
+    drawLayer(scene1,gerber1.get(), *colorRed1);
 
 
     ui->graphicsView->setScene(scene1);
@@ -302,7 +335,7 @@ void MainWindow::on_actionOpen_triggered()
     preprocessfile1=new Preprocess(*gerber1,settingWindow.settings);
 
     ui->messageBrowser->clear();
-    showMessage(*gerber1,*preprocessfile1);
+    showMessage(gerber1.get(),*preprocessfile1);
 
     sceneNet1=new QGraphicsScene(this);
     drawNet(sceneNet1,*preprocessfile1,*colorBlue1,*Error1);
@@ -324,23 +357,25 @@ void MainWindow::on_actionAdd_layer_triggered()
 {
     if(layerNum==1)//no any layer2,draw a new layer2
     {
-        fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
-            return;
-        gerberFileName=fileName.mid(fileName.lastIndexOf('/')+1,fileName.size()-fileName.lastIndexOf('/'));
-
-        gerber2=new Gerber(fileName);
-        if(gerber2->readingFlag==false)
         {
+            return;
+        }
+        gerberFileName = QFileInfo(fileName).fileName();
+        gerber2 = std::make_unique<Gerber>(fileName);
+        if(!gerber2->readingFlag)
+        {
+            m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
             ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
-            ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
+            ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
             return;
         }
         preprocessfile2=new Preprocess(*gerber2,settingWindow.settings);
 
 
-        showMessage(*gerber2,*preprocessfile2);
+        showMessage(gerber2.get(), *preprocessfile2);
 
         //ui->graphicsView->setScene(scene21);
         layerNum=2;
@@ -356,21 +391,24 @@ void MainWindow::on_actionAdd_layer_triggered()
     }
     else if(currentLayer==2)//add to layer2
     {
-        fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
-            return;
-
-        gerber2=new Gerber(fileName);
-        if(gerber2->readingFlag==false)
         {
+            return;
+        }
+
+        gerber2 = std::make_unique<Gerber>(fileName);
+        if(!gerber2->readingFlag)
+        {
+            m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
             ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
-            ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
+            ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
             return;
         }
         preprocessfile2=new Preprocess(*gerber2,settingWindow.settings);
 
-        showMessage(*gerber2,*preprocessfile2);
+        showMessage(gerber2.get(),*preprocessfile2);
 
         TreeModel *model =new TreeModel(*preprocessfile2);
 
@@ -382,21 +420,24 @@ void MainWindow::on_actionAdd_layer_triggered()
     }
     else if(currentLayer==1)//add to layer1
     {
-        fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
-            return;
-
-        gerber1=new Gerber(fileName);
-        if(gerber1->readingFlag==false)
         {
+            return;
+        }
+
+        gerber1 = std::make_unique<Gerber>(fileName);
+        if(!gerber1->readingFlag)
+        {
+			m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
             ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
         preprocessfile1=new Preprocess(*gerber1,settingWindow.settings);
 
-        showMessage(*gerber1,*preprocessfile1);
+        showMessage(gerber1.get(),*preprocessfile1);
 
         TreeModel *model =new TreeModel(*preprocessfile1);
 
@@ -504,10 +545,6 @@ void MainWindow::wheelEvent(QWheelEvent *event)
     ui->graphicsView->scale(factor,factor);
 }
 
-
-
-
-
 void MainWindow::on_actionLayer1_triggered()
 {
     currentLayer=1;
@@ -566,4 +603,9 @@ void MainWindow::on_actionAbout_GerberCAM_triggered()
     //about aboutwindow;
     //aboutwindow.setModal(true);
     //aboutwindow.exec();
+}
+
+void  MainWindow::on_actionView_Log_triggered()
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(m_appdir + "/log/"));
 }

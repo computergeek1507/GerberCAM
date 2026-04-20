@@ -90,6 +90,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 #target_sources(${PROJECT_NAME} PRIVATE res/resource.rc)
+if(WIN32)
+    target_sources(${PROJECT_NAME} PRIVATE res/resource.rc)
+endif()
 
 if(WIN32)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

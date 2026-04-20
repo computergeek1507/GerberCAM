@@ -369,6 +369,20 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             */
 
         }
+        else if(tempPad.shape=='M')
+        {
+            // Macro pad — draw as rectangle approximation
+            if(tempPad.parameterNum >= 2)
+            {
+                QRect rectangle(-tempPad.parameter[0]/2,-tempPad.parameter[1]/2,tempPad.parameter[0],tempPad.parameter[1]);
+                painter->drawRect(rectangle);
+            }
+            else if(tempPad.parameterNum >= 1)
+            {
+                QRect rectangle(-tempPad.parameter[0]/2,-tempPad.parameter[0]/2,tempPad.parameter[0],tempPad.parameter[0]);
+                painter->drawEllipse(rectangle);
+            }
+        }
 
 
 

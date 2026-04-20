@@ -82,7 +82,7 @@
      <x>0</x>
      <y>0</y>
      <width>1213</width>
-     <height>31</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -117,6 +117,7 @@
      <string>Help</string>
     </property>
     <addaction name="actionAbout_GerberCAM"/>
+    <addaction name="actionView_Log"/>
    </widget>
    <widget class="QMenu" name="menuMachine">
     <property name="title">
@@ -209,6 +210,11 @@
   <action name="actionAbout_GerberCAM">
    <property name="text">
     <string>About GerberCAM</string>
+   </property>
+  </action>
+  <action name="actionView_Log">
+   <property name="text">
+    <string>View Log</string>
    </property>
   </action>
  </widget>

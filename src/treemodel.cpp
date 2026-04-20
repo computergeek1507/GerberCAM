@@ -413,4 +413,110 @@ void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)
 
         number++;
     }
+
+    parents << parent;
+    indentations << 0;
+    number = 0;
+    columnData.clear();
+    columnData << "Elements" << QString::number(pFile.elementList.size());
+    parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+    while (number < pFile.elementList.size())
+    {
+        position = 1;
+        if (position > indentations.last()) {
+            // The last child of the current parent is now the new parent
+            // unless the current parent has no children.
+
+            if (parents.last()->childCount() > 0) {
+                parents << parents.last()->child(parents.last()->childCount() - 1);
+                indentations << position;
+            }
+        }
+        else {
+            while (position < indentations.last() && parents.count() > 0) {
+                parents.pop_back();
+                indentations.pop_back();
+            }
+        }
+        Element eM = pFile.elementList.at(number);
+        QList<QVariant> columnData;
+        columnData << eM.ADNum << QString::number(eM.elementNum);
+        parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+        position = 2;
+        if (position > indentations.last()) {
+            // The last child of the current parent is now the new parent
+            // unless the current parent has no children.
+
+            if (parents.last()->childCount() > 0) {
+                parents << parents.last()->child(parents.last()->childCount() - 1);
+                indentations << position;
+            }
+        }
+        else {
+            while (position < indentations.last() && parents.count() > 0) {
+                parents.pop_back();
+                indentations.pop_back();
+            }
+        }
+
+        columnData.clear();
+        QString temp;
+        //switch (eM.elementType)
+        //{
+        //case'C':temp = "Round"; break;
+        //case'R':temp = "Rectangle"; break;
+        //case'O':temp = "Obround"; break;
+        //case'P':temp = "Poly"; break;
+        //}
+
+        if (eM.elementType == 'P')
+        {
+            Pad p = eM.pad;
+			columnData << "shape" << p.shape;
+            parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+            columnData.clear();
+            columnData << "x" << QString::number(p.point.x());
+            parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+            columnData.clear();
+            columnData << "y" << QString::number(p.point.y());
+            parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+			columnData.clear();
+			columnData << "rotation" << QString::number(p.angle * 180 / 3.1415, 'f', 3) + "°";
+			parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+            //columnData.clear();
+            //columnData << "net" << eM.track.;
+            //parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+        }
+
+        if (eM.elementType == 'T')
+        {
+            Track t = eM.track;
+            columnData << "startx" << t.pointstart.x();
+            parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+            columnData.clear();
+			columnData << "starty" << t.pointstart.y();
+			parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+			columnData.clear();
+			columnData << "endx" << t.pointend.x();
+			parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+
+			columnData.clear();
+			columnData << "endy" << t.pointend.y();
+			parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+			//columnData.clear();
+			//columnData << "net" << eM.track.net;
+			//parents.last()->appendChild(new TreeItem(columnData, parents.last()));    
+        }
+
+        number++;
+    }
 }

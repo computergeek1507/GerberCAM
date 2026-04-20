@@ -22,6 +22,8 @@ SOFTWARE.
 
 #include "gerber.h"
 
+#include "config.h"
+
 /*
 ● support        ○ not support
 
@@ -99,12 +101,15 @@ void Gerber::initParameters()
 }
 
 
-Gerber::Gerber(QString &fileName)
+Gerber::Gerber(QString &fileName): m_logger(spdlog::get(PROJECT_NAME))
 {
     initParameters();
     QFile file(fileName);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-            return;
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        m_logger->error("Failed to open file: {}", fileName.toStdString());
+        return;
+    }
     qDebug() << "start to read file\n";
 
     bool readFileFlag=false;
@@ -179,75 +184,113 @@ Gerber::Gerber(QString &fileName)
  * APERTURE MACRO: A mass parameter that describes the geometry of a special
  * aperture and assigns it to a D code.
  *
- * Some examples:
- * An AM is usually a complex shap,e.g.,a round pad with a rectangle inside,
- * or an Obround shap,which could be treated as a short track with round endings.
- * Currently only rectangle or Obround pad are implemented as these are the most
- * common ones.
+ * Supported primitive types (RS-274X):
+ *   1  - Circle          : exposure, diameter, X, Y [, rotation]
+ *   4  - Outline         : exposure, #vertices, X0,Y0, X1,Y1, ..., rotation
+ *   5  - Polygon         : exposure, #vertices, X, Y, diameter, rotation
+ *   20 - Vector Line     : exposure, width, X0,Y0, X1,Y1, rotation
+ *   21 - Center Line     : exposure, width, height, X, Y, rotation
+ *   22 - Lower-Left Line : exposure, width, height, X, Y, rotation
+ *
+ * The function iterates over every stored primitive and picks the first
+ * exposed one to derive a representative shape (SHAPE_C / SHAPE_R / SHAPE_O)
+ * used downstream for bounding-rect calculations.
  *
  * A good test case for AM is 'design1.gtl'
  * */
-void Gerber::macroToPad(int AMNum,QString AMName)
+void Gerber::macroToPad(int AMNum, QString AMName)
 {
-    int parameterNum;
-    if(AMNum==1)//Octagon or rectangle
+    for (int n = 1; n <= AMNum; n++)
     {
-        parameterNum=ADHash.value(AMName+'n'+QString::number(AMNum)+" pNum");
-        if(parameterNum==4)//rectangle
+        QString key = AMName + 'n' + QString::number(n);
+        int primType = (int)ADHash.value(key + " primType", -1);
+        int pNum = (int)ADHash.value(key + " pNum", 0);
+
+        auto p = [&](int idx) -> double {
+            return ADHash.value(key + 'p' + QString::number(idx), 0.0);
+        };
+
+        if (primType == 1) // Circle: exposure, diameter, cx, cy [, rotation]
         {
-            QPointF p1,p2;
-            p1.setX(ADHash.value(AMName+'n'+QString::number(AMNum)+'p'+QString::number(0)));
-            p1.setY(ADHash.value(AMName+'n'+QString::number(AMNum)+'p'+QString::number(1)));
-
-            p2.setX(ADHash.value(AMName+'n'+QString::number(AMNum)+'p'+QString::number(2)));
-            p2.setY(ADHash.value(AMName+'n'+QString::number(AMNum)+'p'+QString::number(3)));
-
-            /*
-             * Like any other simple ADs,an AM is described by width(distance1),length(distance2)
-             * and angle.
-             * */
-            double distance1=qSqrt((p1.x()-p2.x())*(p1.x()-p2.x())+(p1.y()-p2.y())*(p1.y()-p2.y()));
-            double angle=atan((p2.y()-p1.y())/(p2.x()-p1.x()));
-
-            p1.setX(ADHash.value(AMName+'n'+QString::number(AMNum)+'p'+QString::number(4)));
-            p1.setY(ADHash.value(AMName+'n'+QString::number(AMNum)+'p'+QString::number(5)));
-
-            double distance2=qSqrt((p1.x()-p2.x())*(p1.x()-p2.x())+(p1.y()-p2.y())*(p1.y()-p2.y()));
-
-            ADHash.insert(AMName+" Num",2);
-            ADHash.insert(AMName+" Shape",SHAPE_R);
-            ADHash.insert(AMName+QString::number(0),distance1);
-            ADHash.insert(AMName+QString::number(1),distance2);
-            ADHash.insert(AMName+" Angle",angle);
+            double diameter = p(0);
+            double angle    = (pNum >= 4) ? p(3) : 0.0;
+            ADHash.insert(AMName + " Num",   1);
+            ADHash.insert(AMName + " Shape", SHAPE_C);
+            ADHash.insert(AMName + "0",      diameter);
+            ADHash.insert(AMName + " Angle", angle);
+            return;
         }
-        else if(parameterNum==8)//Octagon
+        else if (primType == 4) // Outline polygon
         {
-            //todo: update this in the future
+            // vertices are stored as x0,y0,x1,y1,...,rotation
+            // Build bounding box → represent as rectangle
+            if (pNum < 2) continue;
+            int vertexCount = pNum / 2; // each vertex is (x,y)
+            double minX =  1e18, minY =  1e18;
+            double maxX = -1e18, maxY = -1e18;
+            for (int v = 0; v < vertexCount; v++)
+            {
+                double vx = p(v * 2);
+                double vy = p(v * 2 + 1);
+                if (vx < minX) minX = vx;
+                if (vx > maxX) maxX = vx;
+                if (vy < minY) minY = vy;
+                if (vy > maxY) maxY = vy;
+            }
+            double width  = maxX - minX;
+            double height = maxY - minY;
+            ADHash.insert(AMName + " Num",   2);
+            ADHash.insert(AMName + " Shape", SHAPE_R);
+            ADHash.insert(AMName + "0",      width);
+            ADHash.insert(AMName + "1",      height);
+            ADHash.insert(AMName + " Angle", 0.0);
+            return;
+        }
+        else if (primType == 5) // Polygon: exposure, vertices, cx, cy, diameter, rotation
+        {
+            double diameter = (pNum >= 4) ? p(3) : 0.0;
+            double angle    = (pNum >= 5) ? p(4) : 0.0;
+            ADHash.insert(AMName + " Num",   1);
+            ADHash.insert(AMName + " Shape", SHAPE_C); // approximate as circle
+            ADHash.insert(AMName + "0",      diameter);
+            ADHash.insert(AMName + " Angle", angle);
+            return;
+        }
+        else if (primType == 20) // Vector Line: exposure, width, x0,y0, x1,y1, rotation
+        {
+            if (pNum < 5) continue;
+            double width  = p(0);
+            double x0 = p(1), y0 = p(2), x1 = p(3), y1 = p(4);
+            double angle  = (pNum >= 6) ? p(5) : 0.0;
+            double length = qSqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+            ADHash.insert(AMName + " Num",   2);
+            ADHash.insert(AMName + " Shape", SHAPE_O);
+            ADHash.insert(AMName + "0",      length + width);
+            ADHash.insert(AMName + "1",      width);
+            ADHash.insert(AMName + " Angle", angle);
+            return;
+        }
+        else if (primType == 21 || primType == 22) // Center Line / Lower-Left Line
+        {
+            // exposure, width, height, cx, cy, rotation
+            if (pNum < 2) continue;
+            double width  = p(0);
+            double height = p(1);
+            double angle  = (pNum >= 5) ? p(4) : 0.0;
+            ADHash.insert(AMName + " Num",   2);
+            ADHash.insert(AMName + " Shape", SHAPE_R);
+            ADHash.insert(AMName + "0",      width);
+            ADHash.insert(AMName + "1",      height);
+            ADHash.insert(AMName + " Angle", angle);
+            return;
+        }
+        else
+        {
+            m_logger->error("macroToPad: unhandled primitive type {} in macro {}", primType, AMName.toStdString());
+            qDebug() << "macroToPad: unhandled primitive type" << primType << "in macro" << AMName;
         }
     }
-    else if(AMNum==3)//Obround,1rectangle+2circle
-    {
-        QPointF c1,c2;
-        c1.setX(ADHash.value(AMName+'n'+QString::number(2)+'p'+QString::number(1)));
-        c1.setY(ADHash.value(AMName+'n'+QString::number(2)+'p'+QString::number(2)));
-
-        c2.setX(ADHash.value(AMName+'n'+QString::number(3)+'p'+QString::number(1)));
-        c2.setY(ADHash.value(AMName+'n'+QString::number(3)+'p'+QString::number(2)));
-        double r=ADHash.value(AMName+'n'+QString::number(3)+'p'+QString::number(0));
-
-        /*
-         * Like any other simple ADs,an AM is described by width(distance1),length(distance2)
-         * and angle.
-         * */
-        double angle=atan((c2.y()-c1.y())/(c2.x()-c1.x()));
-        double distance=qSqrt((c2.x()-c1.x())*(c2.x()-c1.x())+(c2.y()-c1.y())*(c2.y()-c1.y()));
-
-        ADHash.insert(AMName+" Num",2);
-        ADHash.insert(AMName+" Shape",SHAPE_O);
-        ADHash.insert(AMName+QString::number(0),distance+r);
-        ADHash.insert(AMName+QString::number(1),r);
-        ADHash.insert(AMName+" Angle",angle);
-    }
+    m_logger->error("macroToPad: no usable primitive found in macro {}", AMName.toStdString());
 }
 
 // 1.Read the raw ASCII gerber data,check if there's any error,and put
@@ -258,8 +301,17 @@ bool Gerber::process_line(QByteArray line)
     static bool AMFlag=false;
     static int AMNum=0;
     static QString AMName;
-    //Emty line
+
+    // Normalize line endings so all checks work regardless of CRLF vs LF
+    line.replace("\r\n", "\n");
+    line.replace('\r', '\n');
+
+    //Empty line
     if(line=="\n")
+        return true;
+
+    // G04 comments — skip entirely (KiCad emits these between parameter blocks)
+    if(line.startsWith("G04"))
         return true;
 
     /*
@@ -270,9 +322,13 @@ bool Gerber::process_line(QByteArray line)
      * */
     else if(line.startsWith("%")||AMFlag==true)
     {
+        // Skip extended attribute commands (%TA, %TD, %TO, %TF) — not needed for geometry
+        if(line.startsWith("%T"))
+            return true;
+
         if(!line.endsWith("%\n")&&!line.endsWith("*\n"))
         {
-            qDebug()<<"Data error!Incomplete parameter block!";
+            m_logger->error("Data error! Incomplete parameter block!");
             return false;
         }
 
@@ -304,162 +360,313 @@ bool Gerber::process_line(QByteArray line)
 
         /*
          * Aperture parameters definition.Aperture format:
-         *    %ADD<D-code number><aperture type>,<modifier>[X<modifer>]*%
+         *    %ADD<D-code number><aperture type>[,<modifier>[X<modifier>]*]*%
          * where:
          *  ADD                 - the AD parameter and D (for D-code)
          *  <D-code number>     - the D-code number being defined (10 - 999)
-         *  <aperture type>     - the aperture descriptions.Standar types:
+         *  <aperture type>     - the aperture descriptions.Standard types:
          *                          C - Circle
-         *                          R - Rectangle or squre
+         *                          R - Rectangle or square
          *                          O - Obround(oval)
          *                          P - Regular polygon
+         *                       or an aperture macro name (e.g. MYMACRO)
          *
          * <modifier>           - depends on aperture type,X to separate each modifier.
          *
          * examples:
          * %ADD10C,.025*%               - D-code 10: 25 mil round
-         * %ADD22R,.050X.050X.027*% 	- D-code 22: 50 mil square with 27mil round hole
-         * %ADD57O,.030X.040X.015*% 	- D-code 57: obround 30x40 mil with 15 mil round hole
+         * %ADD22R,.050X.050X.027*%     - D-code 22: 50 mil square with 27 mil round hole
+         * %ADD57O,.030X.040X.015*%     - D-code 57: obround 30x40 mil with 15 mil round hole
+         * %ADD14MYMACRO*%              - D-code 14: aperture from macro MYMACRO
+         * %ADD14MYMACRO,0.5X0.3*%     - D-code 14: macro with modifiers
          *
          * */
         else if(line.startsWith("%AD"))
         {
-            int parameterNum=line.count("X")+1;
-            int i,j;
-            //qDebug()<<"p="+QString::number(parameterNum);
+            // Extract D-code: digits starting at position 4 (after '%ADD')
+            int dStart = 4;
+            int dEnd   = dStart;
+            while(dEnd < line.length() && line.at(dEnd) >= '0' && line.at(dEnd) <= '9')
+                dEnd++;
 
-            //save number of parameter
+            // ADName is 'D' + the numeric code, e.g. "D14"
+            QString ADName = line.mid(3, dEnd - 3); // includes the leading 'D'
 
-            QString ADName=line.mid(3,line.indexOf(",")-4);
-            QByteArray temp=line.mid(line.indexOf(",")-1,1);
-            char shapeName=temp[0];
-            ADHash.insert(ADName+" Num",parameterNum);
-            if(shapeName=='R')
-                ADHash.insert(ADName+" Shape",SHAPE_R);
-            else if(shapeName=='O')
-                ADHash.insert(ADName+" Shape",SHAPE_O);
-            else if(shapeName=='C')
-                ADHash.insert(ADName+" Shape",SHAPE_C);
-            else if(shapeName=='P')
-                ADHash.insert(ADName+" Shape",SHAPE_P);
+            // Shape/macro name runs from dEnd up to ',' or '*'
+            int commaPos = line.indexOf(',', dEnd);
+            int starPos  = line.indexOf('*', dEnd);
+            int nameEnd  = (commaPos >= 0 && commaPos < starPos) ? commaPos : starPos;
+            QString shapePart = line.mid(dEnd, nameEnd - dEnd);
 
-            ADHash.insert(ADName+" Angle",0);
+            // Is this a standard aperture type?
+            static const QByteArray stdShapes = "CROP";
+            bool isStandard = (shapePart.length() == 1 &&
+                               stdShapes.contains(shapePart.at(0).toLatin1()));
 
-            //qDebug()<<ADName+"="+QString::number(ADHash.value(ADName+" Num"));
-
-            //Save every parameter
-            int startofNum,endofNum;
-            startofNum=line.indexOf(",")+1;
-            j=line.indexOf(',')+1;
-            for(i=0;i<parameterNum;i++)
+            if(isStandard)
             {
-                for(;j<line.length();j++)
-                    if(!((line.at(j)>='0'&&line.at(j)<='9')||line.at(j)=='.'))
-                        break;
-                endofNum=j-1;
-                QByteArray number=line.mid(startofNum,endofNum-startofNum+1);
-                //qDebug()<<number;
+                char shapeName = shapePart.at(0).toLatin1();
+                if(shapeName=='R')
+                    ADHash.insert(ADName+" Shape",SHAPE_R);
+                else if(shapeName=='O')
+                    ADHash.insert(ADName+" Shape",SHAPE_O);
+                else if(shapeName=='C')
+                    ADHash.insert(ADName+" Shape",SHAPE_C);
+                else if(shapeName=='P')
+                    ADHash.insert(ADName+" Shape",SHAPE_P);
 
-                ADHash.insert(ADName+QString::number(i),number.toDouble());
-                //qDebug()<<QString::number(ADHash.value(ADName+QString::number(i)));
-                j++;
-                startofNum=j;
+                ADHash.insert(ADName+" Angle", 0.0);
+
+                // Count and save numeric modifiers (separated by 'X')
+                int parameterNum = 0;
+                if(commaPos >= 0)
+                {
+                    int j = commaPos + 1;
+                    while(j < line.length() && line.at(j) != '*' && line.at(j) != '%')
+                    {
+                        // Read one number
+                        int numStart = j;
+                        while(j < line.length() &&
+                              ((line.at(j)>='0'&&line.at(j)<='9') || line.at(j)=='.'))
+                            j++;
+                        if(j > numStart)
+                        {
+                            QByteArray numBytes = line.mid(numStart, j - numStart);
+                            ADHash.insert(ADName + QString::number(parameterNum), numBytes.toDouble());
+                            parameterNum++;
+                        }
+                        // Skip separator ('X' or ',')
+                        if(j < line.length() && (line.at(j)=='X' || line.at(j)==','))
+                            j++;
+                    }
+                }
+                ADHash.insert(ADName+" Num", parameterNum);
+                qDebug() << ADName << "=" << QString::number(ADHash.value(ADName+" Num"));
+            }
+            else
+            {
+                // Macro aperture reference: e.g. %ADD16RoundRect,0.25X-0.6X-0.75X0.6X-0.75X...X0*%
+                // Modifiers after the comma replace $1, $2, ... in the macro definition.
+                // Since variable evaluation is not implemented, we compute a bounding
+                // rectangle directly from the modifier values.
+                QString macroName = shapePart;
+                qDebug() << ADName << "references macro" << macroName;
+
+                // Parse modifiers (comma-separated, then X-separated)
+                QList<double> modifiers;
+                if(commaPos >= 0)
+                {
+                    int j = commaPos + 1;
+                    while(j < line.length() && line.at(j) != '*' && line.at(j) != '%')
+                    {
+                        int numStart = j;
+                        // Allow negative numbers
+                        if(j < line.length() && line.at(j) == '-')
+                            j++;
+                        while(j < line.length() &&
+                              ((line.at(j)>='0' && line.at(j)<='9') || line.at(j)=='.'))
+                            j++;
+                        if(j > numStart)
+                        {
+                            QByteArray numBytes = line.mid(numStart, j - numStart);
+                            modifiers.append(numBytes.toDouble());
+                        }
+                        if(j < line.length() && (line.at(j)=='X' || line.at(j)==','))
+                            j++;
+                    }
+                }
+
+                if(modifiers.size() >= 9)
+                {
+                    // Typical KiCad RoundRect/macro: $1=rounding, ($2,$3),($4,$5),($6,$7),($8,$9)=corners, $10=rotation
+                    // Compute bounding box from the 4 corner coordinates
+                    double rounding = modifiers[0];
+                    double bminX = modifiers[1], bmaxX = modifiers[1];
+                    double bminY = modifiers[2], bmaxY = modifiers[2];
+                    for(int ci = 1; ci < 4; ci++)
+                    {
+                        double cx = modifiers[1 + ci*2];
+                        double cy = modifiers[2 + ci*2];
+                        if(cx < bminX) bminX = cx;
+                        if(cx > bmaxX) bmaxX = cx;
+                        if(cy < bminY) bminY = cy;
+                        if(cy > bmaxY) bmaxY = cy;
+                    }
+                    double width  = (bmaxX - bminX) + rounding * 2;
+                    double height = (bmaxY - bminY) + rounding * 2;
+                    double angle  = (modifiers.size() >= 10) ? modifiers[9] : 0.0;
+
+                    ADHash.insert(ADName+" Shape", SHAPE_R);
+                    ADHash.insert(ADName+" Num",   2);
+                    ADHash.insert(ADName+"0",      width);
+                    ADHash.insert(ADName+"1",      height);
+                    ADHash.insert(ADName+" Angle", angle);
+                }
+                else
+                {
+                    // Fewer modifiers — copy whatever macroToPad resolved
+                    ADHash.insert(ADName+" Shape", ADHash.value(macroName+" Shape", SHAPE_M));
+                    ADHash.insert(ADName+" Num",   ADHash.value(macroName+" Num",   0));
+                    ADHash.insert(ADName+" Angle", ADHash.value(macroName+" Angle", 0.0));
+
+                    int pNum = (int)ADHash.value(macroName+" Num", 0);
+                    for(int pi = 0; pi < pNum; pi++)
+                        ADHash.insert(ADName+QString::number(pi),
+                                      ADHash.value(macroName+QString::number(pi), 0.0));
+                }
             }
 
         }
         /*
+         * Aperture Macro (AM) parameter block.
+         * Each primitive occupies one comma-separated record terminated by '*'.
+         * Multi-line macros: name on first line ending with '*', primitives follow,
+         * block closed by a bare '%' line.
+         * Single-line macros: name and primitives on the same '%AM...' line.
+         *
+         * Supported primitive types:
+         *   1  - Circle
+         *   4  - Outline
+         *   5  - Polygon
+         *   20 - Vector Line
+         *   21 - Center Line
+         *   22 - Lower-Left Line
+         *
          * A good test case for AM is 'design1.gtl'
          * */
         else if(line.startsWith("%AM")||AMFlag==true)
         {
-
-            int i,j;
-            if(line.startsWith("%")&&line.size()==2)
+            // Bare '%' or '%\n' closes a multi-line macro block
+            if(line.trimmed()=="%")
             {
                 AMFlag=false;
                 macroToPad(AMNum,AMName);
                 return true;
             }
-            if(line.startsWith("%AM")&&line.indexOf('*')==line.size()-2)//only AM name on this line
+
+            // '%AM<name>*%' — header with no primitives on this line and closed immediately
+            if(line.startsWith("%AM") && line.endsWith("%\n") && line.indexOf('*')==(int)(line.size()-3))
             {
-                AMFlag=true;
-                AMNum=0;
-                AMName=line.mid(3,line.indexOf("*")-3);//eg.AMD19
+                AMName = line.mid(3, line.indexOf('*')-3);
+                AMNum  = 0;
+                AMFlag = false;
                 return true;
             }
 
-            int position;
-            if(AMFlag==false)//AM name and parameter are on the same line
+            // '%AM<name>*\n' — multi-line macro: name only on this line
+            if(line.startsWith("%AM") && line.indexOf('*')==line.size()-2)
             {
-                AMName=line.mid(3,line.indexOf("*")-4);
-                position=line.indexOf("*")+1;
+                AMFlag = true;
+                AMNum  = 0;
+                AMName = line.mid(3, line.indexOf('*')-3);
+                return true;
             }
-            else
-                position=0;
 
-            AMNum++;
-            for(i=0;;i++)
+            // Determine where primitive data begins
+            int position = 0;
+            if(!AMFlag) // single-line: '%AM<name>*<primitive>,...*%'
             {
-                if(line.at(position+i)==',')
-                    break;
+                int starPos = line.indexOf('*');
+                AMName   = line.mid(3, starPos - 3);
+                AMNum    = 0;
+                position = starPos + 1;
             }
-            QString temp=line.mid(position,i-position);
-            int primative=temp.toInt();
 
-            if(primative==4)//Outline
+            // Parse every '*'-terminated primitive record on this line
+            while(position < line.size())
             {
-                position=i+1;
-                temp=line.mid(position,1);
-                if(temp.toInt()==1)
+                // Skip closing '%', newlines
+                while(position < line.size() &&
+                      (line.at(position)=='%' || line.at(position)=='\n' || line.at(position)=='\r'))
+                    position++;
+                if(position >= line.size()) break;
+
+                // Find the end of this primitive record (terminated by '*')
+                int recordEnd = line.indexOf('*', position);
+                if(recordEnd < 0) break;
+
+                QString record = line.mid(position, recordEnd - position);
+                position = recordEnd + 1;
+
+                if(record.isEmpty()) continue;
+
+                QStringList fields = record.split(',');
+                if(fields.isEmpty()) continue;
+
+                bool ok = false;
+                int primType = fields.at(0).trimmed().toInt(&ok);
+                if(!ok)
                 {
-                    position+=2;
-                    for(i=0;;i++)
+                    // Could be an AM comment (type 0 text) or other non-numeric
+                    continue;
+                }
+
+                // Primitive type 0 is a comment — skip it
+                if(primType == 0)
+                    continue;
+
+                AMNum++;
+                QString key = AMName + 'n' + QString::number(AMNum);
+                ADHash.insert(key + " primType", primType);
+                ADHash.insert(AMName + " Shape", SHAPE_M);
+
+                bool hasExposure = (primType==1 || primType==4 || primType==5 ||
+                                    primType==20 || primType==21 || primType==22);
+
+                int storedCount = 0;
+                bool skipPrimitive = false;
+                for(int fi = 1; fi < fields.size(); fi++)
+                {
+                    QString f = fields.at(fi).trimmed();
+                    if(f.isEmpty()) continue;
+
+                    double val = 0.0;
+                    if(f.startsWith('$'))
                     {
-                        if(line.at(position+i)==',')
+                        m_logger->error("AM: variable expression not supported: {}", f.toStdString());
+                    }
+                    else
+                    {
+                        val = f.toDouble();
+                    }
+
+                    if(hasExposure && fi==1)
+                    {
+                        // Exposure flag: skip the entire primitive if unexposed
+                        if((int)val == 0)
+                        {
+                            skipPrimitive = true;
                             break;
+                        }
+                        continue; // don't store the exposure value as a parameter
                     }
-                    temp=line.mid(position,i);
-                    int parameterNum=temp.toInt();
-                    ADHash.insert(AMName+'n'+QString::number(AMNum)+" pNum",parameterNum);
-                    ADHash.insert(AMName+" Shape",SHAPE_M);
 
-                    position+=i+1;
-                    QString tempString=line.mid(position,line.size()-position-1);
-                    QStringList parameterList=tempString.split(",");
-                    double parameter;
-                    for(j=0;j<parameterList.size();j++)
-                    {
-                        parameter=parameterList.at(j).toDouble();
-                        ADHash.insert(AMName+'n'+QString::number(AMNum)+'p'+QString::number(j),parameter);
-                    }
+                    ADHash.insert(key + 'p' + QString::number(storedCount), val);
+                    storedCount++;
                 }
 
-            }
-            else if(primative==1)//Circle
-            {
-                position=i+1;
-                temp=line.mid(position,1);
-                if(temp.toInt()==1)
+                if(skipPrimitive)
                 {
-                    ADHash.insert(AMName+'n'+QString::number(AMNum)+" pNum",3);
-                    ADHash.insert(AMName+" Shape",SHAPE_M);
-
-                    position+=2;
-                    QString tempString=line.mid(position,line.size()-position-1);
-                    QStringList parameterList=tempString.split(",");
-                    double parameter;
-                    for(j=0;j<parameterList.size();j++)
-                    {
-                        QString t=parameterList.at(j);
-                        if(t.contains('*'))
-                            t.chop(1);
-                        parameter=t.toDouble();
-                        ADHash.insert(AMName+'n'+QString::number(AMNum)+'p'+QString::number(j),parameter);
-                    }
+                    ADHash.remove(key + " primType");
+                    AMNum--;
+                    continue;
                 }
+
+                ADHash.insert(key + " pNum", storedCount);
+                qDebug() << "AM" << AMName << "n" << AMNum
+                         << "primType=" << primType << "pNum=" << storedCount;
             }
-            else
-                return false;
+
+            // Check if line ends with '%' — closes the AM block
+            if(AMFlag && line.trimmed().endsWith("%"))
+            {
+                AMFlag = false;
+                macroToPad(AMNum, AMName);
+            }
+
+            // If this was a single-line AM, resolve it immediately
+            if(!AMFlag && AMNum > 0)
+                macroToPad(AMNum, AMName);
         }
         else if(line.at(1)=='M')
         {
@@ -467,14 +674,21 @@ bool Gerber::process_line(QByteArray line)
             ModeofUnit+=line.at(4);
             ModeofUnit+='\0';
         }
+        // Layer Polarity (%LPD*% or %LPC*%) and other % commands — skip gracefully
+        else if(line.startsWith("%LP") || line.startsWith("%LN") ||
+                line.startsWith("%SR") || line.startsWith("%IR") ||
+                line.startsWith("%IP"))
+        {
+            return true;
+        }
 
     }
-    else if(line.indexOf("X")||line.indexOf("Y")||
-                line.indexOf("G")||line.indexOf("M")||line.indexOf("D"))
+    else if(line.contains("X")||line.contains("Y")||
+                line.contains("G")||line.contains("M")||line.contains("D"))
     {
         if(!(line.endsWith("*\n")||line.endsWith("*")))
         {
-            qDebug()<<"Data error!Incomplete data block!";
+            m_logger->error("Data error! Incomplete data block!");
             return false;
         }
         if(line.startsWith("D"))
@@ -490,37 +704,46 @@ bool Gerber::process_line(QByteArray line)
 qint64 Gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 decimalDigit)
 {
     int i=0;
-    int start,end,length;
+    int start,end;
     start=line.indexOf(c)+1;
-    for(end=start+1;end<line.size();end++)
+
+    // Handle negative sign
+    bool negative = false;
+    if(start < line.size() && line.at(start)=='-')
+    {
+        negative = true;
+        start++;
+    }
+
+    for(end=start;end<line.size();end++)
         if(!(line.at(end)>='0'&&line.at(end)<='9'))
                 break;
-    length=end-start;
+    int length=end-start; // digit count only, excluding sign
     QString temp=line.mid(start,length);
-    qint64 number=temp.toInt();
+    qint64 number=temp.toLongLong();
     int scaleNum=decimalDigit+integerDigit-length;
     if(FormatStatement=='T')
     {
+        // Trailing zeros omitted: missing digits are on the right (low-order),
+        // so we pad by multiplying.
         while(i<scaleNum)
         {
             number*=10;
             i++;
         }
     }
-    else if(FormatStatement=='L')
-    {
-        while(i<scaleNum)
-        {
-            number*=10;
-            i++;
-        }
-    }
+    // For 'L' (Leading zeros omitted): missing digits are on the left (high-order),
+    // so no multiplication is needed — the number is already right-aligned.
     i=0;
     while(decimalDigit+i<precision)
     {
         number*=10;
         i++;
     }
+
+    if(negative)
+        number = -number;
+
     return number;
 }
 
@@ -620,6 +843,10 @@ bool Gerber::transform_data()
                 currentShape='R';
             else if(ADHash.value(currentParameter+" Shape")==SHAPE_P)
                 currentShape='P';
+            else if(ADHash.value(currentParameter+" Shape")==SHAPE_M)
+                currentShape='M'; // aperture macro — shape resolved at flash time
+            else
+                m_logger->error("G54: unknown shape for {}", currentParameter.toStdString());
             continue;
         }
 
@@ -790,6 +1017,35 @@ BoundingRect Gerber::boundingRect(Pad pad)
             }
 
         }
+        else if(pad.shape=='M')
+        {
+            // Macro pad — use parameters like a rectangle if available
+            if(pad.parameterNum >= 2)
+            {
+                qint64 x,y;
+                y=pad.parameter[1]/2;
+                x=pad.parameter[0]/2;
+                r.top=pad.point.y()+y;
+                r.bottom=pad.point.y()-y;
+                r.right=pad.point.x()+x;
+                r.left=pad.point.x()-x;
+            }
+            else if(pad.parameterNum >= 1)
+            {
+                r.bottom=pad.point.y()-pad.parameter[0]/2;
+                r.top=pad.point.y()+pad.parameter[0]/2;
+                r.left=pad.point.x()-pad.parameter[0]/2;
+                r.right=pad.point.x()+pad.parameter[0]/2;
+            }
+            else
+            {
+                // Fallback: zero-size bounding rect at the pad center
+                r.bottom=pad.point.y();
+                r.top=pad.point.y();
+                r.left=pad.point.x();
+                r.right=pad.point.x();
+            }
+        }
     }
     r.area=(r.top-r.bottom)*(r.right-r.left);
     return r;
@@ -950,6 +1206,10 @@ void Gerber::blockCount()
     bool sameBlock=false;
     Track t;
     Pad p;
+
+    if(trackNum==0 && padNum==0)
+        return;
+
     if(trackNum!=0)
     {
         t=tracksList.at(0);

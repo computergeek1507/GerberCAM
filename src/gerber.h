@@ -36,7 +36,12 @@ SOFTWARE.
 #include "clipper.hpp"
 
 
+
+
 using namespace ClipperLib;
+
+#include "spdlog/spdlog.h"
+#include "spdlog/common.h"
 
 /*
  * A rectangle border of a element,for quick collision check.
@@ -152,6 +157,8 @@ private:
 
     BoundingRect boundingRect(Pad pad);
     BoundingRect boundingRect(Track t);
+
+    std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 
 };
 

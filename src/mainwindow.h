@@ -46,6 +46,10 @@ using namespace ClipperLib;
 
 #include "config.h"
 
+#include "spdlog/spdlog.h"
+#include "spdlog/common.h"
+
+#include <memory>
 
 namespace Ui {
 class MainWindow;
@@ -69,7 +73,7 @@ public:
 protected:
     void drawNet(QGraphicsScene *scene, Preprocess &t, QColor color, QColor colorError);
     void drawToolpath(QGraphicsScene *scene, Toolpath &t);
-    void showMessage(Gerber &g, Preprocess &p);
+    void showMessage(Gerber *g, Preprocess &p);
 private slots:
     void on_actionOpen_triggered();
 
@@ -89,16 +93,19 @@ private slots:
 
     void on_actionAbout_GerberCAM_triggered();
 
+    void on_actionView_Log_triggered();
+
 private:
     Ui::MainWindow *ui;
-    QString fileName;
+
     double scale=1;
     void wheelEvent(QWheelEvent *event);
     void drawLayer(QGraphicsScene *scene, Gerber *gerberfile, QColor color);
     double scaleFactor=250;
     int layerNum=0;
     int currentLayer=1;
-    Gerber *gerber1,*gerber2;
+    std::unique_ptr<Gerber> gerber1{ nullptr };
+    std::unique_ptr<Gerber> gerber2{ nullptr };
     QGraphicsScene *scene1,*scene12,*scene2,*scene21;
     QGraphicsScene *sceneNet1,*sceneNet2,*sceneNet12,*sceneNet21;
     QGraphicsScene *scenePath1,*scenePath2,*scenePath12,*scenePath21;
@@ -129,6 +136,9 @@ private:
 
     QString alertHtml = "<font color=\"red\">";
     QString endHtml = "</font>";
+
+    std::shared_ptr<spdlog::logger> m_logger{ nullptr };
+    QString m_appdir;
 
 };
 

@@ -3,5 +3,7 @@
         <file>jpg/Conical.jpg</file>
         <file>jpg/Cylindrical.jpg</file>
         <file>jpg/Drill.jpg</file>
+            <file>GerberCAM.ico</file>
     </qresource>
 </RCC>
+

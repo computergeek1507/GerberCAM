@@ -22,13 +22,16 @@ SOFTWARE.
 
 #include "mainwindow.h"
 #include <QApplication>
+#include <QIcon>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setWindowIcon(QIcon(":/GerberCAM.ico"));
     MainWindow w;
     w.show();
     w.showMaximized();
 
     return a.exec();
 }
+
