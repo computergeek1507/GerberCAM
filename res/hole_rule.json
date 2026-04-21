@@ -1,0 +1,149 @@
+{
+    "holeRuleList": [
+        {
+            "name": "rule1",
+            "ruleList": [
+                {
+                    "condition": "[x,∞)",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill3",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.118
+                    },
+                    "text": "If pad size>=0.300,use drill :  \"drill3  0.118\"",
+                    "value": 0.3,
+                    "value1": -9.255963134931783e+61
+                },
+                {
+                    "condition": "default",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill0.5",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.02
+                    },
+                    "text": "Default drill : \"drill0.5  0.020\"",
+                    "value": 1.0,
+                    "value1": 6.828955929214059e-308
+                },
+                {
+                    "condition": "[0,x]",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill0",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.0001
+                    },
+                    "text": "If pad size<=0.030,use drill :  \"drill0  0.000\"",
+                    "value": 0.03,
+                    "value1": 6.829023833079386e-308
+                },
+                {
+                    "condition": "[x1,x2]",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill1",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.039
+                    },
+                    "text": "If 0.052<=pad size<=0.109,use drill : \"drill1  0.039\"",
+                    "value": 0.052,
+                    "value1": 0.109
+                },
+                {
+                    "condition": "[x1,x2]",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill1.5",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.059
+                    },
+                    "text": "If 0.110<=pad size<=0.130,use drill : \"drill1.5  0.059\"",
+                    "value": 0.11,
+                    "value1": 0.13
+                },
+                {
+                    "condition": "[x1,x2]",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill2",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.078
+                    },
+                    "text": "If 0.150<=pad size<=0.165,use drill : \"drill2  0.078\"",
+                    "value": 0.15,
+                    "value1": 0.165
+                },
+                {
+                    "condition": "[x1,x2]",
+                    "drill": {
+                        "angle": 0.0,
+                        "diameter": 3.175,
+                        "feedrate": 200.0,
+                        "maxPlungeSpeed": 2.0,
+                        "maxStepDepth": 2.0,
+                        "name": "drill3",
+                        "overlap": 0.0,
+                        "speedUnit": "InchperMin",
+                        "spindleSpeed": 2.0,
+                        "toolType": "Drill",
+                        "unitType": "Inch",
+                        "width": 0.118
+                    },
+                    "text": "If 0.190<=pad size<=0.270,use drill : \"drill3  0.118\"",
+                    "value": 0.19,
+                    "value1": 0.27
+                }
+            ]
+        }
+    ]
+}
