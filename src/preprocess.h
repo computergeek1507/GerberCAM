@@ -28,7 +28,7 @@ SOFTWARE.
 #include<QtMath>
 #include <QElapsedTimer>
 
-
+#include "spdlog/spdlog.h"
 #include "clipper.hpp"
 #include "setting.h"
 using namespace ClipperLib;
@@ -129,6 +129,8 @@ protected:
     void padPreprocess(Gerber &g, const Setting *s);
 private:
     QList<Net> nets;
+
+    std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 };
 
 #endif // PREPROCESS_H

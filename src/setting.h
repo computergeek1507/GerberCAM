@@ -28,6 +28,8 @@ SOFTWARE.
 #include <QFile>
 #include <QMessageBox>
 
+#include <optional>
+
 #include "nlohmann/json.hpp"
 
 #include "spdlog/spdlog.h"
@@ -36,6 +38,27 @@ SOFTWARE.
 //enum UnitType{unitInch,unitMM};
 //enum SpeedUnit{MMperSec,MMperMin,InchperSec,InchperMin};
 //enum ToolType{Conical,Cylindrical,Drill};
+struct CuttingParm
+{
+    QString toolName;
+	//double spindleSpeed{ 18000.0 };
+	double depth{ 1.7 };
+	CuttingParm() = default;
+	CuttingParm(nlohmann::json const& j)
+	{
+		toolName = QString::fromStdString(j.value("toolName", ""));
+		//spindleSpeed = j.value("spindleSpeed", spindleSpeed);
+		depth = j.value("depth", depth);
+	}
+	nlohmann::json toJson() const
+	{
+		nlohmann::json j;
+		j["toolName"] = toolName.toStdString();
+		//j["spindleSpeed"] = spindleSpeed;
+		j["depth"] = depth;
+		return j;
+	}
+};
 
 struct Tool
 {
@@ -49,7 +72,7 @@ struct Tool
     double overlap{0.0};
     double maxStepDepth{0.0};
     double maxPlungeSpeed{0.0};
-    double spindleSpeed{0.0};
+    double spindleSpeed{12000.0};//rpm
     double feedrate{0.0};
 
 	Tool() = default;
@@ -165,23 +188,34 @@ class Setting
 public:
     Setting(QString const& appData);
     ~Setting();
-    Tool engravingTool;
-    Tool hatchingTool;
-    Tool drillTool;
-    Tool centeringTool;
+    CuttingParm engravingParm;
+    CuttingParm drillParm;
+    CuttingParm cutParm;
+
+    //Tool engravingTool;
+    //Tool drillTool;
+    //Tool cutTool;
+
     QList<Tool> toolList;
     QList<Tool> drillList;
     QList<HoleRule> holeRuleList;
-    int selectedRule=0;
+    int selectedRule = 0;
 
     void appendTool(Tool t);
     void saveLibrary();
     void saveHoleRule();
+    void saveSettings();
     void replaceTool(int index, Tool t);
+
+    std::optional<Tool> getEngravingTool() const;
+    std::optional<Tool> getDrillTool() const;
+    std::optional<Tool> getCutTool() const;
+
 protected:
 
     bool readHoleRule(QString const& appData);
     bool readTool(QString const& appData);
+    bool readSettings(QString const& appData);
 
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 

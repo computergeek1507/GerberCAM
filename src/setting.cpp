@@ -33,6 +33,8 @@ SOFTWARE.
 #define BINARY_HOLE_RULE_FILENAME "hole_rule.con"
 #define JSON_HOLE_RULE_FILENAME "hole_rule.json"
 
+#define JSON_SETTINGS_FILENAME "settings.json"
+
 inline QDataStream &operator <<(QDataStream &out,const Tool &toolBit)
 {
     out<<toolBit.name<<toolBit.unitType<<toolBit.toolType<<toolBit.diameter
@@ -231,6 +233,7 @@ Setting::Setting(QString const& appData) : m_logger(spdlog::get(PROJECT_NAME))
 	m_appData = appData;
     readTool(appData);
     readHoleRule(appData);
+    readSettings(appData);
 }
 void Setting::appendTool(Tool t)
 {
@@ -346,8 +349,85 @@ void Setting::saveHoleRule()
     //
 }
 
+bool Setting::readSettings(QString const& appData)
+{
+    auto path = appData + "/" + JSON_SETTINGS_FILENAME;
+
+    if (QFile::exists(path))
+    {
+        try
+        {
+            std::ifstream in(path.toStdString());
+            nlohmann::json j;
+            in >> j;
+
+            if (j.contains("engravingParm"))
+                engravingParm = CuttingParm(j["engravingParm"]);
+            if (j.contains("drillParm"))
+                drillParm = CuttingParm(j["drillParm"]);
+            if (j.contains("cutParm"))
+                cutParm = CuttingParm(j["cutParm"]);
+
+            return true;
+        }
+        catch (std::exception &ex)
+        {
+            m_logger->error("Error reading toolpath settings: {}", ex.what());
+        }
+    }
+    return false;
+}
+
+void Setting::saveSettings()
+{
+    try
+    {
+        nlohmann::json j;
+        j["engravingParm"] = engravingParm.toJson();
+        j["drillParm"] = drillParm.toJson();
+        j["cutParm"] = cutParm.toJson();
+
+        std::ofstream out((m_appData + "/" + JSON_SETTINGS_FILENAME).toStdString());
+        out << j.dump(4);
+    }
+    catch (std::exception& ex)
+    {
+        m_logger->error("Error saving toolpath settings: {}", ex.what());
+    }
+}
+
+std::optional<Tool> Setting::getEngravingTool() const 
+{
+    for (const auto& tool : toolList) {
+        if (tool.name == engravingParm.toolName) {
+            return tool;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<Tool> Setting::getDrillTool() const
+{
+    for (const auto& tool : toolList) {
+        if (tool.name == drillParm.toolName) {
+            return tool;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<Tool> Setting::getCutTool() const
+{
+    for (const auto& tool : toolList) {
+        if (tool.name == cutParm.toolName) {
+            return tool;
+        }
+    }
+    return std::nullopt;
+}
+
 Setting::~Setting()
 {
-
+	saveSettings();
 }
 

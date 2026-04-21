@@ -24,19 +24,19 @@ SOFTWARE.
 #include "settingwindow.h"
 #include "ui_settingwindow.h"
 
-Settingwindow::Settingwindow(QString const& appData, QWidget *parent) :
+Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
     QDialog(parent),
     ui(new Ui::settingwindow)
 {
     Q_INIT_RESOURCE(resources);
     ui->setupUi(this);
     this->setWindowTitle("Setting");
-    settings=new Setting(appData);
+    settings = new Setting(appData);
 
     //Tool Library setup
-    tlModel =new TreeModel(*settings);
+    tlModel = new TreeModel(*settings);
     ui->treeView->setModel(tlModel);
-    for(int i=0;i<6;i++)
+    for (int i = 0; i < 6; i++)
         ui->treeView->resizeColumnToContents(i);
     ui->treeView->show();
     ui->tlSaveButton->setEnabled(false);
@@ -46,8 +46,11 @@ Settingwindow::Settingwindow(QString const& appData, QWidget *parent) :
 
     //Misc setup
     ui->mSelectRuleComboBox->clear();
-    for(int i=0;i<settings->holeRuleList.size();i++)
-     ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
+
+    for (int i = 0; i < settings->holeRuleList.size(); i++)
+    {
+        ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
+    }
 
     if(settings->holeRuleList.size()>0)
     {
@@ -55,11 +58,24 @@ Settingwindow::Settingwindow(QString const& appData, QWidget *parent) :
         updateMTreeView(rule);
     }
     ui->mREDrillComboBox->clear();
-    for(int i=0;i<settings->drillList.size();i++)
+    ui->comboBoxDrillingTools->clear();
+    ui->comboBoxCuttingTool->clear();
+
+    for (int i = 0; i < settings->drillList.size(); i++)
     {
-        Tool t=settings->drillList.at(i);
-        QString s=t.name+"  "+QString::number(t.width,'f',3);
-        ui->mREDrillComboBox->addItem(s);
+        Tool t = settings->drillList.at(i);
+        QString s = t.name + "  " + QString::number(t.width, 'f', 3);
+        ui->mREDrillComboBox->addItem(s, QVariant::fromValue(t.name));
+        ui->comboBoxDrillingTools->addItem(s, QVariant::fromValue(t.name));
+        ui->comboBoxCuttingTool->addItem(s, QVariant::fromValue(t.name));
+    }
+
+    ui->comboBoxEngravingTool->clear();
+    for (int i = 0; i < settings->toolList.size(); i++)
+    {
+        Tool t = settings->toolList.at(i);
+        QString s = t.name + "  " + QString::number(t.width, 'f', 3);
+        ui->comboBoxEngravingTool->addItem(s, QVariant::fromValue(t.name));
     }
 
     ui->mSaveButton->setEnabled(false);
@@ -84,6 +100,26 @@ Settingwindow::Settingwindow(QString const& appData, QWidget *parent) :
 
     holeDrillCheck();
 
+	int idx = ui->comboBoxEngravingTool->findText(settings->engravingParm.toolName);
+    if (idx != -1)
+    {
+        ui->comboBoxEngravingTool->setCurrentIndex(idx);
+    }
+
+	idx = ui->comboBoxDrillingTools->findText(settings->drillParm.toolName);
+	if (idx != -1)
+	{
+		ui->comboBoxDrillingTools->setCurrentIndex(idx);
+	}
+
+	idx = ui->comboBoxCuttingTool->findText(settings->cutParm.toolName);
+	if (idx != -1)
+	{
+		ui->comboBoxCuttingTool->setCurrentIndex(idx);
+	}
+	ui->lineEditEngravingDepth->setText(QString::number(settings->engravingParm.depth, 'f', 3));
+	ui->lineEditDrillingDepth->setText(QString::number(settings->drillParm.depth, 'f', 3));
+	ui->lineEditCuttingDepth->setText(QString::number(settings->cutParm.depth, 'f', 3));
 }
 
 void Settingwindow::holeDrillCheck()
@@ -1036,4 +1072,18 @@ void Settingwindow::on_mREDrillComboBox_activated(int index)
 void Settingwindow::on_mSelectRuleComboBox_activated(const QString &arg1)
 {
     Q_UNUSED(arg1)
+}
+
+void Settingwindow::on_pushButtonSaveBit_clicked()
+{
+	settings->engravingParm.toolName = ui->comboBoxEngravingTool->currentData().toString();
+	settings->engravingParm.depth = ui->lineEditEngravingDepth->text().toDouble();
+
+	settings->drillParm.toolName = ui->comboBoxDrillingTools->currentData().toString();
+	settings->drillParm.depth = ui->lineEditDrillingDepth->text().toDouble();
+
+	settings->cutParm.toolName = ui->comboBoxCuttingTool->currentData().toString();
+	settings->cutParm.depth = ui->lineEditCuttingDepth->text().toDouble();
+
+    settings->saveSettings();
 }

@@ -24,12 +24,15 @@ SOFTWARE.
 
 #include "scale.h"
 
-Preprocess::Preprocess(Gerber &g,const Setting *s)
+#include "config.h"
+
+Preprocess::Preprocess(Gerber& g, const Setting* s) 
+    : m_logger(spdlog::get(PROJECT_NAME))
 {
     padNum=g.padNum;
     padPreprocess(g,s);
     checkSameNet(g);
-    qDebug()<<"netList num="+QString::number(netList.size());
+    m_logger->info("netList num={}", netList.size());
 }
 
 void Preprocess::clearEccentricHole(QList<Pad> pads)
@@ -59,18 +62,27 @@ void Preprocess::clearEccentricHole(QList<Pad> pads)
     }
 }
 
-void Preprocess::padPreprocess(Gerber &g,const Setting *s)
+void Preprocess::padPreprocess(Gerber& g, const Setting* s)
 {
     if (s->holeRuleList.isEmpty())
-        return;
-    HoleRule rule=s->holeRuleList.at(s->selectedRule);
-    //handle the default condition first
-    for(int i=0;i<rule.ruleList.size();i++)
     {
-        HoleCondition c=rule.ruleList.at(i);
-        c.drill.width=c.drill.width* PRECISIONSCALE;
-        c.value=c.value* PRECISIONSCALE;
-        c.value1=c.value1* PRECISIONSCALE;
+        return;
+    }
+    HoleRule rule = s->holeRuleList.at(s->selectedRule);
+
+    for (HoleCondition &c : rule.ruleList)
+    {
+        c.drill.width = c.drill.width * PRECISIONSCALE;
+        c.value = c.value * PRECISIONSCALE;
+        c.value1 = c.value1 * PRECISIONSCALE;
+    }
+
+    //handle the default condition first
+    for(HoleCondition c : rule.ruleList)
+    {
+        //c.drill.width = c.drill.width* PRECISIONSCALE;
+        //c.value = c.value* PRECISIONSCALE;
+        //c.value1= c.value1* PRECISIONSCALE;
         if(c.condition=="default")
         {
             for(int j=0;j<g.padsList.size();j++)
@@ -82,12 +94,11 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
         }
     }
 
-    for(int i=0;i<rule.ruleList.size();i++)
+    for(HoleCondition c : rule.ruleList)
     {
-        HoleCondition c=rule.ruleList.at(i);
-        c.drill.width=c.drill.width* PRECISIONSCALE;
-        c.value=c.value* PRECISIONSCALE;
-        c.value1=c.value1* PRECISIONSCALE;
+        //c.drill.width = c.drill.width * PRECISIONSCALE;
+        //c.value = c.value * PRECISIONSCALE;
+        //c.value1 = c.value1 * PRECISIONSCALE;
         if(c.condition=="==x")
         {
             for(int j=0;j<g.padsList.size();j++)
@@ -222,7 +233,7 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
         {
             for(int j=0;j<g.padsList.size();j++)
             {
-                Pad p=g.padsList.at(j);
+                Pad p = g.padsList.at(j);
                 if(p.shape=='R')
                 {
                     if(p.parameter[0]==c.value&&p.parameter[1]==c.value1)
@@ -1154,9 +1165,9 @@ void Preprocess::checkSameNet(Gerber g)
         }
     }
 
-        qDebug() << "Contour num="+QString::number(contourList.size());
+    m_logger->info("Contour num={}", contourList.size());
 
-    qDebug() << "Net calculation took" << timer.elapsed() << "ms";
+    m_logger->debug("Net calculation took {} ms", timer.elapsed());
     time=timer.elapsed();
 }
 Preprocess::~Preprocess()

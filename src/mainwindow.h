@@ -78,6 +78,8 @@ protected:
 private slots:
     void on_actionOpen_triggered();
 
+    void on_actionExit_triggered();
+
     void on_actionZoom_in_triggered();
 
     void on_actionZoom_out_triggered();
@@ -102,6 +104,10 @@ private slots:
 
     void on_actionView_Log_triggered();
 
+    void on_actionOpen_Outline_triggered();
+
+    void on_actionExport_Outline_triggered();
+
 private:
     Ui::MainWindow *ui;
 
@@ -116,9 +122,18 @@ private:
     std::unique_ptr<Gerber> gerber1{ nullptr };
     std::unique_ptr<Gerber> gerber2{ nullptr };
 
-    QGraphicsScene *scene1,*scene12,*scene2,*scene21;
-    QGraphicsScene *sceneNet1,*sceneNet2,*sceneNet12,*sceneNet21;
-    QGraphicsScene *scenePath1,*scenePath2,*scenePath12,*scenePath21;
+    QGraphicsScene* scene1{ nullptr };
+    QGraphicsScene* scene12{ nullptr };
+    QGraphicsScene* scene2{ nullptr };
+    QGraphicsScene* scene21{ nullptr };
+    QGraphicsScene* sceneNet1{ nullptr };
+    QGraphicsScene* sceneNet2{ nullptr };
+    QGraphicsScene* sceneNet12{ nullptr };
+    QGraphicsScene* sceneNet21{ nullptr };
+    QGraphicsScene* scenePath1{ nullptr };
+    QGraphicsScene* scenePath2{ nullptr };
+    QGraphicsScene* scenePath12{ nullptr };
+    QGraphicsScene* scenePath21{ nullptr };
     //QColor *colorRed1=new QColor(255,0,0,230);
     //QColor *colorRed2=new QColor(255,0,0,40);
     QColor *colorRed1=new QColor(30,144,225,240);
@@ -134,10 +149,10 @@ private:
     void timerEvent(QTimerEvent *event);
     QLabel *coordinateLabel;
 
-    std::unique_ptr <Preprocess> preprocessfile1;
-    std::unique_ptr <Preprocess> preprocessfile2;
-    std::unique_ptr <Toolpath> toolpath1;
-    std::unique_ptr <Toolpath> toolpath2;
+    std::unique_ptr <Preprocess> preprocessfile1{ nullptr };
+    std::unique_ptr <Preprocess> preprocessfile2{ nullptr };
+    std::unique_ptr <Toolpath> toolpath1{ nullptr };
+    std::unique_ptr <Toolpath> toolpath2{ nullptr };
 
     QString version = PROJECT_NAME " v" PROJECT_VER;
     QString gerberFileName;
@@ -152,6 +167,10 @@ private:
 
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
     QString m_appdir;
+
+    std::unique_ptr<Gerber> gerberOutline{ nullptr };
+    QGraphicsScene *sceneOutline{ nullptr };
+    QColor *colorOutline = new QColor(0, 200, 0, 200);
 };
 
 #endif // MAINWINDOW_H

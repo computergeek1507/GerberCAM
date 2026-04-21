@@ -27,6 +27,8 @@ SOFTWARE.
 
 #include "scale.h"
 
+#include "config.h"
+
 MyRect Toolpath::trackToMyRect(Track t, qint64 offset)
 {
     MyRect r;
@@ -375,8 +377,6 @@ bool Toolpath::cToolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath
                 p.p2=j;
                 tcTList.pair.append(p);
             }
-
-
         }
         if(tcTList.list.size()>1)
         {
@@ -440,183 +440,193 @@ bool Toolpath::cToolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath
     return cTList.isEmpty() == false;
 }
 
-Toolpath::Toolpath(Preprocess &p, Setting &s)
+Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAME))
 {
     QElapsedTimer timer;
     timer.start();
 
-    if(s.engravingTool.diameter > 0.0)
-        toolDiameter = static_cast<qint64>(s.engravingTool.diameter * PRECISIONSCALE);
-    qDebug()<<"Toolpath: toolDiameter="<<toolDiameter<<"("<<toolDiameter/PRECISIONSCALE<<"inches )";
+    auto toolDiameter = 0LL;
 
-    int i,j;
+    auto tool = s->getEngravingTool();
+    if (tool && tool->diameter > 0.0)
+    {
+        toolDiameter = static_cast<qint64>(tool->diameter * PRECISIONSCALE);
+    }
+
+    m_logger->debug("Toolpath: toolDiameter={} ({} inches)", toolDiameter, toolDiameter / PRECISIONSCALE);
+
+    //int i,j;
     Net tempPreprocessNetPath;
 
     //produce toolpath for every element
     //method:offset the shape with the radius of the bit
     //then link the breaking points
-    for(j=0;j<p.netList.size();j++)
+    for (int j = 0; j < p->netList.size(); j++)
     {
         NetPath tempToolPathNetPath;
-        tempPreprocessNetPath=p.netList.at(j);
+        tempPreprocessNetPath = p->netList.at(j);
         Paths tempCPaths;
-        for(i=0;i<tempPreprocessNetPath.elements.size();i++)
+        for (int i = 0; i < tempPreprocessNetPath.elements.size(); i++)
         {
             MyPath tempPath;
-            Element e=tempPreprocessNetPath.elements.at(i);
+            Element e = tempPreprocessNetPath.elements.at(i);
             Segment s;
-            tempPath.element=e;
-            if(e.elementType=='T')//track
+            tempPath.element = e;
+            if (e.elementType == 'T')//track
             {
-                MyRect r=trackToMyRect(e.track,toolDiameter);
+                MyRect r = trackToMyRect(e.track, toolDiameter);
 
-                s.point=r.p1;
-                s.type='L';
+                s.point = r.p1;
+                s.type = 'L';
                 tempPath.segmentList.append(s);
-                s.point=r.p2;
-                s.type='C';
+                s.point = r.p2;
+                s.type = 'C';
                 tempPath.segmentList.append(s);
-                s.point=r.p3;
-                s.type='L';
+                s.point = r.p3;
+                s.type = 'L';
                 tempPath.segmentList.append(s);
-                s.point=r.p4;
-                s.type='C';
+                s.point = r.p4;
+                s.type = 'C';
                 tempPath.segmentList.append(s);
 
                 IntPoint point;
-                point.X=r.p1.x();point.Y=r.p1.y();
-                tempPath.toolpath<<point;
-                arcToSegments(r.p2,r.p3,tempPath.toolpath);
-                point.X=r.p4.x();point.Y=r.p4.y();
-                tempPath.toolpath<<point;
-                arcToSegments(r.p4,r.p1,tempPath.toolpath);
+                point.X = r.p1.x(); point.Y = r.p1.y();
+                tempPath.toolpath << point;
+                arcToSegments(r.p2, r.p3, tempPath.toolpath);
+                point.X = r.p4.x(); point.Y = r.p4.y();
+                tempPath.toolpath << point;
+                arcToSegments(r.p4, r.p1, tempPath.toolpath);
             }
             else//pad
             {
-                if(e.pad.shape=='C')
+                if (e.pad.shape == 'C')
                 {
                     QPoint point;
-                    QPoint point1,point2;
+                    QPoint point1, point2;
                     point.setX(e.pad.point.x());
-                    point.setY(e.pad.point.y()+e.pad.parameter[0]/2+toolDiameter/2);
-                    point1=point;
-                    s.point=point;
-                    s.type='C';
+                    point.setY(e.pad.point.y() + e.pad.parameter[0] / 2 + toolDiameter / 2);
+                    point1 = point;
+                    s.point = point;
+                    s.type = 'C';
                     tempPath.segmentList.append(s);
 
-                    point.setY(e.pad.point.y()-e.pad.parameter[0]/2-toolDiameter/2);
-                    point2=point;
-                    s.point=point;
-                    s.type='C';
+                    point.setY(e.pad.point.y() - e.pad.parameter[0] / 2 - toolDiameter / 2);
+                    point2 = point;
+                    s.point = point;
+                    s.type = 'C';
                     tempPath.segmentList.append(s);
 
-                    arcToSegments(point1,point2,tempPath.toolpath);
-                    arcToSegments(point2,point1,tempPath.toolpath);
+                    arcToSegments(point1, point2, tempPath.toolpath);
+                    arcToSegments(point2, point1, tempPath.toolpath);
                 }
-                else if(e.pad.shape=='R')
+                else if (e.pad.shape == 'R')
                 {
-                    MyRect r=rectToMyRect(e.pad,toolDiameter);
-                    s.point=r.p1;
-                    s.type='L';
+                    MyRect r = rectToMyRect(e.pad, toolDiameter);
+                    s.point = r.p1;
+                    s.type = 'L';
                     tempPath.segmentList.append(s);
-                    s.point=r.p2;
-                    s.type='L';
+                    s.point = r.p2;
+                    s.type = 'L';
                     tempPath.segmentList.append(s);
-                    s.point=r.p3;
-                    s.type='L';
+                    s.point = r.p3;
+                    s.type = 'L';
                     tempPath.segmentList.append(s);
-                    s.point=r.p4;
-                    s.type='L';
+                    s.point = r.p4;
+                    s.type = 'L';
                     tempPath.segmentList.append(s);
 
                     IntPoint point;
-                    point.X=r.p1.x();point.Y=r.p1.y();
-                    tempPath.toolpath<<point;
-                    point.X=r.p2.x();point.Y=r.p2.y();
-                    tempPath.toolpath<<point;
-                    point.X=r.p3.x();point.Y=r.p3.y();
-                    tempPath.toolpath<<point;
-                    point.X=r.p4.x();point.Y=r.p4.y();
-                    tempPath.toolpath<<point;
+                    point.X = r.p1.x(); point.Y = r.p1.y();
+                    tempPath.toolpath << point;
+                    point.X = r.p2.x(); point.Y = r.p2.y();
+                    tempPath.toolpath << point;
+                    point.X = r.p3.x(); point.Y = r.p3.y();
+                    tempPath.toolpath << point;
+                    point.X = r.p4.x(); point.Y = r.p4.y();
+                    tempPath.toolpath << point;
                 }
-                else if(e.pad.shape=='O')
+                else if (e.pad.shape == 'O')
                 {
-                    Track t=obroundToTrack(e.pad);
-                    MyRect r=trackToMyRect(t,toolDiameter);
-                    s.point=r.p1;
-                    s.type='L';
+                    Track t = obroundToTrack(e.pad);
+                    MyRect r = trackToMyRect(t, toolDiameter);
+                    s.point = r.p1;
+                    s.type = 'L';
                     tempPath.segmentList.append(s);
-                    s.point=r.p2;
-                    s.type='C';
+                    s.point = r.p2;
+                    s.type = 'C';
                     tempPath.segmentList.append(s);
-                    s.point=r.p3;
-                    s.type='L';
+                    s.point = r.p3;
+                    s.type = 'L';
                     tempPath.segmentList.append(s);
-                    s.point=r.p4;
-                    s.type='C';
+                    s.point = r.p4;
+                    s.type = 'C';
                     tempPath.segmentList.append(s);
 
                     IntPoint point;
-                    point.X=r.p1.x();point.Y=r.p1.y();
-                    tempPath.toolpath<<point;
-                    arcToSegments(r.p2,r.p3,tempPath.toolpath);
-                    point.X=r.p4.x();point.Y=r.p4.y();
-                    tempPath.toolpath<<point;
-                    arcToSegments(r.p4,r.p1,tempPath.toolpath);
+                    point.X = r.p1.x(); point.Y = r.p1.y();
+                    tempPath.toolpath << point;
+                    arcToSegments(r.p2, r.p3, tempPath.toolpath);
+                    point.X = r.p4.x(); point.Y = r.p4.y();
+                    tempPath.toolpath << point;
+                    arcToSegments(r.p4, r.p1, tempPath.toolpath);
                 }
             }
             tempCPaths.push_back(tempPath.toolpath);
-            tempPath.boundingRect=expandBoundingRect(e.boundingRect,toolDiameter);
+            tempPath.boundingRect = expandBoundingRect(e.boundingRect, toolDiameter);
             tempToolPathNetPath.pathList.append(tempPath);
 
         }
-        SimplifyPolygons(tempCPaths,tempToolPathNetPath.toolpath,pftNonZero);
-        if(j<5) // log first 5 nets to avoid log spam
-            qDebug()<<"net"<<j<<"elements="<<tempPreprocessNetPath.elements.size()
-                    <<"input paths="<<tempCPaths.size()
-                    <<"output paths="<<tempToolPathNetPath.toolpath.size();
+        SimplifyPolygons(tempCPaths, tempToolPathNetPath.toolpath, pftNonZero);
+        //if (j < 5) // log first 5 nets to avoid log spam
+        {
+            m_logger->debug("net {} elements={} input paths={} output paths={}", j, tempPreprocessNetPath.elements.size(), tempCPaths.size(), tempToolPathNetPath.toolpath.size());
+        }
         netPathList.append(tempToolPathNetPath);
     }
-    cToolpathIntersects(netPathList,tpCollisionNum);
-    int sum=0;
-    for(int i=0;i<tpCollisionNum.size();i++)
+    cToolpathIntersects(netPathList, tpCollisionNum);
+    int sum = 0;
+    for (int i = 0; i < tpCollisionNum.size(); i++)
     {
-        CollisionToolpath temp=tpCollisionNum.at(i);
-        sum+=temp.pair.size();
-        for(int j=0;j<temp.pair.size();j++)
+        CollisionToolpath temp = tpCollisionNum.at(i);
+        sum += temp.pair.size();
+        for (int j = 0; j < temp.pair.size(); j++)
         {
-            Net n=p.netList.at(temp.pair.at(j).p1);
-            n.collisionFlag=true;
-            p.netList.replace(temp.pair.at(j).p1,n);
+            Net n = p->netList.at(temp.pair.at(j).p1);
+            n.collisionFlag = true;
+            p->netList.replace(temp.pair.at(j).p1, n);
 
-            n=p.netList.at(temp.pair.at(j).p2);
-            n.collisionFlag=true;
-            p.netList.replace(temp.pair.at(j).p2,n);
+            n = p->netList.at(temp.pair.at(j).p2);
+            n.collisionFlag = true;
+            p->netList.replace(temp.pair.at(j).p2, n);
         }
     }
-    qDebug()<<"toolpath collision num="<<sum;
-    collisionSum=sum;
+    m_logger->debug("toolpath collision num={}", sum);
+    collisionSum = sum;
 
     Paths tempPath;
-    for(i=0;i<netPathList.size();i++)
-        if(!netPathList.at(i).toolpath.empty())
-            tempPath.push_back(netPathList.at(i).toolpath.at(0));
-
-    SimplifyPolygons(tempPath,totalToolpath,pftNonZero);
-
-    qDebug()<<"totalToolpath paths after SimplifyPolygons:"<<totalToolpath.size()
-            <<"(from"<<netPathList.size()<<"nets,"<<tempPath.size()<<"non-empty)";
-
-    for(i=0;i<netPathList.size();i++)
-        if(netPathList.at(i).toolpath.size()>1)
+    for (int i = 0; i < netPathList.size(); i++)
+    {
+        if (!netPathList.at(i).toolpath.empty())
         {
-            for(size_t j=1;j<netPathList.at(i).toolpath.size();j++)
-            totalToolpath.push_back(netPathList.at(i).toolpath.at(j));
+            tempPath.push_back(netPathList.at(i).toolpath.at(0));
         }
+    }
 
-    qDebug()<<"totalToolpath final size:"<<totalToolpath.size();
+    SimplifyPolygons(tempPath, totalToolpath, pftNonZero);
+
+    m_logger->debug("totalToolpath paths after SimplifyPolygons: {} (from {} nets, {} non-empty)", totalToolpath.size(), netPathList.size(), tempPath.size());
+
+    for (int i = 0; i < netPathList.size(); i++) {
+        if (netPathList.at(i).toolpath.size() > 1)
+        {
+            for (size_t j = 1; j < netPathList.at(i).toolpath.size(); j++)
+            {
+                totalToolpath.push_back(netPathList.at(i).toolpath.at(j));
+            }
+        }
+    }
+    m_logger->debug("totalToolpath final size: {}", totalToolpath.size());
     time=timer.elapsed();
-
 }
 
 Toolpath::~Toolpath()

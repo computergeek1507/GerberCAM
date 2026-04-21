@@ -106,6 +106,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->LayerTab1->setTabText(0,"Message");
     ui->LayerTab1->setTabText(1,"Layer1");
     ui->LayerTab1->setTabText(2,"Layer2");
+    ui->LayerTab1->setTabText(3,"Outline");
     ui->LayerTab1->setFixedWidth(350);
 
 
@@ -332,7 +333,7 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
 
-    preprocessfile1 = new Preprocess(*gerber1,settingWindow->settings);
+    preprocessfile1 = std::make_unique<Preprocess>(*gerber1,settingWindow->settings);
 
     ui->messageBrowser->clear();
     showMessage(gerber1.get(),*preprocessfile1);
@@ -470,16 +471,20 @@ void MainWindow::on_actionAdd_layer_triggered()
     recalculateFlag = true;
 }
 
+void MainWindow::on_actionExit_triggered()
+{
+    close();
+}
 
 void MainWindow::on_actionToolpath_generat_triggered()
 {
-    if(recalculateFlag)
+    //if(recalculateFlag)
     {
-        toolpath1 = std::make_unique<Toolpath>(*preprocessfile1, *settingWindow->settings);
+        toolpath1 = std::make_unique<Toolpath>(preprocessfile1.get(), settingWindow->settings);
 
         if(layerNum==2)
         {
-            toolpath2 = std::make_unique<Toolpath>(*preprocessfile2, *settingWindow->settings);
+            toolpath2 = std::make_unique<Toolpath>(preprocessfile2.get(), settingWindow->settings);
             scenePath12=new QGraphicsScene(this);
             drawNet(scenePath12,*preprocessfile2,*colorBlue2,*Error2);
             drawNet(scenePath12,*preprocessfile1,*colorRed1,*Error1);
@@ -490,13 +495,13 @@ void MainWindow::on_actionToolpath_generat_triggered()
             drawNet(scenePath21,*preprocessfile2,*colorBlue1,*Error1);
             drawToolpath(scenePath21,*toolpath2);
 
-            QString temp=alertHtml+QString::number(toolpath1->collisionSum)+endHtml;
-            ui->messageBrowser->append("Layer1 Toolpath collision="+temp);
+            QString temp = alertHtml + QString::number(toolpath1->collisionSum)+endHtml;
+            ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
           //ui->messageBrowser->append("   Preprocessing time ="+QString::number(p.time)+"ms");
-            ui->messageBrowser->append("   Calculation time   ="+QString::number(toolpath1->time)+"ms");
-            temp=alertHtml+QString::number(toolpath2->collisionSum)+endHtml;
+            ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath1->time) + "ms");
+            temp=alertHtml + QString::number(toolpath2->collisionSum)+endHtml;
             ui->messageBrowser->append("Layer2 Toolpath collision="+temp);
-            ui->messageBrowser->append("   Calculation time   ="+QString::number(toolpath2->time)+"ms");
+            ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath2->time) + "ms");
         }
         else
         {
@@ -709,4 +714,111 @@ void MainWindow::on_actionAbout_GerberCAM_triggered()
 void  MainWindow::on_actionView_Log_triggered()
 {
     QDesktopServices::openUrl(QUrl::fromLocalFile(m_appdir + "/log/"));
+}
+
+void MainWindow::on_actionOpen_Outline_triggered()
+{
+    auto fileName = QFileDialog::getOpenFileName(this, tr("Open Edge Cut / Outline"), "",
+        tr("Edge Cuts (*.gm1 *.gko *.gm);;Gerber Files (*.gbr *.ger);;All types (*.*)"));
+    if (fileName.isEmpty())
+        return;
+
+    gerberOutline = std::make_unique<Gerber>(fileName);
+    if (!gerberOutline->readingFlag)
+    {
+        m_logger->error("Outline read fail: {}", QFileInfo(fileName).fileName().toStdString());
+        ui->messageBrowser->append("Outline file read fail");
+        return;
+    }
+
+    // Draw the outline onto every existing copper / net scene so it
+    // overlays correctly regardless of which view is active.
+    QList<QGraphicsScene*> scenes;
+    for (auto* s : { sceneNet1, sceneNet2, sceneNet12, sceneNet21,
+                    scenePath1, scenePath2, scenePath12, scenePath21 })
+    {
+        if (s)
+        {
+            scenes.append(s);
+        }
+    }
+    for (auto* s : scenes)
+    {
+        if (s)
+        {
+            drawLayer(s, gerberOutline.get(), *colorOutline);
+        }
+    }
+
+    // Also build a standalone outline-only scene
+    if(sceneOutline)
+        delete sceneOutline;
+    sceneOutline = new QGraphicsScene(this);
+    drawLayer(sceneOutline, gerberOutline.get(), *colorOutline);
+
+    // Show the current scene (with outline now added) or the standalone scene
+    QGraphicsScene *current = ui->graphicsView->scene();
+    if(current && scenes.contains(current))
+    {
+        // Already showing a copper scene - outline was just added to it, refresh
+        ui->graphicsView->viewport()->update();
+    }
+    else
+    {
+        ui->graphicsView->setScene(sceneOutline);
+    }
+
+    // Fit view to the outline extents
+    ui->graphicsView->fitInView(gerberOutline->borderRect, Qt::KeepAspectRatio);
+
+    // Show outline info in the Outline tab
+    ui->outlineBrowser->clear();
+    QString fn = QFileInfo(fileName).fileName();
+    ui->outlineBrowser->append("Outline: " + fn);
+    ui->outlineBrowser->append("  Pads:   " + QString::number(gerberOutline->padNum));
+    ui->outlineBrowser->append("  Tracks: " + QString::number(gerberOutline->trackNum));
+
+    ui->LayerTab1->setCurrentWidget(ui->tabOutline);
+    ui->messageBrowser->append("Outline loaded: " + fn);
+    ui->actionExport_Outline->setEnabled(true);
+}
+
+
+void MainWindow::on_actionExport_Outline_triggered()
+{
+    if(!gerberOutline)
+    {
+        QMessageBox::warning(this, "Export Outline G-Code",
+                             "No outline loaded. Open an edge cut file first.");
+        return;
+    }
+
+    QString defaultName = gerberFileName;
+    if(!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if(dot >= 0) defaultName.truncate(dot);
+        defaultName += "_outline.nc";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export Outline G-Code", defaultName,
+        "G-Code files (*.nc *.gcode *.tap);;All files (*)");
+
+    if(filePath.isEmpty())
+        return;
+
+    QString errorMsg;
+    if(GcodeExport::writeOutline(*gerberOutline, *settingWindow->settings,
+                                 filePath, errorMsg, boardFlipped))
+    {
+        ui->messageBrowser->append("Outline G-Code exported: " + QFileInfo(filePath).fileName());
+        ui->messageBrowser->append("  Segments: " + QString::number(gerberOutline->tracksList.size()));
+        m_logger->info("Outline G-Code exported: {}", filePath.toStdString());
+    }
+    else
+    {
+        m_logger->error("Export Outline G-Code failed: {}", errorMsg.toStdString());
+        QMessageBox::critical(this, "Export Outline G-Code", errorMsg);
+    }
 }

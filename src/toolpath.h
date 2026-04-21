@@ -29,6 +29,9 @@ SOFTWARE.
 #include<QtMath>
 #include <QElapsedTimer>
 
+
+#include "spdlog/spdlog.h"
+
 #include "clipper.hpp"
 using namespace ClipperLib;
 struct Segment{
@@ -64,7 +67,7 @@ class Toolpath//:public preprocess
 
 public:
 
-    Toolpath(Preprocess &p, Setting &s);
+    Toolpath(Preprocess *p, Setting* s);
     ~Toolpath();
 
     QList<NetPath> netPathList;
@@ -92,7 +95,7 @@ private:
       //the precision must be 10e6!!
      qint64 arcError=10000;//0.01mm
 
-
+     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 
 };
 

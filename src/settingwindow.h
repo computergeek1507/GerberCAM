@@ -107,6 +107,9 @@ private slots:
     void on_mDeleteButton_clicked();
 
     void on_mREDrillComboBox_activated(int index);
+    //void on_comboBoxEngravingTool_currentIndexChanged(int index);
+
+    void on_pushButtonSaveBit_clicked();
 
 private:
     Ui::settingwindow *ui;

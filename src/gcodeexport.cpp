@@ -28,8 +28,8 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     // -------------------------------------------------------
     // Resolve parameters from settings, falling back to safe defaults
     // -------------------------------------------------------
-    const Tool &tool = s.engravingTool;
-
+    const Tool &tool = s.getEngravingTool().value_or(Tool{});
+    const CuttingParm& parm = s.engravingParm;
     bool useInch = (tool.unitType == "Inch");
 
     // Internal units are mm-based: 1 mm = PRECISIONSCALE (1e6) units.
@@ -40,7 +40,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     // All defaults are in mm; divide by 25.4 when inch output is selected.
     double safeZ    = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double depth_mm = (tool.maxStepDepth > 0.0) ? tool.maxStepDepth : kDefaultDepthmm;
+    double depth_mm = (tool.maxStepDepth > 0.0) ? tool.maxStepDepth : parm.depth;
     double depth    = useInch ? depth_mm / 25.4 : depth_mm;
 
     double feed_mm  = (tool.feedrate > 0.0)       ? tool.feedrate       : kDefaultFeedratemm;
@@ -168,14 +168,15 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     // -------------------------------------------------------
     // Resolve parameters — use drillTool if configured, else defaults
     // -------------------------------------------------------
-    const Tool &dTool = s.drillTool;
+    const Tool &dTool = s.getDrillTool().value_or(Tool{});
+    const CuttingParm& parm = s.drillParm;
     bool useInch = (dTool.unitType == "Inch");
 
     double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
                             : (1.0 / PRECISIONSCALE);
     double safeZ  = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double depth_mm = (dTool.maxStepDepth > 0.0) ? dTool.maxStepDepth : kDefaultDrillDepthmm;
+    double depth_mm = (parm.depth > dTool.maxStepDepth) ? dTool.maxStepDepth : parm.depth;
     double depth    = useInch ? depth_mm / 25.4 : depth_mm;
 
     double plunge_mm = (dTool.maxPlungeSpeed > 0.0) ? dTool.maxPlungeSpeed : kDefaultDrillFeedmm;
@@ -267,6 +268,121 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     // -------------------------------------------------------
     // Footer
     // -------------------------------------------------------
+    out << "M5\n";
+    out << "M30\n";
+
+    file.close();
+    return true;
+}
+
+
+bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
+                               const QString &filePath, QString &errorMsg,
+                               bool flipX)
+{
+    if (outline.tracksList.isEmpty())
+    {
+        errorMsg = "No outline tracks found in the edge cut file.";
+        return false;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        errorMsg = "Cannot open file for writing: " + file.errorString();
+        return false;
+    }
+
+    QTextStream out(&file);
+
+    const Tool &tool = s.getCutTool().value_or(Tool{});
+    const CuttingParm& parm = s.cutParm;
+    bool useInch = (tool.unitType == "Inch");
+
+    double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
+                            : (1.0 / PRECISIONSCALE);
+    double safeZ    = useInch ? kSafeZmm / 25.4 : kSafeZmm;
+
+    double depth_mm = parm.depth;
+    double step_depth_mm = (parm.depth > tool.maxStepDepth) ? tool.maxStepDepth : parm.depth;
+
+    int passes = std::ceil(depth_mm / step_depth_mm);
+
+    double depth    = useInch ? depth_mm / 25.4 : depth_mm;
+    double step_depth = useInch ? step_depth_mm / 25.4 : step_depth_mm;
+
+    double feed_mm  = (tool.feedrate > 0.0) ? tool.feedrate : kDefaultFeedratemm;
+    double feedrate = useInch ? feed_mm / 25.4 : feed_mm;
+    double plunge_mm = (tool.maxPlungeSpeed > 0.0) ? tool.maxPlungeSpeed : kDefaultPlungemm;
+    double plunge    = useInch ? plunge_mm / 25.4 : plunge_mm;
+    double spindle  = (tool.spindleSpeed > 0.0) ? tool.spindleSpeed : kDefaultSpindle;
+
+    int prec  = useInch ? 6 : 4;
+    int zprec = useInch ? 4 : 3;
+    double xSign = flipX ? -1.0 : 1.0;
+
+    out << "(GerberCAM - Outline Cut)\n";
+    out << "(Generated: "
+        << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
+        << ")\n";
+    out << "(Feedrate: " << feedrate << (useInch ? " in/min" : " mm/min") << ")\n";
+    out << "(Depth:    -" << QString::number(depth, 'f', zprec)
+        << (useInch ? " in" : " mm") << ")\n";
+    out << "(Segments: " << outline.tracksList.size() << ")\n";
+    if(flipX) out << "(Mirror:   X axis flipped)\n";
+    out << "\n";
+
+    out << "G90\n";
+    out << (useInch ? "G20\n" : "G21\n");
+    out << "G17\n";
+    out << "M3 S" << static_cast<int>(spindle) << "\n";
+    out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+    out << "\n";
+
+    bool cutting = false;
+    double lastX = 0, lastY = 0;
+
+    for (int pass = 1; pass <= passes; ++pass) {
+
+        for (int i = 0; i < outline.tracksList.size(); ++i)
+        {
+            const Track& t = outline.tracksList.at(i);
+            double sx = t.pointstart.x() * toUnit * xSign;
+            double sy = t.pointstart.y() * toUnit;
+            double ex = t.pointend.x() * toUnit * xSign;
+            double ey = t.pointend.y() * toUnit;
+
+            bool connected = cutting
+                && qAbs(sx - lastX) < 0.001
+                && qAbs(sy - lastY) < 0.001;
+
+            if (!connected)
+            {
+                double tdepth = pass * step_depth;
+
+                tdepth = std::min(tdepth, depth);
+
+                if (cutting)
+                    out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+                out << "G0 X" << QString::number(sx, 'f', prec)
+                    << " Y" << QString::number(sy, 'f', prec) << "\n";
+                out << "G1 Z-" << QString::number(tdepth, 'f', zprec)
+                    << " F" << QString::number(plunge, 'f', 1) << "\n";
+                out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
+                cutting = true;
+            }
+
+            out << "G1 X" << QString::number(ex, 'f', prec)
+                << " Y" << QString::number(ey, 'f', prec) << "\n";
+            lastX = ex;
+            lastY = ey;
+        }
+    }
+
+    if (cutting)
+        out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+
+    out << "\n";
     out << "M5\n";
     out << "M30\n";
 
