@@ -35,6 +35,18 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
     ui->setupUi(this);
     this->setWindowTitle("Setting");
 
+    constexpr auto tool_type_names = magic_enum::enum_names<ToolType>();
+    for (auto name : tool_type_names)
+    {
+        ui->tlTypeComboBox->addItem(name.data());
+    }
+
+    constexpr auto speed_units_names = magic_enum::enum_names<SpeedUnit>();
+    for (auto name : speed_units_names)
+    {
+        ui->tlSpeedUnitComboBox->addItem(name.data());
+    }
+
     //Tool Library setup
     tlModel = new TreeModel(*settings);
     ui->treeView->setModel(tlModel);
@@ -174,14 +186,14 @@ void Settingwindow::updateWindow()
         ui->tlToolTypeViewLabel->setScaledContents(true);
 
         ui->tlName->setText(t.name);
-        if(t.unitType=="Inch")
+        if(t.unitType==UnitType::Inch)
             ui->tlUnitInchRadio->setChecked(true);
         else
             ui->tlUnitMMRadio->setChecked(true);
         //ui->tlSpeedUnitComboBox->setItemData();
-        if(t.toolType=="Conical")
+        if(t.toolType==ToolType::Conical)
             ui->tlTypeComboBox->setCurrentIndex(0);
-        else if(t.toolType=="Cylindrical")
+        else if(t.toolType==ToolType::Cylindrical)
             ui->tlTypeComboBox->setCurrentIndex(1);
         else
             ui->tlTypeComboBox->setCurrentIndex(2);
@@ -211,7 +223,7 @@ void Settingwindow::updateWindow(Tool t)
     filename = ":/jpg/Cylindrical.jpg";
     QImage imageCylindrical(filename);
 
-    if(t.toolType=="Conical")
+    if(t.toolType==ToolType::Conical)
     {
         ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageConical));
         ui->tlAngle->setEnabled(true);
@@ -221,7 +233,7 @@ void Settingwindow::updateWindow(Tool t)
         ui->tlOverlap->setText(QString::number(t.overlap,'f',3));
 
     }
-    else if(t.toolType=="Cylindrical")
+    else if(t.toolType==ToolType::Cylindrical)
     {
         ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageCylindrical));
         ui->tlAngle->setEnabled(false);
@@ -242,14 +254,14 @@ void Settingwindow::updateWindow(Tool t)
     ui->tlToolTypeViewLabel->setScaledContents(true);
 
     ui->tlName->setText(t.name);
-    if(t.unitType=="Inch")
+    if(t.unitType==UnitType::Inch)
         ui->tlUnitInchRadio->setChecked(true);
     else
         ui->tlUnitMMRadio->setChecked(true);
     //ui->tlSpeedUnitComboBox->setItemData();
-    if(t.toolType=="Conical")
+    if(t.toolType==ToolType::Conical)
         ui->tlTypeComboBox->setCurrentIndex(0);
-    else if(t.toolType=="Cylindrical")
+    else if(t.toolType==ToolType::Cylindrical)
         ui->tlTypeComboBox->setCurrentIndex(1);
     else
         ui->tlTypeComboBox->setCurrentIndex(2);
@@ -318,8 +330,8 @@ bool Settingwindow::checkValue(Tool& t, bool newTool)
         }
     }
     t.unitType = unitType;
-    t.speedUnit = ui->tlSpeedUnitComboBox->currentText();
-    t.toolType = ui->tlTypeComboBox->currentText();
+    t.speedUnit = magic_enum::enum_cast<SpeedUnit>(ui->tlSpeedUnitComboBox->currentText().toStdString(), magic_enum::case_insensitive).value_or(SpeedUnit::MMperSec);
+    t.toolType = magic_enum::enum_cast<ToolType>(ui->tlTypeComboBox->currentText().toStdString(), magic_enum::case_insensitive).value_or(ToolType::Conical);
     bool ok;
     t.diameter = ui->tlDiameter->text().toDouble(&ok);
     if (!ok || t.diameter < 0)
@@ -329,7 +341,7 @@ bool Settingwindow::checkValue(Tool& t, bool newTool)
         msgBox.exec();
         return false;
     }
-    if (t.toolType == "Conical")
+    if (t.toolType == ToolType::Conical)
     {
         t.angle = ui->tlAngle->text().toDouble(&ok);
         if (!ok || t.angle < 0)
@@ -352,7 +364,7 @@ bool Settingwindow::checkValue(Tool& t, bool newTool)
         msgBox.exec();
         return false;
     }
-    if (t.toolType != "Drill")
+    if (t.toolType != ToolType::Drill)
     {
         t.overlap = ui->tlOverlap->text().toDouble(&ok);
         if (!ok || t.overlap < 0)
@@ -423,12 +435,12 @@ void Settingwindow::on_tlAddButton_clicked()
 
 void Settingwindow::on_tlUnitInchRadio_clicked()
 {
-    unitType="Inch";
+    unitType = UnitType::Inch;
 }
 
 void Settingwindow::on_tlUnitMMRadio_clicked()
 {
-    unitType="Milimeter";
+    unitType = UnitType::Milimeter;
 }
 
 void Settingwindow::on_tlTypeComboBox_currentIndexChanged(int index)

@@ -290,26 +290,6 @@
                           <verstretch>0</verstretch>
                          </sizepolicy>
                         </property>
-                        <item>
-                         <property name="text">
-                          <string>inch/min</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>inch/sec</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>mm/min</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>mm/sec</string>
-                         </property>
-                        </item>
                        </widget>
                       </item>
                      </layout>
@@ -337,21 +317,6 @@
                           <verstretch>0</verstretch>
                          </sizepolicy>
                         </property>
-                        <item>
-                         <property name="text">
-                          <string>Conical</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Cylindrical</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Drill</string>
-                         </property>
-                        </item>
                        </widget>
                       </item>
                      </layout>

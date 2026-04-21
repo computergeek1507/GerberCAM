@@ -34,12 +34,15 @@ SOFTWARE.
 
 #include "nlohmann/json.hpp"
 
+#include <magic_enum/magic_enum.hpp>
+
 #include "spdlog/spdlog.h"
 #include "spdlog/common.h"
 
-//enum UnitType{unitInch,unitMM};
-//enum SpeedUnit{MMperSec,MMperMin,InchperSec,InchperMin};
-//enum ToolType{Conical,Cylindrical,Drill};
+enum class UnitType : int { Inch, Milimeter = 1};
+enum class SpeedUnit : int { MMperSec, MMperMin, InchperSec, InchperMin};
+enum class ToolType : int { Conical, Cylindrical, Drill};
+
 struct CuttingParm
 {
     QString toolName;
@@ -65,9 +68,13 @@ struct CuttingParm
 struct Tool
 {
     QString name;
-    QString unitType = "MM";
-    QString speedUnit = "InchperMin";;
-    QString toolType = "Conical";;
+    //QString unitType = "MM";
+    //QString speedUnit = "InchperMin";
+    //QString toolType = "Conical";
+    UnitType unitType = UnitType::Milimeter;
+    SpeedUnit speedUnit = SpeedUnit::InchperMin;
+    ToolType toolType = ToolType::Conical;
+
     double diameter{0.0};
     double angle{0.0};
     double width{0.0};
@@ -79,7 +86,7 @@ struct Tool
 
     double calculateWidth(double depth) const
     {
-        if (toolType  == "Conical")
+        if (toolType  == ToolType::Conical)
         {
 			return width + 2 * depth * std::tan(qDegreesToRadians(angle / 2.0));
         }
@@ -91,9 +98,9 @@ struct Tool
     Tool(nlohmann::json const& j)
     {
         name = QString::fromStdString(j.value("name", ""));
-        unitType = QString::fromStdString(j.value("unitType", unitType.toStdString()));
-        speedUnit = QString::fromStdString(j.value("speedUnit", speedUnit.toStdString()));
-        toolType = QString::fromStdString(j.value("toolType", toolType.toStdString()));
+        unitType = magic_enum::enum_cast<UnitType>(j.value("unitType", magic_enum::enum_name(unitType)), magic_enum::case_insensitive).value_or(unitType);
+        speedUnit = magic_enum::enum_cast<SpeedUnit>(j.value("speedUnit", magic_enum::enum_name(speedUnit)), magic_enum::case_insensitive).value_or(speedUnit);
+        toolType = magic_enum::enum_cast<ToolType>(j.value("toolType", magic_enum::enum_name(toolType)), magic_enum::case_insensitive).value_or(toolType);
         diameter = j.value("diameter", diameter);
         angle = j.value("angle", angle);
         width = j.value("width", width);
@@ -108,9 +115,9 @@ struct Tool
 	{
 		nlohmann::json j;
 		j["name"] = name.toStdString();
-		j["unitType"] = unitType.toStdString();
-		j["speedUnit"] = speedUnit.toStdString();
-		j["toolType"] = toolType.toStdString();
+		j["unitType"] = magic_enum::enum_name(unitType);
+		j["speedUnit"] = magic_enum::enum_name(speedUnit);
+		j["toolType"] = magic_enum::enum_name(toolType);
 		j["diameter"] = diameter;
 		j["angle"] = angle;
 		j["width"] = width;

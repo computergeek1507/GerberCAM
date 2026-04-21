@@ -418,7 +418,7 @@ void Setting::setLastDir(const QString& filePath)
 
 bool Setting::isDrillTool(Tool const& t) const
 {
-    return t.toolType == "Drill";
+    return t.toolType == ToolType::Drill;
 }
 
 bool Setting::hasTool(QString const& toolName) const
@@ -465,7 +465,7 @@ std::vector<Tool> Setting::getDrillList() const
 {
     std::vector<Tool> drillList;
     for (auto t : toolList) {
-        if (t.toolType == "Drill")
+        if (isDrillTool(t))
         {
             drillList.push_back(t);
         }

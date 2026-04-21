@@ -30,7 +30,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     // -------------------------------------------------------
     const Tool &tool = s.getEngravingTool().value_or(Tool{});
     const CuttingParm& parm = s.engravingParm;
-    bool useInch = (tool.unitType == "Inch");
+    bool useInch = (tool.unitType == UnitType::Inch);
 
     // Internal units are mm-based: 1 mm = PRECISIONSCALE (1e6) units.
     // toUnit converts internal units → output unit (mm or inch).
@@ -170,7 +170,7 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     // -------------------------------------------------------
     const Tool &dTool = s.getDrillTool().value_or(Tool{});
     const CuttingParm& parm = s.drillParm;
-    bool useInch = (dTool.unitType == "Inch");
+    bool useInch = (dTool.unitType == UnitType::Inch);
 
     double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
                             : (1.0 / PRECISIONSCALE);
@@ -299,7 +299,7 @@ bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
 
     const Tool &tool = s.getCutTool().value_or(Tool{});
     const CuttingParm& parm = s.cutParm;
-    bool useInch = (tool.unitType == "Inch");
+    bool useInch = (tool.unitType == UnitType::Inch);
 
     double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
                             : (1.0 / PRECISIONSCALE);

@@ -70,7 +70,7 @@ SOFTWARE.
 #include "treeitem.h"
 #include "treemodel.h"
 
-
+#include <magic_enum/magic_enum.hpp>
 #include <QStringList>
 
 
@@ -224,12 +224,13 @@ void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
     //              << "Step Depth"<< "pluge Speed"<< "Spindle Speed"<< "Feedrate";
     for(int i=0;i<sFile.toolList.size();i++)
     {
-        Tool t=sFile.toolList.at(i);
+        Tool const& t = sFile.toolList.at(i);
         //if(t.toolType!="Conical")
         //    continue;
+		//auto tool_type = magic_enum::enum_name(t.toolType);
         QList<QVariant> columnData;
         columnData<<t.name;
-        columnData<<t.toolType;
+        columnData<<QString::fromStdString(magic_enum::enum_name(t.toolType).data());
         columnData<<QString::number(t.diameter,'f',3);
         columnData<<QString::number(t.angle,'f',1)+"°";
         columnData<<QString::number(t.width,'f',3);
@@ -243,11 +244,11 @@ void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
     //for(int i=0;i<sFile.toolList.size();i++)
     //{
     //    Tool t=sFile.toolList.at(i);
-    //    if(t.toolType!="Cylindrical")
+    //    if(t.toolType!=ToolType::Cylindrical)
     //        continue;
     //    QList<QVariant> columnData;
     //    columnData<<t.name;
-    //    columnData<<t.toolType;
+    //    columnData<<QString::fromStdString(magic_enum::enum_name(t.toolType));
     //    columnData<<QString::number(t.diameter,'f',3);
     //    columnData<<"-";
     //    columnData<<QString::number(t.width,'f',3);

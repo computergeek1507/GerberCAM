@@ -120,15 +120,15 @@ private:
 
     TreeModel *tlModel,*hrModel;
     HoleRule hr;
-    QString unitType="Milimeter";
-    bool editFlag=false;
-    int editIndex=0;
+    UnitType unitType = UnitType::Milimeter;
+    bool editFlag = false;
+    int editIndex = 0;
 
-    int mEditIndex=0;
-    bool mEditFlag=false;
+    int mEditIndex = 0;
+    bool mEditFlag = false;
 
-    int mREEditIndex=0;
-    bool mREEditFlag=false;
+    int mREEditIndex = 0;
+    bool mREEditFlag = false;
 
 };
 

@@ -16,6 +16,7 @@ include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:nlohmann/json@3.12.0")
 CPMAddPackage("gh:gabime/spdlog@1.17.0")
+CPMAddPackage("gh:Neargye/magic_enum@0.9.7")
 
 #set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -72,7 +73,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Xml spdlog nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Xml spdlog nlohmann_json::nlohmann_json magic_enum)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
