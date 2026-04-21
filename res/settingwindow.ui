@@ -877,15 +877,15 @@
                         <property name="text">
                          <string>Milimeter</string>
                         </property>
+                        <property name="checked">
+                         <bool>true</bool>
+                        </property>
                        </widget>
                       </item>
                       <item>
                        <widget class="QRadioButton" name="tlUnitInchRadio">
                         <property name="text">
                          <string>Inch</string>
-                        </property>
-                        <property name="checked">
-                         <bool>true</bool>
                         </property>
                        </widget>
                       </item>

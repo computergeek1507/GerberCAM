@@ -640,7 +640,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
     QPoint p1 = QCursor::pos();
     p1=ui->graphicsView->mapFromGlobal(QCursor::pos());
     QPointF p2=ui->graphicsView->mapToScene(p1);
-    QString s="("+QString::number(p2.x()/ PRECISIONSCALE,'f',3)+","+QString::number(p2.y()/ PRECISIONSCALE,'f',3)+") /Inch  ";
+    QString s="("+QString::number(p2.x()/ PRECISIONSCALE,'f',3)+","+QString::number(p2.y()/ PRECISIONSCALE,'f',3)+") mm  ";
     coordinateLabel->setText(s);
 }
 

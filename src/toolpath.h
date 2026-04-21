@@ -69,9 +69,9 @@ public:
 
     QList<NetPath> netPathList;
     Paths totalToolpath;
-    //consit with the precision 10e6!!!!
-    qint64 toolDiameter=15748;//0.4mm bit
-    //qint64 toolDiameter=7874;//0.2mm bit
+    // Internal units: 1 mm = 1,000,000 units
+    qint64 toolDiameter=400000;//0.4mm bit
+    //qint64 toolDiameter=200000;//0.2mm bit
     int collisionSum=0;
     qint64 time;
 
@@ -90,7 +90,7 @@ protected:
     bool segmentCollision(Element e1, Element e2);
 private:
       //the precision must be 10e6!!
-     qint64 arcError=394;//0.01mm
+     qint64 arcError=10000;//0.01mm
 
 
 

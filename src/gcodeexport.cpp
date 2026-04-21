@@ -30,24 +30,25 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     // -------------------------------------------------------
     const Tool &tool = s.engravingTool;
 
-    bool useInch = (tool.unitType != "MM");
+    bool useInch = (tool.unitType == "Inch");
 
-    // Unit scale: internal units → output unit
-    // Internal: 1 inch = PRECISIONSCALE (1e6) units
-    double toUnit = useInch ? (1.0 / PRECISIONSCALE)
-                            : (25.4 / PRECISIONSCALE); // → mm
+    // Internal units are mm-based: 1 mm = PRECISIONSCALE (1e6) units.
+    // toUnit converts internal units → output unit (mm or inch).
+    double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
+                            : (1.0 / PRECISIONSCALE);
 
-    double safeZ  = useInch ? kSafeZInch : kSafeZInch * 25.4;
+    // All defaults are in mm; divide by 25.4 when inch output is selected.
+    double safeZ    = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double depth  = (tool.maxStepDepth > 0.0)
-                        ? tool.maxStepDepth
-                        : kDefaultDepthInch;
-    if (!useInch) depth *= 25.4;
+    double depth_mm = (tool.maxStepDepth > 0.0) ? tool.maxStepDepth : kDefaultDepthmm;
+    double depth    = useInch ? depth_mm / 25.4 : depth_mm;
 
-    double feedrate = (tool.feedrate > 0.0)
-                          ? tool.feedrate : kDefaultFeedrate;
-    double plunge   = (tool.maxPlungeSpeed > 0.0)
-                          ? tool.maxPlungeSpeed : kDefaultPlunge;
+    double feed_mm  = (tool.feedrate > 0.0)       ? tool.feedrate       : kDefaultFeedratemm;
+    double feedrate = useInch ? feed_mm / 25.4 : feed_mm;
+
+    double plunge_mm = (tool.maxPlungeSpeed > 0.0) ? tool.maxPlungeSpeed : kDefaultPlungemm;
+    double plunge    = useInch ? plunge_mm / 25.4 : plunge_mm;
+
     double spindle  = (tool.spindleSpeed > 0.0)
                           ? tool.spindleSpeed : kDefaultSpindle;
 
@@ -168,18 +169,19 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     // Resolve parameters — use drillTool if configured, else defaults
     // -------------------------------------------------------
     const Tool &dTool = s.drillTool;
-    bool useInch = (dTool.unitType != "MM");
+    bool useInch = (dTool.unitType == "Inch");
 
-    double toUnit  = useInch ? (1.0 / PRECISIONSCALE) : (25.4 / PRECISIONSCALE);
-    double safeZ   = useInch ? kSafeZInch : kSafeZInch * 25.4;
-    double depth   = (dTool.maxStepDepth > 0.0) ? dTool.maxStepDepth
-                                                 : kDefaultDrillDepthInch;
-    if (!useInch) depth *= 25.4;
+    double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
+                            : (1.0 / PRECISIONSCALE);
+    double safeZ  = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double plunge  = (dTool.maxPlungeSpeed > 0.0) ? dTool.maxPlungeSpeed
-                                                   : kDefaultDrillFeed;
-    double spindle = (dTool.spindleSpeed > 0.0)   ? dTool.spindleSpeed
-                                                   : kDefaultDrillRPM;
+    double depth_mm = (dTool.maxStepDepth > 0.0) ? dTool.maxStepDepth : kDefaultDrillDepthmm;
+    double depth    = useInch ? depth_mm / 25.4 : depth_mm;
+
+    double plunge_mm = (dTool.maxPlungeSpeed > 0.0) ? dTool.maxPlungeSpeed : kDefaultDrillFeedmm;
+    double plunge    = useInch ? plunge_mm / 25.4 : plunge_mm;
+
+    double spindle = (dTool.spindleSpeed > 0.0) ? dTool.spindleSpeed : kDefaultDrillRPM;
 
     int prec  = useInch ? 6 : 4;
     int zprec = useInch ? 4 : 3;
@@ -217,10 +219,10 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
         qint64 holeDiam = it.key();
         const QList<QPoint> &holes = it.value();
 
-        double diamInch = holeDiam / PRECISIONSCALE;
-        double diamOut  = useInch ? diamInch : diamInch * 25.4;
+        double diamMM  = holeDiam / PRECISIONSCALE; // always in mm
+        double diamOut = useInch ? diamMM / 25.4 : diamMM;
 
-        // Try to find a matching drill bit in the library (closest diameter)
+        // Try to find a matching drill bit in the library (closest diameter, both in mm)
         QString toolName = "";
         double  toolFeed = plunge;
         double  toolRPM  = spindle;
@@ -229,7 +231,7 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
             double bestDiff = 1e9;
             for (const Tool &t : s.drillList)
             {
-                double diff = qAbs(t.width - diamInch);
+                double diff = qAbs(t.width - diamMM);
                 if (diff < bestDiff)
                 {
                     bestDiff = diff;

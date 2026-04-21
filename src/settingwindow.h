@@ -113,7 +113,7 @@ private:
 
     TreeModel *tlModel,*hrModel;
     HoleRule hr;
-    QString unitType="Inch";
+    QString unitType="Milimeter";
     bool editFlag=false;
     int editIndex=0;
 

@@ -122,7 +122,7 @@ protected:
     bool pointInRect(MyRect r1, QPoint p);
     BoundingRect mergeRect(BoundingRect r1,BoundingRect r2);
     void findContour();
-    qint64 contourThreshold=13950027900;//3x3mm,10e6 precision
+    qint64 contourThreshold=9000000000000LL;//3x3 mm² at 1e6 units/mm precision
     //qint64 contourThreshold=5629921259842;//13x11mm,10e6 precision
     bool searchLoop(int n, QPoint originPoint, QPoint currentPoint, int deepth);
     bool searchContour(Net &n);

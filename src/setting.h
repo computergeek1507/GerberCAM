@@ -40,7 +40,7 @@ SOFTWARE.
 struct Tool
 {
     QString name;
-    QString unitType = "Inch";
+    QString unitType = "MM";
     QString speedUnit = "InchperMin";;
     QString toolType = "Conical";;
     double diameter{0.0};

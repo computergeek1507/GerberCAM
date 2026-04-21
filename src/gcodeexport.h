@@ -21,19 +21,24 @@ public:
                             bool flipX = false);
 
 private:
-    // Safe retract height above the PCB surface (in working units).
-    static constexpr double kSafeZInch = 0.100;
+    // All defaults are in mm (or RPM where noted).
+    // When inch output is requested, these are divided by 25.4.
 
-    // Default cutting depth when maxStepDepth is not configured.
-    static constexpr double kDefaultDepthInch = 0.005;
+    // Safe retract height above the PCB surface.
+    static constexpr double kSafeZmm          = 2.54;    // 0.1 inch
 
-    // Default drill-through depth (PCB thickness + clearance) if not configured.
-    static constexpr double kDefaultDrillDepthInch = 0.075; // ~1.9mm
+    // Default isolation cutting depth (engrave depth into substrate).
+    static constexpr double kDefaultDepthmm   = 0.127;   // ~5 mil
 
-    // Default feedrates (in/min) when not configured.
-    static constexpr double kDefaultFeedrate   = 30.0;
-    static constexpr double kDefaultPlunge     = 10.0;
+    // Default drill-through depth (PCB thickness + clearance).
+    static constexpr double kDefaultDrillDepthmm = 1.905; // ~75 mil / 1.9mm
+
+    // Default feedrates in mm/min.
+    static constexpr double kDefaultFeedratemm  = 762.0;  // 30 in/min
+    static constexpr double kDefaultPlungemm    = 254.0;  // 10 in/min
+    static constexpr double kDefaultDrillFeedmm = 254.0;  // 10 in/min
+
+    // Spindle speeds in RPM (unit-independent).
     static constexpr double kDefaultSpindle    = 10000.0;
-    static constexpr double kDefaultDrillFeed  = 10.0;
     static constexpr double kDefaultDrillRPM   = 5000.0;
 };

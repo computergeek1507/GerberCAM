@@ -746,7 +746,10 @@ qint64 Gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 d
     if(negative)
         number = -number;
 
-    return number;
+    // Convert from inch-based internal units (1 unit = 1 microinch) to
+    // mm-based internal units (1 unit = 1 nm) by multiplying by 25.4.
+    double scaled = static_cast<double>(number) * 25.4;
+    return static_cast<qint64>(scaled >= 0.0 ? scaled + 0.5 : scaled - 0.5);
 }
 
 /*
@@ -879,9 +882,9 @@ bool Gerber::transform_data()
             newTrack.pointend.setY(currentY);
 
             if(polygonFillMode==true)
-                newTrack.width=500;
+                newTrack.width=12700; // 0.0127 mm minimum fill width
             else
-                newTrack.width=ADHash.value(currentParameter + "0") * PRECISIONSCALE;
+                newTrack.width=ADHash.value(currentParameter + "0") * PRECISIONSCALE * 25.4;
 
             newTrack.boundingRect=boundingRect(newTrack);
             tracksList.append(newTrack);
@@ -918,7 +921,7 @@ bool Gerber::transform_data()
             newPad.angle = ADHash.value(currentParameter + " Angle");
             for (int j = 0; j < newPad.parameterNum; j++)
             {
-                newPad.parameter[j] = ADHash.value(currentParameter + QString::number(j)) * PRECISIONSCALE;
+                newPad.parameter[j] = ADHash.value(currentParameter + QString::number(j)) * PRECISIONSCALE * 25.4;
             }
 
             // Read hole diameter directly from aperture definition if present.
