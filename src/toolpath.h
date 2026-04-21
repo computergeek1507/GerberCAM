@@ -85,12 +85,12 @@ protected:
     BoundingRect expandBoundingRect(BoundingRect r, qint64 offset);
     MyRect rectToMyRect(Pad p1, qint64 offset);
 
-    Track obroundToTrack(Pad o1);
-    void arcToSegments(QPoint p1, QPoint p2,Path &path);
-    bool bondingRecIntersect(BoundingRect r1, BoundingRect r2);
-    bool cToolpathIntersects(QList<NetPath> nPList, QList<CollisionToolpath> &cTList);
-    bool toolpathIntersects(QList<NetPath> nPList, QList<CollisionToolpath> &cTList);
-    bool segmentCollision(Element e1, Element e2);
+    Track obroundToTrack(Pad const& o1);
+    void arcToSegments(QPoint const& p1, QPoint  const& p2,Path &path);
+    bool bondingRecIntersect(BoundingRect const& r1, BoundingRect const& r2);
+    bool cToolpathIntersects(QList<NetPath> const& nPList, QList<CollisionToolpath> &cTList);
+    bool toolpathIntersects(QList<NetPath> const& nPList, QList<CollisionToolpath> &cTList);
+    bool segmentCollision(Element const& e1, Element const& e2);
 private:
       //the precision must be 10e6!!
      qint64 arcError=10000;//0.01mm

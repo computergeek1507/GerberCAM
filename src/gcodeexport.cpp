@@ -192,6 +192,8 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     int totalHoles = 0;
     for (const auto &list : holesByDiameter) totalHoles += list.size();
 
+	auto drills = s.getDrillList();
+
     // -------------------------------------------------------
     // Header
     // -------------------------------------------------------
@@ -227,10 +229,10 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
         QString toolName = "";
         double  toolFeed = plunge;
         double  toolRPM  = spindle;
-        if (!s.drillList.isEmpty())
+        if (!drills.empty())
         {
             double bestDiff = 1e9;
-            for (const Tool &t : s.drillList)
+            for (const Tool &t : drills)
             {
                 double diff = qAbs(t.width - diamMM);
                 if (diff < bestDiff)

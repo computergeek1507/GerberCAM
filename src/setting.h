@@ -25,8 +25,10 @@ SOFTWARE.
 
 #include <QString>
 #include <QDataStream>
-#include <QFile>
+//#include <QFile>
 #include <QMessageBox>
+
+#include <QtMath>
 
 #include <optional>
 
@@ -74,6 +76,15 @@ struct Tool
     double maxPlungeSpeed{0.0};
     double spindleSpeed{12000.0};//rpm
     double feedrate{0.0};
+
+    double calculateWidth(double depth) const
+    {
+        if (toolType  == "Conical")
+        {
+			return width + 2 * depth * std::tan(qDegreesToRadians(angle / 2.0));
+        }
+		return width;
+    }
 
 	Tool() = default;
 
@@ -197,7 +208,7 @@ public:
     //Tool cutTool;
 
     QList<Tool> toolList;
-    QList<Tool> drillList;
+    //QList<Tool> drillList;
     QList<HoleRule> holeRuleList;
     int selectedRule = 0;
 
@@ -211,6 +222,16 @@ public:
     std::optional<Tool> getDrillTool() const;
     std::optional<Tool> getCutTool() const;
 
+    std::vector<Tool> getDrillList() const;
+
+    QString lastDir() const;
+    void setLastDir(const QString& filePath);
+
+	bool isDrillTool(Tool const& t) const;
+	bool hasTool(QString const& toolName) const;
+    
+    std::optional<Tool> getTool(QString const& toolName) const;
+
 protected:
 
     bool readHoleRule(QString const& appData);
@@ -220,6 +241,7 @@ protected:
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 
     QString m_appData;
+    QString m_lastDir;
 };
 
 

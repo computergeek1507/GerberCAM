@@ -225,8 +225,8 @@ void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
     for(int i=0;i<sFile.toolList.size();i++)
     {
         Tool t=sFile.toolList.at(i);
-        if(t.toolType!="Conical")
-            continue;
+        //if(t.toolType!="Conical")
+        //    continue;
         QList<QVariant> columnData;
         columnData<<t.name;
         columnData<<t.toolType;
@@ -240,42 +240,42 @@ void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
         columnData<<QString::number(t.feedrate,'f',3);
         parents.last()->appendChild(new TreeItem(columnData, parents.last()));
     }
-    for(int i=0;i<sFile.toolList.size();i++)
-    {
-        Tool t=sFile.toolList.at(i);
-        if(t.toolType!="Cylindrical")
-            continue;
-        QList<QVariant> columnData;
-        columnData<<t.name;
-        columnData<<t.toolType;
-        columnData<<QString::number(t.diameter,'f',3);
-        columnData<<"-";
-        columnData<<QString::number(t.width,'f',3);
-        columnData<<QString::number(t.overlap,'f',1)+"%";
-        columnData<<QString::number(t.maxStepDepth,'f',3);
-        columnData<<QString::number(t.maxPlungeSpeed,'f',3);
-        columnData<<QString::number(t.spindleSpeed,'f',3);
-        columnData<<QString::number(t.feedrate,'f',3);
-        parents.last()->appendChild(new TreeItem(columnData, parents.last()));
-    }
-    for(int i=0;i<sFile.toolList.size();i++)
-    {
-        Tool t=sFile.toolList.at(i);
-        if(t.toolType!="Drill")
-            continue;
-        QList<QVariant> columnData;
-        columnData<<t.name;
-        columnData<<t.toolType;
-        columnData<<QString::number(t.diameter,'f',3);
-        columnData<<"-";
-        columnData<<QString::number(t.width,'f',3);
-        columnData<<"-";
-        columnData<<QString::number(t.maxStepDepth,'f',3);
-        columnData<<QString::number(t.maxPlungeSpeed,'f',3);
-        columnData<<QString::number(t.spindleSpeed,'f',3);
-        columnData<<QString::number(t.feedrate,'f',3);
-        parents.last()->appendChild(new TreeItem(columnData, parents.last()));
-    }
+    //for(int i=0;i<sFile.toolList.size();i++)
+    //{
+    //    Tool t=sFile.toolList.at(i);
+    //    if(t.toolType!="Cylindrical")
+    //        continue;
+    //    QList<QVariant> columnData;
+    //    columnData<<t.name;
+    //    columnData<<t.toolType;
+    //    columnData<<QString::number(t.diameter,'f',3);
+    //    columnData<<"-";
+    //    columnData<<QString::number(t.width,'f',3);
+    //    columnData<<QString::number(t.overlap,'f',1)+"%";
+    //    columnData<<QString::number(t.maxStepDepth,'f',3);
+    //    columnData<<QString::number(t.maxPlungeSpeed,'f',3);
+    //    columnData<<QString::number(t.spindleSpeed,'f',3);
+    //    columnData<<QString::number(t.feedrate,'f',3);
+    //    parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+    //}
+    //for(int i=0;i<sFile.toolList.size();i++)
+    //{
+    //    Tool t=sFile.toolList.at(i);
+    //    if(t.toolType!="Drill")
+    //        continue;
+    //    QList<QVariant> columnData;
+    //    columnData<<t.name;
+    //    columnData<<t.toolType;
+    //    columnData<<QString::number(t.diameter,'f',3);
+    //    columnData<<"-";
+    //    columnData<<QString::number(t.width,'f',3);
+    //    columnData<<"-";
+    //    columnData<<QString::number(t.maxStepDepth,'f',3);
+    //    columnData<<QString::number(t.maxPlungeSpeed,'f',3);
+    //    columnData<<QString::number(t.spindleSpeed,'f',3);
+    //    columnData<<QString::number(t.feedrate,'f',3);
+    //    parents.last()->appendChild(new TreeItem(columnData, parents.last()));
+    //}
 }
 
 void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)

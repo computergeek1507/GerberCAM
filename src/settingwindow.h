@@ -40,12 +40,14 @@ public:
     explicit Settingwindow(QString const& appData, QWidget *parent = 0);
     ~Settingwindow();
 
-    Setting *settings;
+    Setting* settings{nullptr};
+
+    std::optional<Tool> getCurrentTool();
 
 protected:
     void updateWindow(Tool t);
     void updateWindow();
-    bool checkValue(Tool &t);
+    bool checkValue(Tool &t, bool newTool);
     bool checkHoleRuleValue(HoleCondition &c);
     void updateMTreeView(HoleRule r);
     void holeDrillCheck();
@@ -110,6 +112,8 @@ private slots:
     //void on_comboBoxEngravingTool_currentIndexChanged(int index);
 
     void on_pushButtonSaveBit_clicked();
+
+    void refreshToolCombobox();
 
 private:
     Ui::settingwindow *ui;

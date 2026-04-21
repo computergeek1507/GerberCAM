@@ -31,6 +31,7 @@ SOFTWARE.
 #include <qpainter.h>
 #include <QColor>
 #include <QTreeView>
+#include <QSettings>
 #include "treemodel.h"
 #include "ui_mainwindow.h"
 #include "ui_settingwindow.h"
@@ -51,6 +52,8 @@ using namespace ClipperLib;
 #include "spdlog/common.h"
 
 #include <memory>
+
+static auto version = PROJECT_NAME " v" PROJECT_VER;
 
 namespace Ui {
 class MainWindow;
@@ -114,6 +117,7 @@ private:
     double scale = 1.0;
     void wheelEvent(QWheelEvent *event);
     void drawLayer(QGraphicsScene *scene, Gerber *gerberfile, QColor color);
+    void timerEvent(QTimerEvent* event);
 
     double scaleFactor = 250.0;
     int layerNum = 0;
@@ -146,7 +150,7 @@ private:
     QColor *Error2=new QColor(255,0,0,40);
     //QColor *Error1=new QColor(0,255,64,230);
     //QColor *Error2=new QColor(0,255,64,40);
-    void timerEvent(QTimerEvent *event);
+
     QLabel *coordinateLabel;
 
     std::unique_ptr <Preprocess> preprocessfile1{ nullptr };
@@ -154,7 +158,6 @@ private:
     std::unique_ptr <Toolpath> toolpath1{ nullptr };
     std::unique_ptr <Toolpath> toolpath2{ nullptr };
 
-    QString version = PROJECT_NAME " v" PROJECT_VER;
     QString gerberFileName;
 
     bool recalculateFlag = false;

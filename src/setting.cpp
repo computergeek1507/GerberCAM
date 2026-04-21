@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <QFileInfo>
 
 #define BINARY_TOOL_LIBRARY_FILENAME "tool_library.con"
 #define JSON_TOOL_LIBRARY_FILENAME "tool_library.json"
@@ -107,10 +108,10 @@ bool Setting::readTool(QString const& appData)
                 for (const auto& item : j["toolList"]) {
                     Tool t(item);
                     toolList.append(t);
-                    if (t.toolType == "Drill")
-                    {
-                        drillList.append(t);
-                    }
+                    //if (t.toolType == "Drill")
+                    //{
+                    //    drillList.append(t);
+                    //}
                 }
             }
             return true;
@@ -139,14 +140,14 @@ bool Setting::readTool(QString const& appData)
 
         in >> num;
         toolList.clear();
-        drillList.clear();
+        //drillList.clear();
         for (int i = 0; i < num; i++)
         {
             Tool t;
             in >> t;
             toolList.append(t);
-            if (t.toolType == "Drill")
-                drillList.append(t);
+            //if (t.toolType == "Drill")
+            //    drillList.append(t);
         }
         file.close();
         return true;
@@ -182,8 +183,7 @@ bool Setting::readHoleRule(QString const& appData)
 
 			if (j.contains("holeRuleList") && j["holeRuleList"].is_array()) {
 				for (const auto& item : j["holeRuleList"]) {
-					HoleRule h(item);
-					holeRuleList.append(h);
+					holeRuleList.append(HoleRule(item));
 				}
 			}
 			return true;
@@ -238,22 +238,25 @@ Setting::Setting(QString const& appData) : m_logger(spdlog::get(PROJECT_NAME))
 void Setting::appendTool(Tool t)
 {
     toolList.append(t);
-    if (t.toolType == "Drill")
-    {
-        drillList.append(t);
-    }
+    //if (t.toolType == "Drill")
+    //{
+    //    drillList.append(t);
+    //}
 }
 
 void Setting::replaceTool(int index,Tool t)
 {
-    toolList.replace(index,t);
-    if(t.toolType=="Drill")
-    {
-        drillList.clear();
-        for(int i=0;i<toolList.size();i++)
-            if(toolList.at(i).toolType=="Drill")
-                drillList.append(toolList.at(i));
-    }
+    //toolList[index] = t;
+
+    //toolList[index] = t;
+    toolList.replace(index, t);
+    //if(t.toolType=="Drill")
+    //{
+    //    drillList.clear();
+    //    for(int i=0;i<toolList.size();i++)
+    //        if(toolList.at(i).toolType=="Drill")
+    //            drillList.append(toolList.at(i));
+    //}
 }
 
 void Setting::saveLibrary()
@@ -361,12 +364,18 @@ bool Setting::readSettings(QString const& appData)
             nlohmann::json j;
             in >> j;
 
-            if (j.contains("engravingParm"))
+            if (j.contains("engravingParm")) {
                 engravingParm = CuttingParm(j["engravingParm"]);
-            if (j.contains("drillParm"))
+            }
+            if (j.contains("drillParm")) {
                 drillParm = CuttingParm(j["drillParm"]);
-            if (j.contains("cutParm"))
+            }
+            if (j.contains("cutParm")) {
                 cutParm = CuttingParm(j["cutParm"]);
+            }
+            if (j.contains("lastDir")) {
+                m_lastDir = QString::fromStdString(j.value("lastDir", ""));
+            }
 
             return true;
         }
@@ -386,6 +395,7 @@ void Setting::saveSettings()
         j["engravingParm"] = engravingParm.toJson();
         j["drillParm"] = drillParm.toJson();
         j["cutParm"] = cutParm.toJson();
+        j["lastDir"] = m_lastDir.toStdString();
 
         std::ofstream out((m_appData + "/" + JSON_SETTINGS_FILENAME).toStdString());
         out << j.dump(4);
@@ -396,38 +406,74 @@ void Setting::saveSettings()
     }
 }
 
-std::optional<Tool> Setting::getEngravingTool() const 
+QString Setting::lastDir() const
 {
-    for (const auto& tool : toolList) {
-        if (tool.name == engravingParm.toolName) {
-            return tool;
-        }
+    return m_lastDir;
+}
+
+void Setting::setLastDir(const QString& filePath)
+{
+    m_lastDir = QFileInfo(filePath).absolutePath();
+}
+
+bool Setting::isDrillTool(Tool const& t) const
+{
+    return t.toolType == "Drill";
+}
+
+bool Setting::hasTool(QString const& toolName) const
+{
+	auto idx = std::find_if(toolList.begin(), toolList.end(), [&](const Tool& tool) {
+		return tool.name == toolName;
+		});
+    
+    if (idx != toolList.end()) {
+        return true;
     }
+    return false;
+}
+
+std::optional<Tool> Setting::getTool(QString const& toolName) const
+{
+    auto idx = std::find_if(toolList.begin(), toolList.end(), [&](const Tool& tool) {
+        return tool.name == toolName;
+        });
+
+    if (idx != toolList.end()) {
+		return *idx;
+    }
+
     return std::nullopt;
+}
+
+std::optional<Tool> Setting::getEngravingTool() const
+{
+    return getTool(engravingParm.toolName);
 }
 
 std::optional<Tool> Setting::getDrillTool() const
 {
-    for (const auto& tool : toolList) {
-        if (tool.name == drillParm.toolName) {
-            return tool;
-        }
-    }
-    return std::nullopt;
+    return getTool(drillParm.toolName);
 }
 
 std::optional<Tool> Setting::getCutTool() const
 {
-    for (const auto& tool : toolList) {
-        if (tool.name == cutParm.toolName) {
-            return tool;
+    return getTool(cutParm.toolName);
+}
+
+std::vector<Tool> Setting::getDrillList() const 
+{
+    std::vector<Tool> drillList;
+    for (auto t : toolList) {
+        if (t.toolType == "Drill")
+        {
+            drillList.push_back(t);
         }
     }
-    return std::nullopt;
+    return drillList;
 }
 
 Setting::~Setting()
 {
 	saveSettings();
 }
-

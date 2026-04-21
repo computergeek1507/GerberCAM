@@ -64,7 +64,7 @@ void Preprocess::clearEccentricHole(QList<Pad> pads)
 
 void Preprocess::padPreprocess(Gerber& g, const Setting* s)
 {
-    if (s->holeRuleList.isEmpty())
+    if (s->holeRuleList.empty())
     {
         return;
     }

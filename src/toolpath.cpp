@@ -101,8 +101,6 @@ MyRect Toolpath::trackToMyRect(Track t, qint64 offset)
             r.p4=t.pointstart+p1;
         }
     }
-
-
     return r;
 }
 
@@ -186,7 +184,7 @@ MyRect Toolpath::rectToMyRect(Pad p1,qint64 offset)
     return r1;
 }
 
-Track Toolpath::obroundToTrack(Pad o1)
+Track Toolpath::obroundToTrack(Pad const& o1)
 {
     Track t1;
     QPoint p1,p2;
@@ -228,7 +226,7 @@ Track Toolpath::obroundToTrack(Pad o1)
     return t1;
 }
 
-void Toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
+void Toolpath::arcToSegments(QPoint const& p1, QPoint const& p2,Path &path)
 {
     double angle = 0.0f;
 
@@ -277,7 +275,7 @@ void Toolpath::arcToSegments(QPoint p1, QPoint p2,Path &path)
 
 }
 
-bool Toolpath::bondingRecIntersect(BoundingRect r1, BoundingRect r2)
+bool Toolpath::bondingRecIntersect(BoundingRect const& r1, BoundingRect const& r2)
 {
     //BE CAREFUL OF the DECIMAL 0.001!!
     //Be consit:5-100000-100!!
@@ -292,7 +290,7 @@ bool Toolpath::bondingRecIntersect(BoundingRect r1, BoundingRect r2)
     return true;
 }
 
-bool Toolpath::segmentCollision(Element e1, Element e2)
+bool Toolpath::segmentCollision(Element const& e1, Element const& e2)
 {
     if(!bondingRecIntersect(e1.boundingRect,e2.boundingRect))
         return false;
@@ -309,7 +307,7 @@ bool Toolpath::segmentCollision(Element e1, Element e2)
     return true;
 }
 
-bool Toolpath::toolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath> &cTList)
+bool Toolpath::toolpathIntersects(QList<NetPath> const& nPList,QList<CollisionToolpath> &cTList)
 {
     //TODO: fix return statement
     Q_UNUSED(cTList)
@@ -349,7 +347,7 @@ bool Toolpath::toolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath>
     }
 	return false;
 }
-bool Toolpath::cToolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath> &cTList)
+bool Toolpath::cToolpathIntersects(QList<NetPath> const& nPList,QList<CollisionToolpath> &cTList)
 {
     for(int i=0;i<nPList.size();i++)
     {
@@ -445,31 +443,28 @@ Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAM
     QElapsedTimer timer;
     timer.start();
 
-    auto toolDiameter = 0LL;
-
     auto tool = s->getEngravingTool();
-    if (tool && tool->diameter > 0.0)
+    if (tool && tool->width > 0.0)
     {
-        toolDiameter = static_cast<qint64>(tool->diameter * PRECISIONSCALE);
+        toolDiameter = static_cast<qint64>(tool->calculateWidth(s->engravingParm.depth) * PRECISIONSCALE);
     }
 
-    m_logger->debug("Toolpath: toolDiameter={} ({} inches)", toolDiameter, toolDiameter / PRECISIONSCALE);
+    m_logger->debug("Toolpath: toolDiameter={} ({} mm)", toolDiameter, toolDiameter / PRECISIONSCALE);
 
     //int i,j;
-    Net tempPreprocessNetPath;
+    //Net tempPreprocessNetPath;
 
     //produce toolpath for every element
     //method:offset the shape with the radius of the bit
     //then link the breaking points
-    for (int j = 0; j < p->netList.size(); j++)
+    for (Net const& net: p->netList)
     {
         NetPath tempToolPathNetPath;
-        tempPreprocessNetPath = p->netList.at(j);
+        //tempPreprocessNetPath = net;
         Paths tempCPaths;
-        for (int i = 0; i < tempPreprocessNetPath.elements.size(); i++)
+        for (Element const& e : net.elements)
         {
             MyPath tempPath;
-            Element e = tempPreprocessNetPath.elements.at(i);
             Segment s;
             tempPath.element = e;
             if (e.elementType == 'T')//track
@@ -579,36 +574,34 @@ Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAM
         SimplifyPolygons(tempCPaths, tempToolPathNetPath.toolpath, pftNonZero);
         //if (j < 5) // log first 5 nets to avoid log spam
         {
-            m_logger->debug("net {} elements={} input paths={} output paths={}", j, tempPreprocessNetPath.elements.size(), tempCPaths.size(), tempToolPathNetPath.toolpath.size());
+            m_logger->debug("net {} elements={} input paths={} output paths={}", net.netNum, net.elements.size(), tempCPaths.size(), tempToolPathNetPath.toolpath.size());
         }
         netPathList.append(tempToolPathNetPath);
     }
     cToolpathIntersects(netPathList, tpCollisionNum);
     int sum = 0;
-    for (int i = 0; i < tpCollisionNum.size(); i++)
-    {
-        CollisionToolpath temp = tpCollisionNum.at(i);
-        sum += temp.pair.size();
-        for (int j = 0; j < temp.pair.size(); j++)
-        {
-            Net n = p->netList.at(temp.pair.at(j).p1);
-            n.collisionFlag = true;
-            p->netList.replace(temp.pair.at(j).p1, n);
 
-            n = p->netList.at(temp.pair.at(j).p2);
+    for (auto const& temp : tpCollisionNum) {
+        sum += temp.pair.size();
+        for (auto const& cp: temp.pair)
+        {
+            Net n = p->netList.at(cp.p1);
             n.collisionFlag = true;
-            p->netList.replace(temp.pair.at(j).p2, n);
+            p->netList.replace(cp.p1, n);
+            n = p->netList.at(cp.p2);
+            n.collisionFlag = true;
+            p->netList.replace(cp.p2, n);
         }
     }
     m_logger->debug("toolpath collision num={}", sum);
     collisionSum = sum;
 
     Paths tempPath;
-    for (int i = 0; i < netPathList.size(); i++)
+    for (auto const& nnetpath : netPathList)
     {
-        if (!netPathList.at(i).toolpath.empty())
+        if (!nnetpath.toolpath.empty())
         {
-            tempPath.push_back(netPathList.at(i).toolpath.at(0));
+            tempPath.push_back(nnetpath.toolpath.at(0));
         }
     }
 
@@ -616,17 +609,17 @@ Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAM
 
     m_logger->debug("totalToolpath paths after SimplifyPolygons: {} (from {} nets, {} non-empty)", totalToolpath.size(), netPathList.size(), tempPath.size());
 
-    for (int i = 0; i < netPathList.size(); i++) {
-        if (netPathList.at(i).toolpath.size() > 1)
+    for (auto const& nnetpath : netPathList) {
+        if (nnetpath.toolpath.size() > 1)
         {
-            for (size_t j = 1; j < netPathList.at(i).toolpath.size(); j++)
+            for (Path const& tp: nnetpath.toolpath)
             {
-                totalToolpath.push_back(netPathList.at(i).toolpath.at(j));
+                totalToolpath.push_back(tp);
             }
         }
     }
     m_logger->debug("totalToolpath final size: {}", totalToolpath.size());
-    time=timer.elapsed();
+    time = timer.elapsed();
 }
 
 Toolpath::~Toolpath()

@@ -96,7 +96,7 @@ MainWindow::MainWindow(QWidget *parent) :
     /*
      * Set up the coordinateLabel at the bottom.
      * */
-    coordinateLabel=new QLabel(this);
+    coordinateLabel= new QLabel(this);
     //coordinateLabel->setAlignment(Qt::AlignLeft);
     ui->statusBar->addPermanentWidget(coordinateLabel);
 
@@ -264,10 +264,10 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
 
 void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color)
 {
-    Track tempTrack;
+    //Track tempTrack;
     for(int i=0;i<gerberfile->trackNum;i++)
     {
-        tempTrack=gerberfile->tracksList.at(i);
+        Track tempTrack = gerberfile->tracksList.at(i);
         QGraphicsItem *item = new DrawPCB(tempTrack,'T', AT_TOP,color);
         item->setPos(tempTrack.pointstart);
         scene->addItem(item);
@@ -301,14 +301,17 @@ void MainWindow::showMessage(Gerber *g,Preprocess &p)
     ui->messageBrowser->append("   Net number         =" + QString::number(p.netList.size()));
 }
 
+
+
 void MainWindow::on_actionOpen_triggered()
 {
-    auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), "",
+    auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), settingWindow->settings->lastDir(),
         tr("Top Layer (*.gtl);;Bottom Layer (*.gbl);;Gerber File(*.gbr *.gbl *gtl);;All types (*.*)"));
     if (fileName.isEmpty())
     {
         return;
     }
+    settingWindow->settings->setLastDir(fileName);
     gerber1 = std::make_unique<Gerber>(fileName);
     gerberFileName = QFileInfo(fileName).fileName();
     if(!gerber1->readingFlag)
@@ -333,7 +336,7 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
 
-    preprocessfile1 = std::make_unique<Preprocess>(*gerber1,settingWindow->settings);
+    preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
 
     ui->messageBrowser->clear();
     showMessage(gerber1.get(),*preprocessfile1);
@@ -356,12 +359,13 @@ void MainWindow::on_actionAdd_layer_triggered()
 {
     if(layerNum==1)//no any layer2,draw a new layer2
     {
-        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
         {
             return;
         }
+        settingWindow->settings->setLastDir(fileName);
         gerberFileName = QFileInfo(fileName).fileName();
         gerber2 = std::make_unique<Gerber>(fileName);
         if(!gerber2->readingFlag)
@@ -390,12 +394,13 @@ void MainWindow::on_actionAdd_layer_triggered()
     }
     else if(currentLayer==2)//add to layer2
     {
-        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
         {
             return;
         }
+        settingWindow->settings->setLastDir(fileName);
 
         gerber2 = std::make_unique<Gerber>(fileName);
         if(!gerber2->readingFlag)
@@ -419,12 +424,13 @@ void MainWindow::on_actionAdd_layer_triggered()
     }
     else if(currentLayer==1)//add to layer1
     {
-        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
                       tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
         {
             return;
         }
+        settingWindow->settings->setLastDir(fileName);
 
         gerber1 = std::make_unique<Gerber>(fileName);
         if(!gerber1->readingFlag)
@@ -434,7 +440,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
-        preprocessfile1 = std::make_unique<Preprocess>(*gerber1,settingWindow->settings);
+        preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
 
         showMessage(gerber1.get(),*preprocessfile1);
 
@@ -531,34 +537,37 @@ void MainWindow::on_actionToolpath_generat_triggered()
 void MainWindow::on_actionExport_GCode_triggered()
 {
     // Pick which toolpath to export (layer currently shown)
-    Toolpath *tp = nullptr;
-    if(layerNum==2)
-        tp = (currentLayer==1) ? toolpath1.get() : toolpath2.get();
+    Toolpath* tp = nullptr;
+    if (layerNum == 2)
+        tp = (currentLayer == 1) ? toolpath1.get() : toolpath2.get();
     else
         tp = toolpath1.get();
 
-    if(!tp || tp->totalToolpath.empty())
+    if (!tp || tp->totalToolpath.empty())
     {
         QMessageBox::warning(this, "Export G-Code",
-                             "No toolpath available. Run Toolpath Generate first.");
+            "No toolpath available. Run Toolpath Generate first.");
         return;
     }
 
     QString defaultName = gerberFileName;
-    if(!defaultName.isEmpty())
+    if (!defaultName.isEmpty())
     {
         // Replace gerber extension with .nc
         int dot = defaultName.lastIndexOf('.');
-        if(dot >= 0) defaultName.truncate(dot);
+        if (dot >= 0) defaultName.truncate(dot);
         defaultName += ".nc";
     }
 
     QString filePath = QFileDialog::getSaveFileName(
-        this, "Export G-Code", defaultName,
+        this, "Export G-Code", settingWindow->settings->lastDir() + "/" + defaultName,
         "G-Code files (*.nc *.gcode *.tap);;All files (*)");
 
-    if(filePath.isEmpty())
+    if (filePath.isEmpty())
+    {
         return;
+    }
+    settingWindow->settings->setLastDir(filePath);
 
     QString errorMsg;
     if(GcodeExport::write(*tp, *settingWindow->settings, filePath, errorMsg, boardFlipped))
@@ -663,11 +672,14 @@ void MainWindow::on_actionExport_Drills_triggered()
     }
 
     QString filePath = QFileDialog::getSaveFileName(
-        this, "Export Drill G-Code", defaultName,
+        this, "Export Drill G-Code", settingWindow->settings->lastDir() + "/" + defaultName,
         "G-Code files (*.nc *.gcode *.tap);;All files (*)");
 
     if(filePath.isEmpty())
+    {
         return;
+    }
+    settingWindow->settings->setLastDir(filePath);
 
     // Use layer 1 — clearEccentricHole already removed non-through-holes
     QString errorMsg;
@@ -718,10 +730,11 @@ void  MainWindow::on_actionView_Log_triggered()
 
 void MainWindow::on_actionOpen_Outline_triggered()
 {
-    auto fileName = QFileDialog::getOpenFileName(this, tr("Open Edge Cut / Outline"), "",
+    auto fileName = QFileDialog::getOpenFileName(this, tr("Open Edge Cut / Outline"), settingWindow->settings->lastDir(),
         tr("Edge Cuts (*.gm1 *.gko *.gm);;Gerber Files (*.gbr *.ger);;All types (*.*)"));
     if (fileName.isEmpty())
         return;
+    settingWindow->settings->setLastDir(fileName);
 
     gerberOutline = std::make_unique<Gerber>(fileName);
     if (!gerberOutline->readingFlag)
@@ -786,27 +799,30 @@ void MainWindow::on_actionOpen_Outline_triggered()
 
 void MainWindow::on_actionExport_Outline_triggered()
 {
-    if(!gerberOutline)
+    if (!gerberOutline)
     {
         QMessageBox::warning(this, "Export Outline G-Code",
-                             "No outline loaded. Open an edge cut file first.");
+            "No outline loaded. Open an edge cut file first.");
         return;
     }
 
     QString defaultName = gerberFileName;
-    if(!defaultName.isEmpty())
+    if (!defaultName.isEmpty())
     {
         int dot = defaultName.lastIndexOf('.');
-        if(dot >= 0) defaultName.truncate(dot);
+        if (dot >= 0) defaultName.truncate(dot);
         defaultName += "_outline.nc";
     }
 
     QString filePath = QFileDialog::getSaveFileName(
-        this, "Export Outline G-Code", defaultName,
+        this, "Export Outline G-Code", settingWindow->settings->lastDir() + "/" + defaultName,
         "G-Code files (*.nc *.gcode *.tap);;All files (*)");
 
-    if(filePath.isEmpty())
+    if (filePath.isEmpty())
+    {
         return;
+    }
+    settingWindow->settings->setLastDir(filePath);
 
     QString errorMsg;
     if(GcodeExport::writeOutline(*gerberOutline, *settingWindow->settings,

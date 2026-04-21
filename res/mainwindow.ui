@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>gerberCAM v0.61</string>
+   <string>gerberCAM</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -103,11 +103,13 @@
     <addaction name="actionOpen_Outline"/>
     <addaction name="actionAdd_layer"/>
     <addaction name="separator"/>
+    <addaction name="actionSetting"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>Edit</string>
+     <string>Tools</string>
     </property>
     <addaction name="actionFlip_Board"/>
     <addaction name="actionToolpath_generat"/>
@@ -122,12 +124,6 @@
     <addaction name="actionLayer1"/>
     <addaction name="actionLayer2"/>
    </widget>
-   <widget class="QMenu" name="menuParameter">
-    <property name="title">
-     <string>Parameter</string>
-    </property>
-    <addaction name="actionSetting"/>
-   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
@@ -141,13 +137,12 @@
     </property>
     <addaction name="actionExport_GCode"/>
     <addaction name="actionExport_Drills"/>
-     <addaction name="actionExport_Outline"/>
+    <addaction name="actionExport_Outline"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuMachine"/>
-   <addaction name="menuParameter"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
