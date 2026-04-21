@@ -35,9 +35,6 @@ SOFTWARE.
 
 #include "clipper.hpp"
 
-
-
-
 using namespace ClipperLib;
 
 #include "spdlog/spdlog.h"
@@ -97,17 +94,17 @@ public:
 
     QString LayerName;
     QRect borderRect;
-    QRect getBoundingRect(Track t);
-    QRect getBoundingRect(Pad p);
+    //QRect getBoundingRect(Track t);
+    //QRect getBoundingRect(Pad p);
 
     /*
      * Be consistent,use either of these settings!
      * 5-100000-100
      * 6-1000000-1000
      * */
-    int precision=6;
-    int precisionScale=1000000;
-    int precisionError=1000;
+    //int precision=6;
+    //int precisionScale=1000000;
+    //int precisionError=1000;
 
     //modiy these varaibles at the same time:
     //toolpath.h--toolDiameter

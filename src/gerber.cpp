@@ -24,6 +24,8 @@ SOFTWARE.
 
 #include "config.h"
 
+#include "scale.h"
+
 /*
 ● support        ○ not support
 
@@ -155,9 +157,9 @@ Gerber::Gerber(QString &fileName): m_logger(spdlog::get(PROJECT_NAME))
         {
             qDebug() << "gerber data transform success";
             Track temptrack;
-            qDebug()<<"blockNum="+QString::number(blockNum);
-            qDebug()<<"tackNum="+QString::number(trackNum);
-            qDebug()<<"padNum="+QString::number(padNum);
+            qDebug() << "blockNum=" + QString::number(blockNum);
+            qDebug() << "tackNum=" + QString::number(trackNum);
+            qDebug() << "padNum=" + QString::number(padNum);
             readingFlag=true;
             return;
             /*
@@ -735,7 +737,7 @@ qint64 Gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 d
     // For 'L' (Leading zeros omitted): missing digits are on the left (high-order),
     // so no multiplication is needed — the number is already right-aligned.
     i=0;
-    while(decimalDigit+i<precision)
+    while(decimalDigit+i< PRECISION)
     {
         number*=10;
         i++;
@@ -879,7 +881,7 @@ bool Gerber::transform_data()
             if(polygonFillMode==true)
                 newTrack.width=500;
             else
-                newTrack.width=ADHash.value(currentParameter+"0")*precisionScale;
+                newTrack.width=ADHash.value(currentParameter + "0") * PRECISIONSCALE;
 
             newTrack.boundingRect=boundingRect(newTrack);
             tracksList.append(newTrack);
@@ -899,29 +901,38 @@ bool Gerber::transform_data()
             lastX=currentX;
             lastY=currentY;
         }
-        else if(currentMode==3)//draw pads
+        else if (currentMode == 3)//draw pads
         {
-            if(line.contains("X"))
-                currentX=convertNumber(line,"X",XInteger,XDecimal);
-            if(line.contains("Y"))
-                currentY=convertNumber(line,"Y",YInteger,YDecimal);
+            if (line.contains("X"))
+                currentX = convertNumber(line, "X", XInteger, XDecimal);
+            if (line.contains("Y"))
+                currentY = convertNumber(line, "Y", YInteger, YDecimal);
 
             Pad newPad;
             newPad.point.setX(currentX);
             newPad.point.setY(currentY);
-            newPad.shape=currentShape;
-            newPad.hole=0;
+            newPad.shape = currentShape;
+            newPad.hole = 0;
 
-            newPad.parameterNum=ADHash.value(currentParameter+" Num");
-            newPad.angle=ADHash.value(currentParameter+" Angle");
-            for(int j=0;j<newPad.parameterNum;j++)
-                newPad.parameter[j]=ADHash.value(currentParameter+QString::number(j))*precisionScale;
+            newPad.parameterNum = ADHash.value(currentParameter + " Num");
+            newPad.angle = ADHash.value(currentParameter + " Angle");
+            for (int j = 0; j < newPad.parameterNum; j++)
+            {
+                newPad.parameter[j] = ADHash.value(currentParameter + QString::number(j)) * PRECISIONSCALE;
+            }
 
-            newPad.ADNum=currentParameter;
-            newPad.boundingRect=boundingRect(newPad);
+            // Read hole diameter directly from aperture definition if present.
+            // Gerber spec: C has optional 2nd param (hole), R/O have optional 3rd param (hole).
+            if (newPad.shape == 'C' && newPad.parameterNum >= 2)
+                newPad.hole = newPad.parameter[1];
+            else if ((newPad.shape == 'R' || newPad.shape == 'O') && newPad.parameterNum >= 3)
+                newPad.hole = newPad.parameter[2];
+
+            newPad.ADNum = currentParameter;
+            newPad.boundingRect = boundingRect(newPad);
             padsList.append(newPad);
-            lastX=currentX;
-            lastY=currentY;
+            lastX = currentX;
+            lastY = currentY;
             padNum++;
 
             find_border(newPad.boundingRect);
@@ -935,12 +946,10 @@ bool Gerber::transform_data()
     borderRect.setWidth(maxX-minX);
     borderRect.setHeight(maxY-minY);
 
-
     blockCount();
 
     return true;
 }
-
 
 Gerber::~Gerber()
 {

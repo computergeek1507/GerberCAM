@@ -24,6 +24,7 @@ SOFTWARE.
 #define TOOLPATH_H
 #include "gerber.h"
 #include "preprocess.h"
+#include "setting.h"
 #include<QPoint>
 #include<QtMath>
 #include <QElapsedTimer>
@@ -63,7 +64,7 @@ class Toolpath//:public preprocess
 
 public:
 
-    Toolpath(Preprocess &p);
+    Toolpath(Preprocess &p, Setting &s);
     ~Toolpath();
 
     QList<NetPath> netPathList;

@@ -163,7 +163,7 @@ QDataStream &operator >>(QDataStream &in, HoleRule &holeRule);
 class Setting
 {
 public:
-    Setting();
+    Setting(QString const& appData);
     ~Setting();
     Tool engravingTool;
     Tool hatchingTool;
@@ -180,10 +180,12 @@ public:
     void replaceTool(int index, Tool t);
 protected:
 
-    bool readHoleRule();
-    bool readTool();
+    bool readHoleRule(QString const& appData);
+    bool readTool(QString const& appData);
 
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
+
+    QString m_appData;
 };
 
 

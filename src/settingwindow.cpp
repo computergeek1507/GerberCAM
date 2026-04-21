@@ -24,14 +24,14 @@ SOFTWARE.
 #include "settingwindow.h"
 #include "ui_settingwindow.h"
 
-Settingwindow::Settingwindow(QWidget *parent) :
+Settingwindow::Settingwindow(QString const& appData, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::settingwindow)
 {
     Q_INIT_RESOURCE(resources);
     ui->setupUi(this);
     this->setWindowTitle("Setting");
-    settings=new Setting();
+    settings=new Setting(appData);
 
     //Tool Library setup
     tlModel =new TreeModel(*settings);

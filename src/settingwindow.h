@@ -37,7 +37,7 @@ class Settingwindow : public QDialog
     Q_OBJECT
 
 public:
-    explicit Settingwindow(QWidget *parent = 0);
+    explicit Settingwindow(QString const& appData, QWidget *parent = 0);
     ~Settingwindow();
 
     Setting *settings;

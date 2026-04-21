@@ -142,6 +142,32 @@ DrawPCB::DrawPCB(Paths component, int layerOrder, QColor c)
 
     color=c;
 
+    // Compute bounding rect from all path points in item-local coordinates.
+    // paint() draws each point relative to tempCPath[0][0], which is also
+    // where the item is positioned in the scene, so subtract that origin.
+    if(!component.empty() && !component.at(0).empty())
+    {
+        cInt originX = component.at(0).at(0).X;
+        cInt originY = component.at(0).at(0).Y;
+        cInt minX = originX, maxX = originX;
+        cInt minY = originY, maxY = originY;
+        for(const auto& path : component)
+        {
+            for(const auto& pt : path)
+            {
+                if(pt.X < minX) minX = pt.X;
+                if(pt.X > maxX) maxX = pt.X;
+                if(pt.Y < minY) minY = pt.Y;
+                if(pt.Y > maxY) maxY = pt.Y;
+            }
+        }
+        const int penHalf = 4500 / 2;
+        area.setLeft(static_cast<int>(minX - originX) - penHalf);
+        area.setRight(static_cast<int>(maxX - originX) + penHalf);
+        area.setTop(static_cast<int>(minY - originY) - penHalf);
+        area.setBottom(static_cast<int>(maxY - originY) + penHalf);
+    }
+
     //setFlags(ItemIsSelectable);
     //setAcceptHoverEvents(true);
 }
@@ -419,8 +445,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     }
     else if(componentType=='l')
     {
-        //pen.setWidth(15748);
-        pen.setWidth(4500);
+        pen.setWidth(0); // cosmetic pen: always 1px regardless of zoom level
         painter->setPen(pen);
 
         p1.setX(0);

@@ -28,6 +28,8 @@ SOFTWARE.
 #include <QFileDialog>
 using namespace ClipperLib;
 
+#include "scale.h"
+
 #include "spdlog/sinks/qt_sinks.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 
@@ -46,8 +48,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     QCoreApplication::setApplicationName(PROJECT_NAME);
     QCoreApplication::setApplicationVersion(PROJECT_VER);
-    ui->setupUi(this);
-
     auto const log_name{ "log.txt" };
 
     m_appdir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -71,6 +71,8 @@ MainWindow::MainWindow(QWidget *parent) :
         QMessageBox::warning(this, "Logger Failed", "Logger Failed To Start.");
     }
 
+	settingWindow = std::make_unique<Settingwindow>(m_appdir, this);
+    ui->setupUi(this);
     /*
      * Initialize the graphicsview to show the gerber file.
      * A matrix is used to auto scale the file and show it properly.
@@ -187,13 +189,13 @@ void MainWindow::drawNet(QGraphicsScene *scene,Preprocess &t,QColor color,QColor
             c=color;
 
             double x1,y1;
-            if(t.elementList.at(j).elementType=='P'&&
-                    t.elementList.at(j).pad.hole!=0)
+            if(t.netList.at(i).elements.at(j).elementType=='P'&&
+                    t.netList.at(i).elements.at(j).pad.hole!=0)
             {
-                x1=t.elementList.at(j).pad.point.x();
-                y1=t.elementList.at(j).pad.point.y();
+                x1=t.netList.at(i).elements.at(j).pad.point.x();
+                y1=t.netList.at(i).elements.at(j).pad.point.y();
 
-                QGraphicsItem *item = new DrawPCB(t.elementList.at(j).pad,'h', AT_TOP,c);
+                QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).pad,'h', AT_TOP,c);
                 item->setPos(x1,y1);
                 scene->addItem(item);
             }
@@ -243,6 +245,12 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
     }
     */
 
+    qDebug()<<"drawToolpath: totalToolpath paths="<<t.totalToolpath.size();
+    if(t.totalToolpath.empty() || t.totalToolpath.at(0).empty())
+    {
+        qDebug()<<"drawToolpath: totalToolpath empty, nothing to draw";
+        return;
+    }
     QColor color(255,170,32);
     //color.setGreen(150);
     Paths p=t.totalToolpath;
@@ -252,6 +260,7 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
     point.setY(p.at(0).at(0).Y);
     item->setPos(point);
     scene->addItem(item);
+    qDebug()<<"drawToolpath: item added at"<<point<<"scene items="<<scene->items().size();
 
 }
 
@@ -332,7 +341,7 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
 
-    preprocessfile1=new Preprocess(*gerber1,settingWindow.settings);
+    preprocessfile1=new Preprocess(*gerber1,settingWindow->settings);
 
     ui->messageBrowser->clear();
     showMessage(gerber1.get(),*preprocessfile1);
@@ -372,7 +381,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
             return;
         }
-        preprocessfile2=new Preprocess(*gerber2,settingWindow.settings);
+        preprocessfile2=new Preprocess(*gerber2,settingWindow->settings);
 
 
         showMessage(gerber2.get(), *preprocessfile2);
@@ -406,7 +415,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
             return;
         }
-        preprocessfile2=new Preprocess(*gerber2,settingWindow.settings);
+        preprocessfile2=new Preprocess(*gerber2,settingWindow->settings);
 
         showMessage(gerber2.get(),*preprocessfile2);
 
@@ -435,7 +444,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
-        preprocessfile1=new Preprocess(*gerber1,settingWindow.settings);
+        preprocessfile1=new Preprocess(*gerber1,settingWindow->settings);
 
         showMessage(gerber1.get(),*preprocessfile1);
 
@@ -477,11 +486,11 @@ void MainWindow::on_actionToolpath_generat_triggered()
 {
     if(recalculateFlag==true)
     {
-        toolpath1=new Toolpath(*preprocessfile1);
+        toolpath1=new Toolpath(*preprocessfile1, *settingWindow->settings);
 
         if(layerNum==2)
         {
-            toolpath2=new Toolpath(*preprocessfile2);
+            toolpath2=new Toolpath(*preprocessfile2, *settingWindow->settings);
             scenePath12=new QGraphicsScene(this);
             drawNet(scenePath12,*preprocessfile2,*colorBlue2,*Error2);
             drawNet(scenePath12,*preprocessfile1,*colorRed1,*Error1);
@@ -582,7 +591,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
     QPoint p1 = QCursor::pos();
     p1=ui->graphicsView->mapFromGlobal(QCursor::pos());
     QPointF p2=ui->graphicsView->mapToScene(p1);
-    QString s="("+QString::number(p2.x()/1000000.0,'f',3)+","+QString::number(p2.y()/1000000.0,'f',3)+") /Inch  ";
+    QString s="("+QString::number(p2.x()/ PRECISIONSCALE,'f',3)+","+QString::number(p2.y()/ PRECISIONSCALE,'f',3)+") /Inch  ";
     coordinateLabel->setText(s);
 }
 
@@ -591,8 +600,8 @@ void MainWindow::timerEvent(QTimerEvent *event)
 void MainWindow::on_actionSetting_triggered()
 {
     //settingwindow s;
-    settingWindow.setModal(true);
-    settingWindow.exec();
+    settingWindow->setModal(true);
+    settingWindow->exec();
 }
 
 void MainWindow::on_actionAbout_GerberCAM_triggered()

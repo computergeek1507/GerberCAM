@@ -132,7 +132,7 @@ private:
 
     bool recalculateFlag=false;
 
-    Settingwindow settingWindow;
+    std::unique_ptr<Settingwindow> settingWindow{ nullptr };
 
     QString alertHtml = "<font color=\"red\">";
     QString endHtml = "</font>";

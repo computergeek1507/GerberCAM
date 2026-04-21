@@ -25,6 +25,8 @@ SOFTWARE.
 #include "Toolpath.h"
 #include <math.h>
 
+#include "scale.h"
+
 MyRect Toolpath::trackToMyRect(Track t, qint64 offset)
 {
     MyRect r;
@@ -281,10 +283,10 @@ bool Toolpath::bondingRecIntersect(BoundingRect r1, BoundingRect r2)
     //int precision=5;
     //int precisionScale=100000;
     //int precisionError=100;
-    if(r1.right<r2.left-1000) return false;
-    if(r1.top<r2.bottom-1000) return false;
-    if(r1.bottom-r2.top>1000) return false;
-    if(r1.left-r2.right>1000) return false;
+    if(r1.right<r2.left- PRECISIONERROR) return false;
+    if(r1.top<r2.bottom- PRECISIONERROR) return false;
+    if(r1.bottom-r2.top> PRECISIONERROR) return false;
+    if(r1.left-r2.right> PRECISIONERROR) return false;
     return true;
 }
 
@@ -350,12 +352,14 @@ bool Toolpath::cToolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath
     for(int i=0;i<nPList.size();i++)
     {
         NetPath tNetPath=nPList.at(i);
+        if(tNetPath.toolpath.empty()) continue;
         Path tPath=tNetPath.toolpath.at(0);
         CollisionToolpath tcTList;
         tcTList.list.append(i);
         for(int j=i+1;j<nPList.size();j++)
         {
             NetPath tNetPath1=nPList.at(j);
+            if(tNetPath1.toolpath.empty()) continue;
             Path tPath1=tNetPath1.toolpath.at(0);
             Paths tPaths;
             Clipper c;
@@ -436,10 +440,14 @@ bool Toolpath::cToolpathIntersects(QList<NetPath> nPList,QList<CollisionToolpath
     return cTList.isEmpty() == false;
 }
 
-Toolpath::Toolpath(Preprocess &p)
+Toolpath::Toolpath(Preprocess &p, Setting &s)
 {
     QElapsedTimer timer;
     timer.start();
+
+    if(s.engravingTool.diameter > 0.0)
+        toolDiameter = static_cast<qint64>(s.engravingTool.diameter * PRECISIONSCALE);
+    qDebug()<<"Toolpath: toolDiameter="<<toolDiameter<<"("<<toolDiameter/PRECISIONSCALE<<"inches )";
 
     int i,j;
     Net tempPreprocessNetPath;
@@ -563,6 +571,10 @@ Toolpath::Toolpath(Preprocess &p)
 
         }
         SimplifyPolygons(tempCPaths,tempToolPathNetPath.toolpath,pftNonZero);
+        if(j<5) // log first 5 nets to avoid log spam
+            qDebug()<<"net"<<j<<"elements="<<tempPreprocessNetPath.elements.size()
+                    <<"input paths="<<tempCPaths.size()
+                    <<"output paths="<<tempToolPathNetPath.toolpath.size();
         netPathList.append(tempToolPathNetPath);
     }
     cToolpathIntersects(netPathList,tpCollisionNum);
@@ -587,9 +599,13 @@ Toolpath::Toolpath(Preprocess &p)
 
     Paths tempPath;
     for(i=0;i<netPathList.size();i++)
-        tempPath.push_back(netPathList.at(i).toolpath.at(0));
+        if(!netPathList.at(i).toolpath.empty())
+            tempPath.push_back(netPathList.at(i).toolpath.at(0));
 
     SimplifyPolygons(tempPath,totalToolpath,pftNonZero);
+
+    qDebug()<<"totalToolpath paths after SimplifyPolygons:"<<totalToolpath.size()
+            <<"(from"<<netPathList.size()<<"nets,"<<tempPath.size()<<"non-empty)";
 
     for(i=0;i<netPathList.size();i++)
         if(netPathList.at(i).toolpath.size()>1)
@@ -598,6 +614,7 @@ Toolpath::Toolpath(Preprocess &p)
             totalToolpath.push_back(netPathList.at(i).toolpath.at(j));
         }
 
+    qDebug()<<"totalToolpath final size:"<<totalToolpath.size();
     time=timer.elapsed();
 
 }

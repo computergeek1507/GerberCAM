@@ -22,15 +22,14 @@ SOFTWARE.
 
 #include "preprocess.h"
 
+#include "scale.h"
+
 Preprocess::Preprocess(Gerber &g,const Setting *s)
 {
-
     padNum=g.padNum;
     padPreprocess(g,s);
     checkSameNet(g);
     qDebug()<<"netList num="+QString::number(netList.size());
-
-
 }
 
 void Preprocess::clearEccentricHole(QList<Pad> pads)
@@ -58,19 +57,20 @@ void Preprocess::clearEccentricHole(QList<Pad> pads)
             }
         }
     }
-
 }
 
 void Preprocess::padPreprocess(Gerber &g,const Setting *s)
 {
+    if (s->holeRuleList.isEmpty())
+        return;
     HoleRule rule=s->holeRuleList.at(s->selectedRule);
     //handle the default condition first
     for(int i=0;i<rule.ruleList.size();i++)
     {
         HoleCondition c=rule.ruleList.at(i);
-        c.drill.width=c.drill.width*1000000;
-        c.value=c.value*1000000;
-        c.value1=c.value1*1000000;
+        c.drill.width=c.drill.width* PRECISIONSCALE;
+        c.value=c.value* PRECISIONSCALE;
+        c.value1=c.value1* PRECISIONSCALE;
         if(c.condition=="default")
         {
             for(int j=0;j<g.padsList.size();j++)
@@ -85,9 +85,9 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
     for(int i=0;i<rule.ruleList.size();i++)
     {
         HoleCondition c=rule.ruleList.at(i);
-        c.drill.width=c.drill.width*1000000;
-        c.value=c.value*1000000;
-        c.value1=c.value1*1000000;
+        c.drill.width=c.drill.width* PRECISIONSCALE;
+        c.value=c.value* PRECISIONSCALE;
+        c.value1=c.value1* PRECISIONSCALE;
         if(c.condition=="==x")
         {
             for(int j=0;j<g.padsList.size();j++)
@@ -135,7 +135,7 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
                 else if(p.shape=='R')
                 {
                     qint64 temp=p.parameter[0]>p.parameter[1]?p.parameter[0]:p.parameter[1];
-                    if(p.parameter[0]>=temp)
+                    if(temp>=c.value)
                     {
                         p.hole=c.drill.width;
                         g.padsList.replace(j,p);
@@ -144,7 +144,7 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
                 else if(p.shape=='O')
                 {
                     qint64 temp=p.parameter[0]>p.parameter[1]?p.parameter[0]:p.parameter[1];
-                    if(p.parameter[0]>=temp)
+                    if(temp>=c.value)
                     {
                         p.hole=c.drill.width;
                         g.padsList.replace(j,p);
@@ -168,7 +168,7 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
                 else if(p.shape=='R')
                 {
                     qint64 temp=p.parameter[0]<p.parameter[1]?p.parameter[0]:p.parameter[1];
-                    if(p.parameter[0]<=temp)
+                    if(temp<=c.value)
                     {
                         p.hole=c.drill.width;
                         g.padsList.replace(j,p);
@@ -177,7 +177,7 @@ void Preprocess::padPreprocess(Gerber &g,const Setting *s)
                 else if(p.shape=='O')
                 {
                     qint64 temp=p.parameter[0]<p.parameter[1]?p.parameter[0]:p.parameter[1];
-                    if(p.parameter[0]<=temp)
+                    if(temp<=c.value)
                     {
                         p.hole=c.drill.width;
                         g.padsList.replace(j,p);
@@ -766,10 +766,10 @@ bool Preprocess::bondingRecIntersect(BoundingRect r1, BoundingRect r2)
     //int precision=5;
     //int precisionScale=100000;
     //int precisionError=100;
-    if(r1.right<r2.left-1000) return false;
-    if(r1.top<r2.bottom-1000) return false;
-    if(r1.bottom-r2.top>1000) return false;
-    if(r1.left-r2.right>1000) return false;
+    if(r1.right<r2.left- PRECISIONERROR) return false;
+    if(r1.top<r2.bottom- PRECISIONERROR) return false;
+    if(r1.bottom-r2.top> PRECISIONERROR) return false;
+    if(r1.left-r2.right> PRECISIONERROR) return false;
     return true;
 }
 

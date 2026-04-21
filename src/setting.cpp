@@ -84,13 +84,20 @@ inline QDataStream &operator >>(QDataStream &in,HoleRule &holeRule)
     return in;
 }
 
-bool Setting::readTool()
+bool Setting::readTool(QString const& appData)
 {
-    if (QFile::exists(JSON_TOOL_LIBRARY_FILENAME))
+    auto path = appData + "/" + JSON_TOOL_LIBRARY_FILENAME;
+
+    if (!QFile::exists(path))
+    {
+        path = JSON_TOOL_LIBRARY_FILENAME;
+    }
+
+    if (QFile::exists(path))
     {
         try 
         {
-			std::ifstream in(JSON_TOOL_LIBRARY_FILENAME);
+			std::ifstream in(path.toStdString());
 			nlohmann::json j;
 			in >> j;
 			toolList.clear();
@@ -153,13 +160,19 @@ bool Setting::readTool()
     return false;
 }
 
-bool Setting::readHoleRule()
+bool Setting::readHoleRule(QString const& appData)
 {
-    if (QFile::exists(JSON_HOLE_RULE_FILENAME))
+    auto path = appData + "/" + JSON_HOLE_RULE_FILENAME;
+
+    if (!QFile::exists(path))
+    {
+        path = JSON_HOLE_RULE_FILENAME;
+    }
+    if (QFile::exists(path))
     {
         try
         {
-            std::ifstream in(JSON_HOLE_RULE_FILENAME);
+            std::ifstream in(path.toStdString());
             nlohmann::json j;
             in >> j;
 
@@ -213,16 +226,19 @@ bool Setting::readHoleRule()
     return false;
 }
 
-Setting::Setting() : m_logger(spdlog::get(PROJECT_NAME))
+Setting::Setting(QString const& appData) : m_logger(spdlog::get(PROJECT_NAME))
 {
-    readTool();
-    readHoleRule();
+	m_appData = appData;
+    readTool(appData);
+    readHoleRule(appData);
 }
 void Setting::appendTool(Tool t)
 {
     toolList.append(t);
-    if(t.toolType=="Drill")
+    if (t.toolType == "Drill")
+    {
         drillList.append(t);
+    }
 }
 
 void Setting::replaceTool(int index,Tool t)
@@ -246,7 +262,7 @@ void Setting::saveLibrary()
 		for (const auto& tool : toolList) {
 			j["toolList"].push_back(tool.toJson());
 		}
-        std::ofstream out(JSON_TOOL_LIBRARY_FILENAME);
+        std::ofstream out((m_appData + "/" + JSON_TOOL_LIBRARY_FILENAME).toStdString());
         out << j.dump(4); // Pretty print with 4 spaces indentation
     }
     catch (std::exception& ex)
@@ -289,7 +305,7 @@ void Setting::saveLibrary()
     file.close();
     */
     toolList.clear();
-    readTool();
+    readTool(m_appData);
 }
 
 void Setting::saveHoleRule()
@@ -301,7 +317,7 @@ void Setting::saveHoleRule()
 		for (const auto& rule : holeRuleList) {
 			j["holeRuleList"].push_back(rule.toJson());
 		}
-		std::ofstream out(JSON_HOLE_RULE_FILENAME);
+        std::ofstream out((m_appData + "/" + JSON_HOLE_RULE_FILENAME).toStdString());
 		out << j.dump(4); // Pretty print with 4 spaces indentation
     }
     catch(std::exception &ex)
