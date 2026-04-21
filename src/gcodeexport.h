@@ -11,12 +11,14 @@ public:
     // Write isolation-routing G-code from tp to filePath.
     // Returns true on success, sets errorMsg on failure.
     static bool write(const Toolpath &tp, const Setting &s,
-                      const QString &filePath, QString &errorMsg);
+                      const QString &filePath, QString &errorMsg,
+                      bool flipX = false);
 
     // Write drill G-code from the holes in pp to filePath.
     // Returns true on success, sets errorMsg on failure.
     static bool writeDrills(const Preprocess &pp, const Setting &s,
-                            const QString &filePath, QString &errorMsg);
+                            const QString &filePath, QString &errorMsg,
+                            bool flipX = false);
 
 private:
     // Safe retract height above the PCB surface (in working units).

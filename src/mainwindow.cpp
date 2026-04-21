@@ -570,7 +570,7 @@ void MainWindow::on_actionExport_GCode_triggered()
         return;
 
     QString errorMsg;
-    if(GcodeExport::write(*tp, *settingWindow->settings, filePath, errorMsg))
+    if(GcodeExport::write(*tp, *settingWindow->settings, filePath, errorMsg, boardFlipped))
     {
         ui->messageBrowser->append("G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Paths: " +
@@ -646,6 +646,16 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
 
 
+void MainWindow::on_actionFlip_Board_triggered()
+{
+    boardFlipped = ui->actionFlip_Board->isChecked();
+    // Multiply the current view transform by scale(-1, 1) to toggle horizontal mirror.
+    // Calling this twice returns to the original orientation.
+    ui->graphicsView->scale(-1, 1);
+    ui->messageBrowser->append(boardFlipped ? "Board flipped (X mirrored)"
+                                            : "Board unflipped");
+}
+
 void MainWindow::on_actionExport_Drills_triggered()
 {
     if(!preprocessfile1)
@@ -673,7 +683,7 @@ void MainWindow::on_actionExport_Drills_triggered()
     // Use layer 1 — clearEccentricHole already removed non-through-holes
     QString errorMsg;
     if(GcodeExport::writeDrills(*preprocessfile1, *settingWindow->settings,
-                                filePath, errorMsg))
+                                filePath, errorMsg, boardFlipped))
     {
         // Count holes for the status message
         int total = 0;

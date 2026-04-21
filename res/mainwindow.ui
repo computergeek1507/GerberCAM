@@ -127,6 +127,7 @@
     <addaction name="actionHole_Identify"/>
     <addaction name="actionExport_GCode"/>
     <addaction name="actionExport_Drills"/>
+    <addaction name="actionFlip_Board"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -233,6 +234,14 @@
    </property>
    <property name="text">
     <string>Export Drill G-Code...</string>
+   </property>
+  </action>
+  <action name="actionFlip_Board">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Flip Board (Mirror X)</string>
    </property>
   </action>
  </widget>

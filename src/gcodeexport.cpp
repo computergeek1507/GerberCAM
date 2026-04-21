@@ -7,7 +7,8 @@
 #include "scale.h"
 
 bool GcodeExport::write(const Toolpath &tp, const Setting &s,
-                        const QString &filePath, QString &errorMsg)
+                        const QString &filePath, QString &errorMsg,
+                        bool flipX)
 {
     if (tp.totalToolpath.empty())
     {
@@ -52,6 +53,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
 
     int prec = useInch ? 6 : 4; // decimal places for XY coords
     int zprec = useInch ? 4 : 3;
+    double xSign = flipX ? -1.0 : 1.0;
 
     // -------------------------------------------------------
     // Header
@@ -67,6 +69,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     out << "(Depth:    -" << QString::number(depth,'f',zprec)
         << (useInch ? " in" : " mm") << ")\n";
     out << "(Paths:    " << tp.totalToolpath.size() << ")\n";
+    if(flipX) out << "(Mirror:   X axis flipped)\n";
     out << "\n";
 
     out << "G90\n";                            // absolute positioning
@@ -89,7 +92,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
         out << "(--- Path " << pathIdx << " ---)\n";
 
         // First point: rapid XY move at safe Z
-        double x0 = path.at(0).X * toUnit;
+        double x0 = path.at(0).X * toUnit * xSign;
         double y0 = path.at(0).Y * toUnit;
         out << "G0 X" << QString::number(x0, 'f', prec)
             << " Y" << QString::number(y0, 'f', prec) << "\n";
@@ -102,7 +105,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
         out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
         for (size_t i = 1; i < path.size(); ++i)
         {
-            double x = path.at(i).X * toUnit;
+            double x = path.at(i).X * toUnit * xSign;
             double y = path.at(i).Y * toUnit;
             out << "X" << QString::number(x, 'f', prec)
                 << " Y" << QString::number(y, 'f', prec) << "\n";
@@ -128,7 +131,8 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
 }
 
 bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
-                              const QString &filePath, QString &errorMsg)
+                              const QString &filePath, QString &errorMsg,
+                              bool flipX)
 {
     // -------------------------------------------------------
     // Collect all holes grouped by diameter
@@ -179,6 +183,7 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
 
     int prec  = useInch ? 6 : 4;
     int zprec = useInch ? 4 : 3;
+    double xSign = flipX ? -1.0 : 1.0;
 
     // Count total holes
     int totalHoles = 0;
@@ -194,6 +199,7 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
         << ", Diameters: " << holesByDiameter.size() << ")\n";
     out << "(Drill depth: -" << QString::number(depth, 'f', zprec)
         << (useInch ? " in" : " mm") << ")\n";
+    if(flipX) out << "(Mirror:     X axis flipped)\n";
     out << "\n";
 
     out << "G90\n";
@@ -245,7 +251,7 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
 
         for (const QPoint &pt : holes)
         {
-            double x = pt.x() * toUnit;
+            double x = pt.x() * toUnit * xSign;
             double y = pt.y() * toUnit;
             out << "G0 X" << QString::number(x, 'f', prec)
                 << " Y" << QString::number(y, 'f', prec) << "\n";

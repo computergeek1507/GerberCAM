@@ -96,6 +96,8 @@ private slots:
 
     void on_actionExport_Drills_triggered();
 
+    void on_actionFlip_Board_triggered();
+
     void on_actionAbout_GerberCAM_triggered();
 
     void on_actionView_Log_triggered();
@@ -136,6 +138,7 @@ private:
     QString gerberFileName;
 
     bool recalculateFlag=false;
+    bool boardFlipped=false;
 
     std::unique_ptr<Settingwindow> settingWindow{ nullptr };
 
