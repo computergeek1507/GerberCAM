@@ -125,6 +125,7 @@
     </property>
     <addaction name="actionToolpath_generat"/>
     <addaction name="actionHole_Identify"/>
+    <addaction name="actionExport_GCode"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -215,6 +216,14 @@
   <action name="actionView_Log">
    <property name="text">
     <string>View Log</string>
+   </property>
+  </action>
+  <action name="actionExport_GCode">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export G-Code...</string>
    </property>
   </action>
  </widget>

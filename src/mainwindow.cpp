@@ -26,6 +26,7 @@ SOFTWARE.
 
 
 #include <QFileDialog>
+#include <QMessageBox>
 using namespace ClipperLib;
 
 #include "scale.h"
@@ -520,6 +521,7 @@ void MainWindow::on_actionToolpath_generat_triggered()
             ui->messageBrowser->append("   Calculation time   ="+QString::number(toolpath1->time)+"ms");
         }
         recalculateFlag=false;
+        ui->actionExport_GCode->setEnabled(true);
     }
     if(layerNum==2)
     {
@@ -531,6 +533,51 @@ void MainWindow::on_actionToolpath_generat_triggered()
     else
         ui->graphicsView->setScene(scenePath1);
 
+}
+
+void MainWindow::on_actionExport_GCode_triggered()
+{
+    // Pick which toolpath to export (layer currently shown)
+    Toolpath *tp = nullptr;
+    if(layerNum==2)
+        tp = (currentLayer==1) ? toolpath1 : toolpath2;
+    else
+        tp = toolpath1;
+
+    if(!tp || tp->totalToolpath.empty())
+    {
+        QMessageBox::warning(this, "Export G-Code",
+                             "No toolpath available. Run Toolpath Generate first.");
+        return;
+    }
+
+    QString defaultName = gerberFileName;
+    if(!defaultName.isEmpty())
+    {
+        // Replace gerber extension with .nc
+        int dot = defaultName.lastIndexOf('.');
+        if(dot >= 0) defaultName.truncate(dot);
+        defaultName += ".nc";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export G-Code", defaultName,
+        "G-Code files (*.nc *.gcode *.tap);;All files (*)");
+
+    if(filePath.isEmpty())
+        return;
+
+    QString errorMsg;
+    if(GcodeExport::write(*tp, *settingWindow->settings, filePath, errorMsg))
+    {
+        ui->messageBrowser->append("G-Code exported: " + QFileInfo(filePath).fileName());
+        ui->messageBrowser->append("  Paths: " +
+            QString::number(tp->totalToolpath.size()));
+    }
+    else
+    {
+        QMessageBox::critical(this, "Export G-Code", errorMsg);
+    }
 }
 
 

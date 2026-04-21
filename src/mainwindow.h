@@ -40,6 +40,7 @@ SOFTWARE.
 #include "drawPCB.h"
 #include "toolpath.h"
 #include "preprocess.h"
+#include "gcodeexport.h"
 
 #include "clipper.hpp"
 using namespace ClipperLib;
@@ -90,6 +91,8 @@ private slots:
     void on_actionToolpath_generat_triggered();
 
     void on_actionSetting_triggered();
+
+    void on_actionExport_GCode_triggered();
 
     void on_actionAbout_GerberCAM_triggered();
 
