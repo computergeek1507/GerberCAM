@@ -1,12 +1,16 @@
 > [!NOTE]
-> From: @claus007
+> From: @computergeek1507
 > 
 > Current State:
->  * It Compiles (Qt 6.9.2)
->  * I removed lots of compiler warnings
->  * There are currently no binaries to download
->  * If you want to use it, the easiest way is to install Qt community edition and select Desktop Variante
->  * BTW Help is appreciated
+>  * Forked @claus007 version
+>  * Switched to cMake
+>  * Compiles with 2022 and QT 5.15, QT 6 should works too.
+>  * Update gerber parser to support macros used in kicad 9. Use Drill Origin still broken.
+>  * Updated DrawPCB and Toolpath code to work I hope.
+>  * Add Gcode Export for Toolpath.
+>  * Add spdlog and nlohmann json.
+>  * Add Installer script and GitHub Action.
+>  * TODO: add Drilling Gcode. Add Flipping for single side.
 
 
 # GerberCAM
