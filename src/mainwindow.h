@@ -105,14 +105,17 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    double scale=1;
+    double scale = 1.0;
     void wheelEvent(QWheelEvent *event);
     void drawLayer(QGraphicsScene *scene, Gerber *gerberfile, QColor color);
-    double scaleFactor=250;
-    int layerNum=0;
-    int currentLayer=1;
+
+    double scaleFactor = 250.0;
+    int layerNum = 0;
+    int currentLayer = 1;
+
     std::unique_ptr<Gerber> gerber1{ nullptr };
     std::unique_ptr<Gerber> gerber2{ nullptr };
+
     QGraphicsScene *scene1,*scene12,*scene2,*scene21;
     QGraphicsScene *sceneNet1,*sceneNet2,*sceneNet12,*sceneNet21;
     QGraphicsScene *scenePath1,*scenePath2,*scenePath12,*scenePath21;
@@ -131,14 +134,16 @@ private:
     void timerEvent(QTimerEvent *event);
     QLabel *coordinateLabel;
 
-    Preprocess *preprocessfile1,*preprocessfile2;
-    Toolpath *toolpath1,*toolpath2;
+    std::unique_ptr <Preprocess> preprocessfile1;
+    std::unique_ptr <Preprocess> preprocessfile2;
+    std::unique_ptr <Toolpath> toolpath1;
+    std::unique_ptr <Toolpath> toolpath2;
 
     QString version = PROJECT_NAME " v" PROJECT_VER;
     QString gerberFileName;
 
-    bool recalculateFlag=false;
-    bool boardFlipped=false;
+    bool recalculateFlag = false;
+    bool boardFlipped = false;
 
     std::unique_ptr<Settingwindow> settingWindow{ nullptr };
 
@@ -147,7 +152,6 @@ private:
 
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
     QString m_appdir;
-
 };
 
 #endif // MAINWINDOW_H

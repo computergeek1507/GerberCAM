@@ -81,7 +81,7 @@ struct Pad
 class Gerber
 {
 public:
-    Gerber(QString &fileName);
+    Gerber(QString const& fileName);
     ~Gerber();
 
     qint32 padNum=0;

@@ -126,8 +126,6 @@ MainWindow::MainWindow(QWidget *parent) :
     co.AddPath(subj, jtRound, etClosedPolygon);
     co.Execute(solution, -7.0);
 
-
-
     startTimer(50);
 }
 
@@ -136,28 +134,30 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::drawNet(QGraphicsScene *scene,Preprocess &t,QColor color,QColor colorError)
+void MainWindow::drawNet(QGraphicsScene* scene, Preprocess& t, QColor color, QColor colorError)
 {
-    if(t.netList.size()==0)
+    if (t.netList.size() == 0)
+    {
         return;
-    int i;
-    for(i=0;i<t.netList.size();i++)
+    }
+
+    for(int i=0;i<t.netList.size();i++)
     {
         if(t.netList.at(i).elements.size()==0) continue;
-        int j;
         /*
         if(i*2<t.netList.size())
             color.setBlue((255*(i+1)*2/t.netList.size())%256);
         else
             color.setGreen((255*((i+1)-t.netList.size()/2)*2/t.netList.size())%256);
         */
-        for(j=0;j<t.netList.at(i).elements.size();j++)//draw track first
+        for (int j = 0; j < t.netList.at(i).elements.size(); j++)//draw track first
         {
-            QColor c;
-            if(t.netList.at(i).collisionFlag==true)
-                c=colorError;
-            else
-                c=color;
+            QColor c = color;
+            if (t.netList.at(i).collisionFlag )
+            {
+                c = colorError;
+            }
+
             if(t.netList.at(i).elements.at(j).elementType=='T')
             {
                 QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).track,'T', AT_TOP,c);
@@ -165,19 +165,17 @@ void MainWindow::drawNet(QGraphicsScene *scene,Preprocess &t,QColor color,QColor
                 scene->addItem(item);
             }
         }
-        for(j=0;j<t.netList.at(i).elements.size();j++)//draw pad without hole
+        for (int j = 0; j < t.netList.at(i).elements.size(); j++)//draw pad without hole
         {
-            QColor c;
-            if(t.netList.at(i).collisionFlag==true)
-                c=colorError;
-            else
-                c=color;
-
-            double x1,y1;
+            QColor c = color;
+            if (t.netList.at(i).collisionFlag)
+            {
+                c = colorError;
+            }
             if(t.netList.at(i).elements.at(j).elementType=='P')
             {
-                x1=t.netList.at(i).elements.at(j).pad.point.x();
-                y1=t.netList.at(i).elements.at(j).pad.point.y();
+                double x1=t.netList.at(i).elements.at(j).pad.point.x();
+                double y1=t.netList.at(i).elements.at(j).pad.point.y();
 
                 QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).pad, AT_TOP,c);
                 item->setPos(x1,y1);
@@ -185,17 +183,15 @@ void MainWindow::drawNet(QGraphicsScene *scene,Preprocess &t,QColor color,QColor
             }
         }
 
-        for(j=0;j<t.netList.at(i).elements.size();j++)//draw pad with hole
+        for(int j=0;j<t.netList.at(i).elements.size();j++)//draw pad with hole
         {
-            QColor c;
-            c=color;
+            QColor c = color;
 
-            double x1,y1;
             if(t.netList.at(i).elements.at(j).elementType=='P'&&
                     t.netList.at(i).elements.at(j).pad.hole!=0)
             {
-                x1=t.netList.at(i).elements.at(j).pad.point.x();
-                y1=t.netList.at(i).elements.at(j).pad.point.y();
+                double x1=t.netList.at(i).elements.at(j).pad.point.x();
+                double y1=t.netList.at(i).elements.at(j).pad.point.y();
 
                 QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).pad,'h', AT_TOP,c);
                 item->setPos(x1,y1);
@@ -204,10 +200,10 @@ void MainWindow::drawNet(QGraphicsScene *scene,Preprocess &t,QColor color,QColor
         }
 
     }
-    for(i=0;i<t.contourList.size();i++)
+    for(int i=0;i<t.contourList.size();i++)
     {
-        Net n=t.contourList.at(i);
-        for(int j=0;j<n.elements.size();j++)
+        Net n = t.contourList.at(i);
+        for(int j = 0; j<n.elements.size(); j++)
         {
             Track tempTrack=n.elements.at(j).track;
             QGraphicsItem *item = new DrawPCB(tempTrack,'C', AT_TOP,Qt::black);
@@ -247,10 +243,10 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
     }
     */
 
-    qDebug()<<"drawToolpath: totalToolpath paths="<<t.totalToolpath.size();
+    //m_logger->debug("drawToolpath: totalToolpath paths={}", t.totalToolpath.size());
     if(t.totalToolpath.empty() || t.totalToolpath.at(0).empty())
     {
-        qDebug()<<"drawToolpath: totalToolpath empty, nothing to draw";
+        //m_logger->debug("drawToolpath: totalToolpath empty, nothing to draw");
         return;
     }
     QColor color(255,170,32);
@@ -262,17 +258,13 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
     point.setY(p.at(0).at(0).Y);
     item->setPos(point);
     scene->addItem(item);
-    qDebug()<<"drawToolpath: item added at"<<point<<"scene items="<<scene->items().size();
-
+    //m_logger->debug("drawToolpath: item added at ({}, {}), scene items={}", point.x(), point.y(), scene->items().size());
 }
-
 
 void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color)
 {
-    int i;
-
     Track tempTrack;
-    for(i=0;i<gerberfile->trackNum;i++)
+    for(int i=0;i<gerberfile->trackNum;i++)
     {
         tempTrack=gerberfile->tracksList.at(i);
         QGraphicsItem *item = new DrawPCB(tempTrack,'T', AT_TOP,color);
@@ -283,7 +275,7 @@ void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color
     Pad tempPad;
     double x1,y1;
 
-    for(i=0;i<gerberfile->padNum;i++)
+    for(int i=0;i<gerberfile->padNum;i++)
     {
         tempPad=gerberfile->padsList.at(i);
         x1=tempPad.point.rx();
@@ -293,14 +285,12 @@ void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color
         item->setPos(x1,y1);
         scene->addItem(item);
     }
-
     //scene->addRect(gerberfile->borderRect);
-
 }
 
 void MainWindow::showMessage(Gerber *g,Preprocess &p)
 {
-    this->setWindowTitle(gerberFileName + " ┅ "+version);
+    setWindowTitle(gerberFileName + " - " + version);
     ui->messageBrowser->append("\"" + gerberFileName + "\"" + " read success");
     ui->messageBrowser->append("   Total line         =" + QString::number(g->totalLine));
     ui->messageBrowser->append("   Preprocessing time =" + QString::number(p.time) + "ms");
@@ -312,7 +302,7 @@ void MainWindow::showMessage(Gerber *g,Preprocess &p)
 
 void MainWindow::on_actionOpen_triggered()
 {
-    auto fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), "",
+    auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), "",
         tr("Top Layer (*.gtl);;Bottom Layer (*.gbl);;Gerber File(*.gbr *.gbl *gtl);;All types (*.*)"));
     if (fileName.isEmpty())
     {
@@ -328,28 +318,26 @@ void MainWindow::on_actionOpen_triggered()
         return;
     }
 
-    scene1=new QGraphicsScene(this);
-    drawLayer(scene1,gerber1.get(), *colorRed1);
-
+    scene1 = new QGraphicsScene(this);
+    drawLayer(scene1, gerber1.get(), *colorRed1);
 
     ui->graphicsView->setScene(scene1);
-    ui->graphicsView->fitInView(gerber1->borderRect,Qt::KeepAspectRatio);
+    ui->graphicsView->fitInView(gerber1->borderRect, Qt::KeepAspectRatio);
     //qDebug()<<gerber1->borderRect;
 
-
-    layerNum=1;
-    currentLayer=1;
+    layerNum = 1;
+    currentLayer = 1;
     ui->actionLayer2->setEnabled(false);
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
 
-    preprocessfile1=new Preprocess(*gerber1,settingWindow->settings);
+    preprocessfile1 = new Preprocess(*gerber1,settingWindow->settings);
 
     ui->messageBrowser->clear();
     showMessage(gerber1.get(),*preprocessfile1);
 
-    sceneNet1=new QGraphicsScene(this);
+    sceneNet1 = new QGraphicsScene(this);
     drawNet(sceneNet1,*preprocessfile1,*colorBlue1,*Error1);
     ui->graphicsView->setScene(sceneNet1);
 
@@ -360,16 +348,14 @@ void MainWindow::on_actionOpen_triggered()
     ui->treeViewlayer1->setColumnWidth(0,200);
     ui->treeViewlayer1->show();
 
-
     recalculateFlag=true;
 }
-
 
 void MainWindow::on_actionAdd_layer_triggered()
 {
     if(layerNum==1)//no any layer2,draw a new layer2
     {
-        auto fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
         {
@@ -384,7 +370,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
             return;
         }
-        preprocessfile2=new Preprocess(*gerber2,settingWindow->settings);
+        preprocessfile2 = std::make_unique<Preprocess>(*gerber2,settingWindow->settings);
 
 
         showMessage(gerber2.get(), *preprocessfile2);
@@ -403,7 +389,7 @@ void MainWindow::on_actionAdd_layer_triggered()
     }
     else if(currentLayer==2)//add to layer2
     {
-        auto fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
         {
@@ -418,7 +404,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
             return;
         }
-        preprocessfile2=new Preprocess(*gerber2,settingWindow->settings);
+        preprocessfile2 = std::make_unique<Preprocess>(*gerber2,settingWindow->settings);
 
         showMessage(gerber2.get(),*preprocessfile2);
 
@@ -432,7 +418,7 @@ void MainWindow::on_actionAdd_layer_triggered()
     }
     else if(currentLayer==1)//add to layer1
     {
-        auto fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
+        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), "",
                       tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
         if(fileName.isEmpty())
         {
@@ -447,7 +433,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
             return;
         }
-        preprocessfile1=new Preprocess(*gerber1,settingWindow->settings);
+        preprocessfile1 = std::make_unique<Preprocess>(*gerber1,settingWindow->settings);
 
         showMessage(gerber1.get(),*preprocessfile1);
 
@@ -481,19 +467,19 @@ void MainWindow::on_actionAdd_layer_triggered()
     else if(currentLayer==2)
         ui->graphicsView->setScene(sceneNet21);
 
-    recalculateFlag=true;
+    recalculateFlag = true;
 }
 
 
 void MainWindow::on_actionToolpath_generat_triggered()
 {
-    if(recalculateFlag==true)
+    if(recalculateFlag)
     {
-        toolpath1=new Toolpath(*preprocessfile1, *settingWindow->settings);
+        toolpath1 = std::make_unique<Toolpath>(*preprocessfile1, *settingWindow->settings);
 
         if(layerNum==2)
         {
-            toolpath2=new Toolpath(*preprocessfile2, *settingWindow->settings);
+            toolpath2 = std::make_unique<Toolpath>(*preprocessfile2, *settingWindow->settings);
             scenePath12=new QGraphicsScene(this);
             drawNet(scenePath12,*preprocessfile2,*colorBlue2,*Error2);
             drawNet(scenePath12,*preprocessfile1,*colorRed1,*Error1);
@@ -542,9 +528,9 @@ void MainWindow::on_actionExport_GCode_triggered()
     // Pick which toolpath to export (layer currently shown)
     Toolpath *tp = nullptr;
     if(layerNum==2)
-        tp = (currentLayer==1) ? toolpath1 : toolpath2;
+        tp = (currentLayer==1) ? toolpath1.get() : toolpath2.get();
     else
-        tp = toolpath1;
+        tp = toolpath1.get();
 
     if(!tp || tp->totalToolpath.empty())
     {
@@ -575,13 +561,14 @@ void MainWindow::on_actionExport_GCode_triggered()
         ui->messageBrowser->append("G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Paths: " +
             QString::number(tp->totalToolpath.size()));
+        m_logger->info("G-Code exported: {}", filePath.toStdString());
     }
     else
     {
+        m_logger->error("Export G-Code failed: {}", errorMsg.toStdString());
         QMessageBox::critical(this, "Export G-Code", errorMsg);
     }
 }
-
 
 void MainWindow::on_actionZoom_in_triggered()
 {
@@ -605,8 +592,8 @@ void MainWindow::wheelEvent(QWheelEvent *event)
 
 void MainWindow::on_actionLayer1_triggered()
 {
-    currentLayer=1;
-    if(recalculateFlag==true)
+    currentLayer = 1;
+    if(recalculateFlag)
     {
         if(layerNum==1)
             ui->graphicsView->setScene(sceneNet1);
@@ -625,9 +612,8 @@ void MainWindow::on_actionLayer1_triggered()
 
 void MainWindow::on_actionLayer2_triggered()
 {
-
-    currentLayer=2;
-    if(recalculateFlag==true)
+    currentLayer = 2;
+    if(recalculateFlag)
         ui->graphicsView->setScene(sceneNet21);
     else
         ui->graphicsView->setScene(scenePath21);
@@ -637,14 +623,12 @@ void MainWindow::on_actionLayer2_triggered()
 void MainWindow::timerEvent(QTimerEvent *event)
 {
     Q_UNUSED(event)
-    QPoint p1 = QCursor::pos();
-    p1=ui->graphicsView->mapFromGlobal(QCursor::pos());
-    QPointF p2=ui->graphicsView->mapToScene(p1);
-    QString s="("+QString::number(p2.x()/ PRECISIONSCALE,'f',3)+","+QString::number(p2.y()/ PRECISIONSCALE,'f',3)+") mm  ";
+    QPoint const p1 = QCursor::pos();
+    QPoint const p1_mapped = ui->graphicsView->mapFromGlobal(p1);
+    QPointF const p2 = ui->graphicsView->mapToScene(p1_mapped);
+    QString const s = "(" + QString::number(p2.x() / PRECISIONSCALE, 'f', 3) + "," + QString::number(p2.y() / PRECISIONSCALE, 'f', 3) + ") mm  ";
     coordinateLabel->setText(s);
 }
-
-
 
 void MainWindow::on_actionFlip_Board_triggered()
 {
@@ -694,11 +678,13 @@ void MainWindow::on_actionExport_Drills_triggered()
                 { ++total; diams.insert(e.pad.hole); }
 
         ui->messageBrowser->append("Drill G-Code exported: " + filePath);
+        m_logger->info("Drill G-Code exported: {}", filePath.toStdString());
         ui->messageBrowser->append("  Holes: " + QString::number(total)
                                    + ", Diameters: " + QString::number(diams.size()));
     }
     else
     {
+        m_logger->error("Export Drill G-Code failed: {}", errorMsg.toStdString());
         QMessageBox::critical(this, "Export Drill G-Code", errorMsg);
     }
 }

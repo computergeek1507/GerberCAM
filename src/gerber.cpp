@@ -103,7 +103,7 @@ void Gerber::initParameters()
 }
 
 
-Gerber::Gerber(QString &fileName): m_logger(spdlog::get(PROJECT_NAME))
+Gerber::Gerber(QString const& fileName): m_logger(spdlog::get(PROJECT_NAME))
 {
     initParameters();
     QFile file(fileName);
@@ -746,10 +746,15 @@ qint64 Gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 d
     if(negative)
         number = -number;
 
-    // Convert from inch-based internal units (1 unit = 1 microinch) to
-    // mm-based internal units (1 unit = 1 nm) by multiplying by 25.4.
-    double scaled = static_cast<double>(number) * 25.4;
-    return static_cast<qint64>(scaled >= 0.0 ? scaled + 0.5 : scaled - 0.5);
+    if(ModeofUnit == "IN")
+    {
+        // Convert from inch-based internal units (1 unit = 1 microinch) to
+        // mm-based internal units (1 unit = 1 nm) by multiplying by 25.4.
+        double scaled = static_cast<double>(number) * 25.4;
+        return static_cast<qint64>(scaled >= 0.0 ? scaled + 0.5 : scaled - 0.5);
+    }
+    // Already in mm-based internal units (1 unit = 1 nm), no conversion needed.
+    return number;
 }
 
 /*
@@ -884,7 +889,7 @@ bool Gerber::transform_data()
             if(polygonFillMode==true)
                 newTrack.width=12700; // 0.0127 mm minimum fill width
             else
-                newTrack.width=ADHash.value(currentParameter + "0") * PRECISIONSCALE * 25.4;
+                newTrack.width=ADHash.value(currentParameter + "0") * PRECISIONSCALE * (ModeofUnit == "IN" ? 25.4 : 1.0);
 
             newTrack.boundingRect=boundingRect(newTrack);
             tracksList.append(newTrack);
@@ -921,7 +926,7 @@ bool Gerber::transform_data()
             newPad.angle = ADHash.value(currentParameter + " Angle");
             for (int j = 0; j < newPad.parameterNum; j++)
             {
-                newPad.parameter[j] = ADHash.value(currentParameter + QString::number(j)) * PRECISIONSCALE * 25.4;
+                newPad.parameter[j] = ADHash.value(currentParameter + QString::number(j)) * PRECISIONSCALE * (ModeofUnit == "IN" ? 25.4 : 1.0);
             }
 
             // Read hole diameter directly from aperture definition if present.
