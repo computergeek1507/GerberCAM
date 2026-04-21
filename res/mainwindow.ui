@@ -126,6 +126,7 @@
     <addaction name="actionToolpath_generat"/>
     <addaction name="actionHole_Identify"/>
     <addaction name="actionExport_GCode"/>
+    <addaction name="actionExport_Drills"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -224,6 +225,14 @@
    </property>
    <property name="text">
     <string>Export G-Code...</string>
+   </property>
+  </action>
+  <action name="actionExport_Drills">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export Drill G-Code...</string>
    </property>
   </action>
  </widget>

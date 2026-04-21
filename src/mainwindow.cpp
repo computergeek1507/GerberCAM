@@ -27,6 +27,7 @@ SOFTWARE.
 
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSet>
 using namespace ClipperLib;
 
 #include "scale.h"
@@ -341,6 +342,7 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionLayer2->setEnabled(false);
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
+    ui->actionExport_Drills->setEnabled(true);
 
     preprocessfile1=new Preprocess(*gerber1,settingWindow->settings);
 
@@ -643,6 +645,53 @@ void MainWindow::timerEvent(QTimerEvent *event)
 }
 
 
+
+void MainWindow::on_actionExport_Drills_triggered()
+{
+    if(!preprocessfile1)
+    {
+        QMessageBox::warning(this, "Export Drill G-Code",
+                             "No file loaded. Open a Gerber file first.");
+        return;
+    }
+
+    QString defaultName = gerberFileName;
+    if(!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if(dot >= 0) defaultName.truncate(dot);
+        defaultName += "_drill.nc";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export Drill G-Code", defaultName,
+        "G-Code files (*.nc *.gcode *.tap);;All files (*)");
+
+    if(filePath.isEmpty())
+        return;
+
+    // Use layer 1 — clearEccentricHole already removed non-through-holes
+    QString errorMsg;
+    if(GcodeExport::writeDrills(*preprocessfile1, *settingWindow->settings,
+                                filePath, errorMsg))
+    {
+        // Count holes for the status message
+        int total = 0;
+        QSet<qint64> diams;
+        for(const Net &n : preprocessfile1->netList)
+            for(const Element &e : n.elements)
+                if(e.elementType=='P' && e.pad.hole > 0)
+                { ++total; diams.insert(e.pad.hole); }
+
+        ui->messageBrowser->append("Drill G-Code exported: " + filePath);
+        ui->messageBrowser->append("  Holes: " + QString::number(total)
+                                   + ", Diameters: " + QString::number(diams.size()));
+    }
+    else
+    {
+        QMessageBox::critical(this, "Export Drill G-Code", errorMsg);
+    }
+}
 
 void MainWindow::on_actionSetting_triggered()
 {

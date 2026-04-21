@@ -94,6 +94,8 @@ private slots:
 
     void on_actionExport_GCode_triggered();
 
+    void on_actionExport_Drills_triggered();
+
     void on_actionAbout_GerberCAM_triggered();
 
     void on_actionView_Log_triggered();
