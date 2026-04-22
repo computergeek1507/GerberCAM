@@ -1,0 +1,22 @@
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - '.github/workflows/*.yml'
+      - '*.md'
+  pull_request:
+name: Flatpak
+jobs:
+  flatpak:
+    name: "Flatpak"
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:kde-5.15-23.08
+      options: --privileged
+    steps:
+    - uses: actions/checkout@v4
+    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      with:
+        bundle: gerbercam.flatpak
+        manifest-path: org.flatpak.gerbercam.yaml
+        cache-key: flatpak-builder-${{ github.sha }}
