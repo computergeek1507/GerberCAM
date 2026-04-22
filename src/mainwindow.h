@@ -69,12 +69,9 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-
-
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
 
 protected:
     void drawNet(QGraphicsScene *scene, Preprocess &t, QColor color, QColor colorError);
@@ -84,41 +81,43 @@ protected:
 private slots:
     void on_actionOpen_triggered();
 
+    void on_actionAdd_layer_triggered();
+
+    void on_actionOpen_Outline_triggered();
+
+    void on_actionOpen_Excellon_triggered();
+
+    void on_actionSetting_triggered();
+
     void on_actionExit_triggered();
 
     void on_actionZoom_in_triggered();
 
     void on_actionZoom_out_triggered();
 
-    void on_actionAdd_layer_triggered();
-
     void on_actionLayer1_triggered();
 
     void on_actionLayer2_triggered();
 
-    void on_actionToolpath_generat_triggered();
+    void on_actionFlip_Board_triggered();
 
-    void on_actionSetting_triggered();
+    void on_actionToolpath_generat_triggered();
 
     void on_actionExport_GCode_triggered();
 
     void on_actionExport_Drills_triggered();
 
-    void on_actionFlip_Board_triggered();
-
-    void on_actionAbout_GerberCAM_triggered();
-
-    void on_actionView_Log_triggered();
-
-    void on_actionOpen_Outline_triggered();
-
-    void on_actionExport_Outline_triggered();
-
-    void on_actionOpen_Excellon_triggered();
+    void on_actionExport_Drill_G_Code_Bore_triggered();
 
     void on_actionExport_Drills_Excellon_triggered();
 
     void on_actionExport_Drills_Excellon_Bore_triggered();
+
+    void on_actionExport_Outline_triggered();
+
+    void on_actionAbout_GerberCAM_triggered();
+
+    void on_actionView_Log_triggered();
 
 private:
     Ui::MainWindow *ui;

@@ -49,6 +49,12 @@
         <number>0</number>
        </property>
        <widget class="QWidget" name="tabMessage">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <attribute name="title">
          <string>Message</string>
         </attribute>
@@ -59,6 +65,12 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tabLayer1">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <attribute name="title">
          <string>Layer1</string>
         </attribute>
@@ -76,8 +88,14 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tabLayer2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <attribute name="title">
-         <string>Tab 2</string>
+         <string>Layer2</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_3">
          <item row="0" column="0">
@@ -86,6 +104,12 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tabOutline">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <attribute name="title">
          <string>Outline</string>
         </attribute>
@@ -96,6 +120,12 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tabDrills">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <attribute name="title">
          <string>Drills</string>
         </attribute>
@@ -180,9 +210,13 @@
      <string>Machine</string>
     </property>
     <addaction name="actionExport_GCode"/>
+    <addaction name="separator"/>
     <addaction name="actionExport_Drills"/>
+    <addaction name="actionExport_Drill_G_Code_Bore"/>
+    <addaction name="separator"/>
     <addaction name="actionExport_Drills_Excellon"/>
     <addaction name="actionExport_Drills_Excellon_Bore"/>
+    <addaction name="separator"/>
     <addaction name="actionExport_Outline"/>
    </widget>
    <addaction name="menuFile"/>
@@ -220,7 +254,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>layer1</string>
+    <string>Layer1</string>
    </property>
   </action>
   <action name="actionLayer2">
@@ -228,7 +262,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>layer2</string>
+    <string>Layer2</string>
    </property>
   </action>
   <action name="actionToolpath_generat">
@@ -320,6 +354,14 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionExport_Drill_G_Code_Bore">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export Drill G-Code (Bore)...</string>
    </property>
   </action>
  </widget>

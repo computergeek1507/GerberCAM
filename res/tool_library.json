@@ -8,8 +8,8 @@
             "maxStepDepth": 2.0,
             "name": "Engrave1",
             "overlap": 50.0,
-            "speedUnit": "inch/min",
-            "spindleSpeed": 2.0,
+            "speedUnit": "InchperMin",
+            "spindleSpeed": 10000.0,
             "toolType": "Conical",
             "unitType": "Inch",
             "width": 0.4
@@ -23,7 +23,7 @@
             "name": "Engrave2",
             "overlap": 50.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Conical",
             "unitType": "Inch",
             "width": 0.6
@@ -37,7 +37,7 @@
             "name": "cut1",
             "overlap": 50.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Cylindrical",
             "unitType": "Inch",
             "width": 1.0
@@ -51,7 +51,7 @@
             "name": "drill1",
             "overlap": 0.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Drill",
             "unitType": "Inch",
             "width": 0.039
@@ -65,7 +65,7 @@
             "name": "drill1.5",
             "overlap": 0.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Drill",
             "unitType": "Inch",
             "width": 0.059
@@ -79,7 +79,7 @@
             "name": "drill2",
             "overlap": 0.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Drill",
             "unitType": "Inch",
             "width": 0.078
@@ -93,7 +93,7 @@
             "name": "drill0",
             "overlap": 0.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Drill",
             "unitType": "Inch",
             "width": 0.0001
@@ -107,7 +107,7 @@
             "name": "drill3",
             "overlap": 0.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Drill",
             "unitType": "Inch",
             "width": 0.118
@@ -121,7 +121,7 @@
             "name": "drill0.5",
             "overlap": 0.0,
             "speedUnit": "InchperMin",
-            "spindleSpeed": 2.0,
+            "spindleSpeed": 10000.0,
             "toolType": "Drill",
             "unitType": "Inch",
             "width": 0.02

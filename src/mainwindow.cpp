@@ -85,24 +85,20 @@ MainWindow::MainWindow(QWidget *parent) :
     //QMatrix matrix;
     //matrix.scale(1, -1);
     //ui->graphicsView->setMatrix(matrix);
-    // Remove layout margins so the splitter fills the window edge-to-edge.
-    ui->horizontalLayout->setContentsMargins(0, 0, 0, 0);
-    ui->horizontalLayout->setSpacing(0);
+    // Make the splitter the central widget directly so the QMainWindow
+    // manages its geometry — bypasses the intermediate QHBoxLayout which
+    // was preventing the splitter children from resizing.
+    setCentralWidget(ui->splitter);
 
-    // Give the splitter an Expanding policy (uic leaves it at default Preferred).
-    ui->splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     ui->splitter->setHandleWidth(6);
-    ui->splitter->setStretchFactor(0, 0);
-    ui->splitter->setStretchFactor(1, 1);
+    ui->splitter->setStretchFactor(0, 1);
+    ui->splitter->setStretchFactor(1, 3);
+    //ui->LayerTab1->setMinimumWidth(50);
+    //ui->graphicsView->setMinimumWidth(50);
 
-    // Allow both sides to shrink/grow freely.
-    ui->LayerTab1->setMinimumWidth(50);
-    ui->graphicsView->setMinimumWidth(50);
-
-    // Apply initial split after the layout has run.
-    QTimer::singleShot(0, this, [this]() {
-        ui->splitter->setSizes({ 280, ui->splitter->width() - 280 });
-    });
+   // QTimer::singleShot(0, this, [this]() {
+    //    ui->splitter->setSizes({ 280, ui->splitter->width() - 280 });
+   // });
 
     ui->graphicsView->scale(1,-1);
     ui->graphicsView->setInteractive(true);
@@ -127,7 +123,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->LayerTab1->setTabText(1,"Layer1");
     ui->LayerTab1->setTabText(2,"Layer2");
     ui->LayerTab1->setTabText(3,"Outline");
-    ui->LayerTab1->setFixedWidth(350);
+    //ui->LayerTab1->setFixedWidth(350);
 
 
     //ui->statusBar->addPermanentWidget();
@@ -376,8 +372,6 @@ void MainWindow::showMessage(Gerber *g,Preprocess &p)
     ui->messageBrowser->append("   Net number         =" + QString::number(p.netList.size()));
 }
 
-
-
 void MainWindow::on_actionOpen_triggered()
 {
     auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), settingWindow->settings->lastDir(),
@@ -410,6 +404,7 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
+    ui->actionExport_Drill_G_Code_Bore->setEnabled(true);
 
     preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
 
@@ -421,19 +416,18 @@ void MainWindow::on_actionOpen_triggered()
     drawExcellonDrills(sceneNet1);
     ui->graphicsView->setScene(sceneNet1);
 
-
-    TreeModel *model =new TreeModel(*preprocessfile1);
+    TreeModel *model = new TreeModel(*preprocessfile1);
 
     ui->treeViewlayer1->setModel(model);
     ui->treeViewlayer1->setColumnWidth(0,200);
     ui->treeViewlayer1->show();
 
-    recalculateFlag=true;
+    recalculateFlag = true;
 }
 
 void MainWindow::on_actionAdd_layer_triggered()
 {
-    if(layerNum==1)//no any layer2,draw a new layer2
+    if(layerNum == 1)//no any layer2,draw a new layer2
     {
         auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
@@ -468,7 +462,7 @@ void MainWindow::on_actionAdd_layer_triggered()
         ui->treeViewlayer2->show();
 
     }
-    else if(currentLayer==2)//add to layer2
+    else if(currentLayer == 2)//add to layer2
     {
         auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
                       tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
@@ -498,7 +492,7 @@ void MainWindow::on_actionAdd_layer_triggered()
 
         //ui->graphicsView->setScene(scene21);
     }
-    else if(currentLayer==1)//add to layer1
+    else if(currentLayer == 1)//add to layer1
     {
         auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
                       tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
@@ -777,7 +771,7 @@ void MainWindow::on_actionExport_Drills_triggered()
         QSet<qint64> diams;
         for(const Net &n : preprocessfile1->netList)
             for(const Element &e : n.elements)
-                if(e.elementType=='P' && e.pad.hole > 0)
+                if(e.elementType == 'P' && e.pad.hole > 0)
                 { ++total; diams.insert(e.pad.hole); }
 
         ui->messageBrowser->append("Drill G-Code exported: " + filePath);
@@ -789,6 +783,64 @@ void MainWindow::on_actionExport_Drills_triggered()
     {
         m_logger->error("Export Drill G-Code failed: {}", errorMsg.toStdString());
         QMessageBox::critical(this, "Export Drill G-Code", errorMsg);
+    }
+}
+
+void MainWindow::on_actionExport_Drill_G_Code_Bore_triggered() 
+{
+    if (!preprocessfile1)
+    {
+        QMessageBox::warning(this, "Export Drill G-Code",
+            "No file loaded. Open a Gerber file first.");
+        return;
+    }
+
+	QString defaultName = gerberFileName;
+
+    if (!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if (dot >= 0) defaultName.truncate(dot);
+        defaultName += "_drill_bore.nc";
+    }
+    else
+    {
+        defaultName = "bore.nc";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export Drill G-Code (Bore)",
+        settingWindow->settings->lastDir() + "/" + defaultName,
+        "G-Code files (*.nc *.gcode *.tap);;All files (*)");
+
+    if (filePath.isEmpty())
+        return;
+
+    settingWindow->settings->setLastDir(filePath);
+
+    QString errorMsg;
+    if (GcodeExport::writeDrillsBore(*preprocessfile1, *settingWindow->settings,
+        filePath, errorMsg, boardFlipped))
+    {
+        int total = 0;
+        QSet<qint64> diams;
+        for (const Net& n : preprocessfile1->netList)
+            for (const Element& e : n.elements)
+                if (e.elementType == 'P' && e.pad.hole > 0)
+                {
+                    ++total; diams.insert(e.pad.hole);
+                }
+
+
+        ui->messageBrowser->append("Drill Bore G-Code exported: " + QFileInfo(filePath).fileName());
+        ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
+            + ", Holes: " + QString::number(total));
+        m_logger->info("Drill Bore G-Code exported: {}", filePath.toStdString());
+    }
+    else
+    {
+        m_logger->error("Export Drill Bore G-Code failed: {}", errorMsg.toStdString());
+        QMessageBox::critical(this, "Export Drill G-Code (Bore)", errorMsg);
     }
 }
 
