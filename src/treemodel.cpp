@@ -230,7 +230,7 @@ void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
 		//auto tool_type = magic_enum::enum_name(t.toolType);
         QList<QVariant> columnData;
         columnData<<t.name;
-        columnData<<QString::fromStdString(magic_enum::enum_name(t.toolType).data());
+        columnData<<QString(magic_enum::enum_name(t.toolType).data());
         columnData<<QString::number(t.diameter,'f',3);
         columnData<<QString::number(t.angle,'f',1)+"°";
         columnData<<QString::number(t.width,'f',3);

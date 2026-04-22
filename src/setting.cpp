@@ -28,10 +28,8 @@ SOFTWARE.
 #include <nlohmann/json.hpp>
 #include <QFileInfo>
 
-#define BINARY_TOOL_LIBRARY_FILENAME "tool_library.con"
 #define JSON_TOOL_LIBRARY_FILENAME "tool_library.json"
 
-#define BINARY_HOLE_RULE_FILENAME "hole_rule.con"
 #define JSON_HOLE_RULE_FILENAME "hole_rule.json"
 
 #define JSON_SETTINGS_FILENAME "settings.json"
@@ -122,36 +120,6 @@ bool Setting::readTool(QString const& appData)
             return false;
         }
     }
-    else if(QFile::exists(BINARY_TOOL_LIBRARY_FILENAME))
-    {
-        QFile file(BINARY_TOOL_LIBRARY_FILENAME);
-        QDataStream in(&file);
-        in.setVersion(QDataStream::Qt_5_4);
-        if (!file.open(QIODevice::ReadOnly))
-        {
-			m_logger->error("Error reading tool library, cannot open file");
-            QMessageBox msgBox;
-            msgBox.setText("Error!Cannot open tool library!");
-            msgBox.exec();
-            return false;
-        }
-
-        int num;
-
-        in >> num;
-        toolList.clear();
-        //drillList.clear();
-        for (int i = 0; i < num; i++)
-        {
-            Tool t;
-            in >> t;
-            toolList.append(t);
-            //if (t.toolType == "Drill")
-            //    drillList.append(t);
-        }
-        file.close();
-        return true;
-    }
     else
     {
         m_logger->error("Error reading tool library, File not found");
@@ -193,31 +161,7 @@ bool Setting::readHoleRule(QString const& appData)
 			m_logger->error("Error reading hole identification rule: {}", ex.what());
         }
     }
-    else if (QFile::exists(BINARY_HOLE_RULE_FILENAME))
-    {
-        holeRuleList.clear();
-        int num;
-        QFile file1(BINARY_HOLE_RULE_FILENAME);
-        QDataStream in1(&file1);
-        in1.setVersion(QDataStream::Qt_5_4);
-        if (!file1.open(QIODevice::ReadOnly))
-        {
-            QMessageBox msgBox;
-            msgBox.setText("Error!Cannot open hole identification rule!");
-            msgBox.exec();
-            return false;
-        }
-
-        in1 >> num;
-        for (int i = 0; i < num; i++)
-        {
-            HoleRule t;
-            in1 >> t;
-            holeRuleList.append(t);
-        }
-        file1.close();
-        return true;
-    }
+    
     else
     {
 		m_logger->error("Error reading hole identification rule, File not found");

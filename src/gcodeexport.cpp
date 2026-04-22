@@ -4,6 +4,7 @@
 #include <QTextStream>
 #include <QDateTime>
 #include <QMap>
+#include <cmath>
 #include "scale.h"
 
 bool GcodeExport::write(const Toolpath &tp, const Setting &s,
@@ -40,8 +41,16 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     // All defaults are in mm; divide by 25.4 when inch output is selected.
     double safeZ    = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double depth_mm = (tool.maxStepDepth > 0.0) ? tool.maxStepDepth : parm.depth;
-    double depth    = useInch ? depth_mm / 25.4 : depth_mm;
+    // Total engraving depth from the Toolpath Parameter UI depth field.
+    double totalDepth_mm = (parm.depth > 0.0) ? parm.depth : kDefaultDepthmm;
+    double totalDepth    = useInch ? totalDepth_mm / 25.4 : totalDepth_mm;
+
+    // Step depth per pass: use maxStepDepth when it's a positive fraction of total depth.
+    // If unset or >= total depth, a single pass cuts to full depth.
+    double step_mm   = (tool.maxStepDepth > 0.0 && tool.maxStepDepth < totalDepth_mm)
+                           ? tool.maxStepDepth : totalDepth_mm;
+    double step      = useInch ? step_mm / 25.4 : step_mm;
+    int    numPasses = static_cast<int>(std::ceil(totalDepth_mm / step_mm));
 
     double feed_mm  = (tool.feedrate > 0.0)       ? tool.feedrate       : kDefaultFeedratemm;
     double feedrate = useInch ? feed_mm / 25.4 : feed_mm;
@@ -63,12 +72,17 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     out << "(Generated: "
         << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
         << ")\n";
+    out << "(Tool: " << tool.name << ")\n";
     out << "(Tool diameter: "
         << QString::number(tool.diameter, 'f', useInch ? 4 : 2)
         << (useInch ? " in" : " mm") << ")\n";
-    out << "(Feedrate: " << feedrate << (useInch ? " in/min" : " mm/min") << ")\n";
-    out << "(Depth:    -" << QString::number(depth,'f',zprec)
+    out << "(Feedrate: " << QString::number(feedrate, 'f', 1)
+        << (useInch ? " in/min" : " mm/min") << ")\n";
+    out << "(Total depth: -" << QString::number(totalDepth, 'f', zprec)
         << (useInch ? " in" : " mm") << ")\n";
+    if (numPasses > 1)
+        out << "(Step depth:  -" << QString::number(step, 'f', zprec)
+            << (useInch ? " in" : " mm") << ", " << numPasses << " passes)\n";
     out << "(Paths:    " << tp.totalToolpath.size() << ")\n";
     if(flipX) out << "(Mirror:   X axis flipped)\n";
     out << "\n";
@@ -92,31 +106,46 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
         ++pathIdx;
         out << "(--- Path " << pathIdx << " ---)\n";
 
-        // First point: rapid XY move at safe Z
         double x0 = path.at(0).X * toUnit * xSign;
         double y0 = path.at(0).Y * toUnit;
+
+        // Rapid to path start at safe height
         out << "G0 X" << QString::number(x0, 'f', prec)
             << " Y" << QString::number(y0, 'f', prec) << "\n";
 
-        // Plunge
-        out << "G1 Z-" << QString::number(depth, 'f', zprec)
-            << " F" << QString::number(plunge, 'f', 1) << "\n";
-
-        // Cut through remaining points
-        out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
-        for (size_t i = 1; i < path.size(); ++i)
+        // Multi-pass: each pass cuts one step deeper until total depth is reached
+        for (int pass = 1; pass <= numPasses; ++pass)
         {
-            double x = path.at(i).X * toUnit * xSign;
-            double y = path.at(i).Y * toUnit;
-            out << "X" << QString::number(x, 'f', prec)
-                << " Y" << QString::number(y, 'f', prec) << "\n";
+            double passDepth = std::min(step * pass, totalDepth);
+
+            if (pass > 1)
+            {
+                // Retract and reposition at path start for next pass
+                out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+                out << "G0 X" << QString::number(x0, 'f', prec)
+                    << " Y" << QString::number(y0, 'f', prec) << "\n";
+            }
+
+            // Plunge to this pass depth
+            out << "G1 Z-" << QString::number(passDepth, 'f', zprec)
+                << " F" << QString::number(plunge, 'f', 1) << "\n";
+
+            // Cut through remaining points
+            out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
+            for (size_t i = 1; i < path.size(); ++i)
+            {
+                double x = path.at(i).X * toUnit * xSign;
+                double y = path.at(i).Y * toUnit;
+                out << "X" << QString::number(x, 'f', prec)
+                    << " Y" << QString::number(y, 'f', prec) << "\n";
+            }
+
+            // Close the polygon (return to first point)
+            out << "X" << QString::number(x0, 'f', prec)
+                << " Y" << QString::number(y0, 'f', prec) << "\n";
         }
 
-        // Close the polygon (return to first point)
-        out << "X" << QString::number(x0, 'f', prec)
-            << " Y" << QString::number(y0, 'f', prec) << "\n";
-
-        // Retract
+        // Retract after all passes
         out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
         out << "\n";
     }
@@ -176,8 +205,16 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
                             : (1.0 / PRECISIONSCALE);
     double safeZ  = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double depth_mm = (parm.depth > dTool.maxStepDepth) ? dTool.maxStepDepth : parm.depth;
-    double depth    = useInch ? depth_mm / 25.4 : depth_mm;
+    // Total drill depth from the Toolpath Parameter UI depth field.
+    double totalDepth_mm = (parm.depth > 0.0) ? parm.depth : kDefaultDrillDepthmm;
+    double totalDepth    = useInch ? totalDepth_mm / 25.4 : totalDepth_mm;
+
+    // Peck step: use maxStepDepth when set and less than total depth.
+    // If unset or >= total depth, treat as a single full-depth plunge.
+    double step_mm  = (dTool.maxStepDepth > 0.0 && dTool.maxStepDepth < totalDepth_mm)
+                          ? dTool.maxStepDepth : totalDepth_mm;
+    double step     = useInch ? step_mm / 25.4 : step_mm;
+    int    numPecks = static_cast<int>(std::ceil(totalDepth_mm / step_mm));
 
     double plunge_mm = (dTool.maxPlungeSpeed > 0.0) ? dTool.maxPlungeSpeed : kDefaultDrillFeedmm;
     double plunge    = useInch ? plunge_mm / 25.4 : plunge_mm;
@@ -192,7 +229,7 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     int totalHoles = 0;
     for (const auto &list : holesByDiameter) totalHoles += list.size();
 
-	auto drills = s.getDrillList();
+    auto drills = s.getDrillList();
 
     // -------------------------------------------------------
     // Header
@@ -202,8 +239,11 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
         << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") << ")\n";
     out << "(Holes: " << totalHoles
         << ", Diameters: " << holesByDiameter.size() << ")\n";
-    out << "(Drill depth: -" << QString::number(depth, 'f', zprec)
+    out << "(Drill depth: -" << QString::number(totalDepth, 'f', zprec)
         << (useInch ? " in" : " mm") << ")\n";
+    if (numPecks > 1)
+        out << "(Peck depth:  -" << QString::number(step, 'f', zprec)
+            << (useInch ? " in" : " mm") << ", " << numPecks << " pecks per hole)\n";
     if(flipX) out << "(Mirror:     X axis flipped)\n";
     out << "\n";
 
@@ -260,8 +300,16 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
             double y = pt.y() * toUnit;
             out << "G0 X" << QString::number(x, 'f', prec)
                 << " Y" << QString::number(y, 'f', prec) << "\n";
-            out << "G1 Z-" << QString::number(depth, 'f', zprec)
-                << " F" << QString::number(toolFeed, 'f', 1) << "\n";
+
+            // Peck drilling: plunge in steps, retract between pecks to clear chips
+            for (int peck = 1; peck <= numPecks; ++peck)
+            {
+                double peckDepth = std::min(step * peck, totalDepth);
+                out << "G1 Z-" << QString::number(peckDepth, 'f', zprec)
+                    << " F" << QString::number(toolFeed, 'f', 1) << "\n";
+                if (peck < numPecks)
+                    out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+            }
             out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
         }
         out << "\n";
@@ -303,21 +351,23 @@ bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
 
     double toUnit = useInch ? (1.0 / (PRECISIONSCALE * 25.4))
                             : (1.0 / PRECISIONSCALE);
-    double safeZ    = useInch ? kSafeZmm / 25.4 : kSafeZmm;
+    double safeZ = useInch ? kSafeZmm / 25.4 : kSafeZmm;
 
-    double depth_mm = parm.depth;
-    double step_depth_mm = (parm.depth > tool.maxStepDepth) ? tool.maxStepDepth : parm.depth;
+    // Total milling depth from the Toolpath Parameter UI depth field.
+    double totalDepth_mm = (parm.depth > 0.0) ? parm.depth : kDefaultDepthmm;
+    double totalDepth    = useInch ? totalDepth_mm / 25.4 : totalDepth_mm;
 
-    int passes = std::ceil(depth_mm / step_depth_mm);
+    // Step depth per pass: use maxStepDepth when set and less than total depth.
+    double step_mm   = (tool.maxStepDepth > 0.0 && tool.maxStepDepth < totalDepth_mm)
+                           ? tool.maxStepDepth : totalDepth_mm;
+    double step      = useInch ? step_mm / 25.4 : step_mm;
+    int    numPasses = static_cast<int>(std::ceil(totalDepth_mm / step_mm));
 
-    double depth    = useInch ? depth_mm / 25.4 : depth_mm;
-    double step_depth = useInch ? step_depth_mm / 25.4 : step_depth_mm;
-
-    double feed_mm  = (tool.feedrate > 0.0) ? tool.feedrate : kDefaultFeedratemm;
-    double feedrate = useInch ? feed_mm / 25.4 : feed_mm;
+    double feed_mm   = (tool.feedrate > 0.0)       ? tool.feedrate       : kDefaultFeedratemm;
+    double feedrate  = useInch ? feed_mm / 25.4 : feed_mm;
     double plunge_mm = (tool.maxPlungeSpeed > 0.0) ? tool.maxPlungeSpeed : kDefaultPlungemm;
     double plunge    = useInch ? plunge_mm / 25.4 : plunge_mm;
-    double spindle  = (tool.spindleSpeed > 0.0) ? tool.spindleSpeed : kDefaultSpindle;
+    double spindle   = (tool.spindleSpeed > 0.0)   ? tool.spindleSpeed   : kDefaultSpindle;
 
     int prec  = useInch ? 6 : 4;
     int zprec = useInch ? 4 : 3;
@@ -327,11 +377,16 @@ bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
     out << "(Generated: "
         << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
         << ")\n";
-    out << "(Feedrate: " << feedrate << (useInch ? " in/min" : " mm/min") << ")\n";
-    out << "(Depth:    -" << QString::number(depth, 'f', zprec)
+    out << "(Tool: " << tool.name << ")\n";
+    out << "(Feedrate:    " << QString::number(feedrate, 'f', 1)
+        << (useInch ? " in/min" : " mm/min") << ")\n";
+    out << "(Total depth: -" << QString::number(totalDepth, 'f', zprec)
         << (useInch ? " in" : " mm") << ")\n";
+    if (numPasses > 1)
+        out << "(Step depth:  -" << QString::number(step, 'f', zprec)
+            << (useInch ? " in" : " mm") << ", " << numPasses << " passes)\n";
     out << "(Segments: " << outline.tracksList.size() << ")\n";
-    if(flipX) out << "(Mirror:   X axis flipped)\n";
+    if (flipX) out << "(Mirror:   X axis flipped)\n";
     out << "\n";
 
     out << "G90\n";
@@ -341,10 +396,18 @@ bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
     out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
     out << "\n";
 
-    bool cutting = false;
-    double lastX = 0, lastY = 0;
+    // Multi-pass: one full outline traversal per pass, each going one step deeper.
+    // cutting/lastX/lastY reset each pass so closed outlines always re-plunge correctly.
+    for (int pass = 1; pass <= numPasses; ++pass)
+    {
+        double passDepth = std::min(step * pass, totalDepth);
 
-    for (int pass = 1; pass <= passes; ++pass) {
+        if (numPasses > 1)
+            out << "(--- Pass " << pass << ": Z-"
+                << QString::number(passDepth, 'f', zprec) << " ---)\n";
+
+        bool cutting = false;
+        double lastX = 0, lastY = 0;
 
         for (int i = 0; i < outline.tracksList.size(); ++i)
         {
@@ -360,15 +423,11 @@ bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
 
             if (!connected)
             {
-                double tdepth = pass * step_depth;
-
-                tdepth = std::min(tdepth, depth);
-
                 if (cutting)
                     out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
                 out << "G0 X" << QString::number(sx, 'f', prec)
                     << " Y" << QString::number(sy, 'f', prec) << "\n";
-                out << "G1 Z-" << QString::number(tdepth, 'f', zprec)
+                out << "G1 Z-" << QString::number(passDepth, 'f', zprec)
                     << " F" << QString::number(plunge, 'f', 1) << "\n";
                 out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
                 cutting = true;
@@ -379,12 +438,12 @@ bool GcodeExport::writeOutline(const Gerber &outline, const Setting &s,
             lastX = ex;
             lastY = ey;
         }
+
+        if (cutting)
+            out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+        out << "\n";
     }
 
-    if (cutting)
-        out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
-
-    out << "\n";
     out << "M5\n";
     out << "M30\n";
 

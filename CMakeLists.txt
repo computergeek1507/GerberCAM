@@ -104,7 +104,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 if(WIN32)
-	file( GLOB_RECURSE installcons res/*.con )
+	file( GLOB_RECURSE installcons res/*.con res/*.json )
     file(COPY ${installcons} DESTINATION ${CMAKE_BINARY_DIR})
 	file(COPY ${installcons} DESTINATION ${CMAKE_BINARY_DIR}/Release)
 	file(COPY ${installcons} DESTINATION ${CMAKE_BINARY_DIR}/Debug)

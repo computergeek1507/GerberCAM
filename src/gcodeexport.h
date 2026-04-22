@@ -35,10 +35,10 @@ private:
     static constexpr double kSafeZmm          = 5.08;    // 0.2 inch
 
     // Default isolation cutting depth (engrave depth into substrate).
-    //static constexpr double kDefaultDepthmm   = 0.127;   // ~5 mil
+    static constexpr double kDefaultDepthmm      = 0.127;  // ~5 mil
 
     // Default drill-through depth (PCB thickness + clearance).
-    //static constexpr double kDefaultDrillDepthmm = 1.7; // ~75 mil / 1.9mm
+    static constexpr double kDefaultDrillDepthmm = 1.7;    // standard 1.6mm PCB + clearance
 
     // Default feedrates in mm/min.
     static constexpr double kDefaultFeedratemm  = 762.0;  // 30 in/min
