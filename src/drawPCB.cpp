@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "DrawPCB.h"
+#include "drawPCB.h"
 
 DrawPCB::DrawPCB(Pad component,int layerOrder,QColor c)
 {
