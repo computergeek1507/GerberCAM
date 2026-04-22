@@ -31,6 +31,7 @@ SOFTWARE.
 #include <qpainter.h>
 #include <QColor>
 #include <QTreeView>
+#include <QTreeWidget>
 #include <QSettings>
 #include "treemodel.h"
 #include "ui_mainwindow.h"
@@ -42,6 +43,7 @@ SOFTWARE.
 #include "toolpath.h"
 #include "preprocess.h"
 #include "gcodeexport.h"
+#include "excellonparser.h"
 
 #include "clipper.hpp"
 using namespace ClipperLib;
@@ -77,6 +79,7 @@ public:
 protected:
     void drawNet(QGraphicsScene *scene, Preprocess &t, QColor color, QColor colorError);
     void drawToolpath(QGraphicsScene *scene, Toolpath &t);
+    void drawExcellonDrills(QGraphicsScene *scene);
     void showMessage(Gerber *g, Preprocess &p);
 private slots:
     void on_actionOpen_triggered();
@@ -110,6 +113,12 @@ private slots:
     void on_actionOpen_Outline_triggered();
 
     void on_actionExport_Outline_triggered();
+
+    void on_actionOpen_Excellon_triggered();
+
+    void on_actionExport_Drills_Excellon_triggered();
+
+    void on_actionExport_Drills_Excellon_Bore_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -155,6 +164,7 @@ private:
 
     std::unique_ptr <Preprocess> preprocessfile1{ nullptr };
     std::unique_ptr <Preprocess> preprocessfile2{ nullptr };
+    std::unique_ptr<ExcellonParser> m_excellon{ nullptr };
     std::unique_ptr <Toolpath> toolpath1{ nullptr };
     std::unique_ptr <Toolpath> toolpath2{ nullptr };
 

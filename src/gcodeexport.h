@@ -1,10 +1,14 @@
 #pragma once
 
 #include <QString>
+#include <QMap>
+#include <QList>
+#include <QPoint>
 #include "toolpath.h"
 #include "preprocess.h"
 #include "setting.h"
 #include "gerber.h"
+#include "excellonparser.h"
 
 class GcodeExport
 {
@@ -15,11 +19,26 @@ public:
                       const QString &filePath, QString &errorMsg,
                       bool flipX = false);
 
-    // Write drill G-code from the holes in pp to filePath.
+    // Write drill G-code from holes extracted from a Gerber Preprocess.
     // Returns true on success, sets errorMsg on failure.
     static bool writeDrills(const Preprocess &pp, const Setting &s,
                             const QString &filePath, QString &errorMsg,
                             bool flipX = false);
+
+    // Write drill G-code from a parsed Excellon drill file.
+    // Returns true on success, sets errorMsg on failure.
+    static bool writeDrills(const ExcellonParser &exc, const Setting &s,
+                            const QString &filePath, QString &errorMsg,
+                            bool flipX = false);
+
+    // Circular-bore variants: uses one end mill (the drill tool) and bores
+    // out holes larger than the tool with concentric G2 arcs.
+    static bool writeDrillsBore(const Preprocess &pp, const Setting &s,
+                                const QString &filePath, QString &errorMsg,
+                                bool flipX = false);
+    static bool writeDrillsBore(const ExcellonParser &exc, const Setting &s,
+                                const QString &filePath, QString &errorMsg,
+                                bool flipX = false);
 
     // Write outline cut G-code from edge cut Gerber tracks to filePath.
     // Returns true on success, sets errorMsg on failure.
@@ -28,6 +47,14 @@ public:
                              bool flipX = false);
 
 private:
+    // Shared implementation used by both writeDrills overloads.
+    // circularBore=true uses concentric G2 arcs to bore holes larger than the tool.
+    static bool writeDrillsImpl(const QMap<qint64, QList<QPoint>> &holes,
+                                const Setting &s, const QString &filePath,
+                                QString &errorMsg, bool flipX,
+                                const QString &sourceLabel,
+                                bool circularBore = false);
+
     // All defaults are in mm (or RPM where noted).
     // When inch output is requested, these are divided by 25.4.
 

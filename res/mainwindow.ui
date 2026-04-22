@@ -22,67 +22,110 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QTabWidget" name="LayerTab1">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
-      <property name="currentIndex">
-       <number>0</number>
+      <property name="childrenCollapsible">
+       <bool>false</bool>
       </property>
-      <widget class="QWidget" name="tabMessage">
-       <attribute name="title">
-        <string>Message</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QTextBrowser" name="messageBrowser"/>
-        </item>
-       </layout>
+      <widget class="QTabWidget" name="LayerTab1">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="tabPosition">
+        <enum>QTabWidget::West</enum>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="tabMessage">
+        <attribute name="title">
+         <string>Message</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QTextBrowser" name="messageBrowser"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabLayer1">
+        <attribute name="title">
+         <string>Layer1</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0">
+          <widget class="QTreeView" name="treeViewlayer1">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabLayer2">
+        <attribute name="title">
+         <string>Tab 2</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <widget class="QTreeView" name="treeViewlayer2"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabOutline">
+        <attribute name="title">
+         <string>Outline</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <widget class="QTextBrowser" name="outlineBrowser"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabDrills">
+        <attribute name="title">
+         <string>Drills</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="0">
+          <widget class="QTreeWidget" name="drillsTree">
+           <column>
+            <property name="text">
+             <string>Size</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Count</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
-      <widget class="QWidget" name="tabLayer1">
-       <attribute name="title">
-        <string>Layer1</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QTreeView" name="treeViewlayer1">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tabLayer2">
-       <attribute name="title">
-        <string>Tab 2</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <widget class="QTreeView" name="treeViewlayer2"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tabOutline">
-       <attribute name="title">
-        <string>Outline</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="0" column="0">
-         <widget class="QTextBrowser" name="outlineBrowser"/>
-        </item>
-       </layout>
+      <widget class="QGraphicsView" name="graphicsView">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
       </widget>
      </widget>
-    </item>
-    <item>
-     <widget class="QGraphicsView" name="graphicsView"/>
     </item>
    </layout>
   </widget>
@@ -101,6 +144,7 @@
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionOpen_Outline"/>
+    <addaction name="actionOpen_Excellon"/>
     <addaction name="actionAdd_layer"/>
     <addaction name="separator"/>
     <addaction name="actionSetting"/>
@@ -137,6 +181,8 @@
     </property>
     <addaction name="actionExport_GCode"/>
     <addaction name="actionExport_Drills"/>
+    <addaction name="actionExport_Drills_Excellon"/>
+    <addaction name="actionExport_Drills_Excellon_Bore"/>
     <addaction name="actionExport_Outline"/>
    </widget>
    <addaction name="menuFile"/>
@@ -240,6 +286,27 @@
   <action name="actionOpen_Outline">
    <property name="text">
     <string>Open Outline...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Excellon">
+   <property name="text">
+    <string>Open Excellon Drill File...</string>
+   </property>
+  </action>
+  <action name="actionExport_Drills_Excellon">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export Excellon Drill G-Code...</string>
+   </property>
+  </action>
+  <action name="actionExport_Drills_Excellon_Bore">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export Excellon Drill G-Code (Bore)...</string>
    </property>
   </action>
   <action name="actionFlip_Board">

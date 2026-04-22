@@ -578,6 +578,14 @@ Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAM
         }
         netPathList.append(tempToolPathNetPath);
     }
+    // Clear all collision flags before re-evaluating so fixed collisions turn blue.
+    for (int i = 0; i < p->netList.size(); ++i)
+    {
+        Net n = p->netList.at(i);
+        n.collisionFlag = false;
+        p->netList.replace(i, n);
+    }
+
     cToolpathIntersects(netPathList, tpCollisionNum);
     int sum = 0;
 

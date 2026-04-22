@@ -164,27 +164,76 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
                               const QString &filePath, QString &errorMsg,
                               bool flipX)
 {
-    // -------------------------------------------------------
-    // Collect all holes grouped by diameter
-    // Key: hole diameter in internal units; Value: list of pad centers
-    // -------------------------------------------------------
-    QMap<qint64, QList<QPoint>> holesByDiameter;
-
+    QMap<qint64, QList<QPoint>> holes;
     for (const Net &net : pp.netList)
-    {
         for (const Element &e : net.elements)
-        {
             if (e.elementType == 'P' && e.pad.hole > 0)
-                holesByDiameter[e.pad.hole].append(e.pad.point);
-        }
-    }
+                holes[e.pad.hole].append(e.pad.point);
 
-    if (holesByDiameter.isEmpty())
+    if (holes.isEmpty())
     {
         errorMsg = "No holes found. Run Hole Identify first.";
         return false;
     }
 
+    return writeDrillsImpl(holes, s, filePath, errorMsg, flipX, "Gerber");
+}
+
+bool GcodeExport::writeDrills(const ExcellonParser &exc, const Setting &s,
+                              const QString &filePath, QString &errorMsg,
+                              bool flipX)
+{
+    QMap<qint64, QList<QPoint>> holes = exc.holesByDiameter();
+
+    if (holes.isEmpty())
+    {
+        errorMsg = "No holes in the Excellon data.";
+        return false;
+    }
+
+    return writeDrillsImpl(holes, s, filePath, errorMsg, flipX, "Excellon");
+}
+
+bool GcodeExport::writeDrillsBore(const Preprocess &pp, const Setting &s,
+                                  const QString &filePath, QString &errorMsg,
+                                  bool flipX)
+{
+    QMap<qint64, QList<QPoint>> holes;
+    for (const Net &net : pp.netList)
+        for (const Element &e : net.elements)
+            if (e.elementType == 'P' && e.pad.hole > 0)
+                holes[e.pad.hole].append(e.pad.point);
+
+    if (holes.isEmpty())
+    {
+        errorMsg = "No holes found. Run Hole Identify first.";
+        return false;
+    }
+
+    return writeDrillsImpl(holes, s, filePath, errorMsg, flipX, "Gerber", true);
+}
+
+bool GcodeExport::writeDrillsBore(const ExcellonParser &exc, const Setting &s,
+                                  const QString &filePath, QString &errorMsg,
+                                  bool flipX)
+{
+    QMap<qint64, QList<QPoint>> holes = exc.holesByDiameter();
+
+    if (holes.isEmpty())
+    {
+        errorMsg = "No holes in the Excellon data.";
+        return false;
+    }
+
+    return writeDrillsImpl(holes, s, filePath, errorMsg, flipX, "Excellon", true);
+}
+
+bool GcodeExport::writeDrillsImpl(const QMap<qint64, QList<QPoint>> &holesByDiameter,
+                                  const Setting &s, const QString &filePath,
+                                  QString &errorMsg, bool flipX,
+                                  const QString &sourceLabel,
+                                  bool circularBore)
+{
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
     {
@@ -234,9 +283,26 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
     // -------------------------------------------------------
     // Header
     // -------------------------------------------------------
-    out << "(GerberCAM - Drill Export)\n";
+    // Circular bore parameters (computed even when not used)
+    double toolDiamMm = dTool.width;
+    double stepoverMm = (toolDiamMm > 0.0) ? toolDiamMm * 0.5 : 0.0;
+    double stepover   = useInch ? stepoverMm / 25.4 : stepoverMm;
+    double toolDiam   = useInch ? toolDiamMm / 25.4 : toolDiamMm;
+    // When flipping X, mirror arc direction (G2↔G3) to maintain CW cut in world coords.
+    const char *arcDir = flipX ? "G3" : "G2";
+
+    out << "(GerberCAM - Drill Export [" << sourceLabel << "])\n";
     out << "(Generated: "
         << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") << ")\n";
+    if (circularBore)
+    {
+        out << "(Mode:       Circular Bore)\n";
+        out << "(End mill:   " << dTool.name << ")\n";
+        out << "(Tool width: " << QString::number(toolDiam, 'f', useInch ? 4 : 2)
+            << (useInch ? " in" : " mm") << ")\n";
+        out << "(Step-over:  " << QString::number(stepover, 'f', useInch ? 4 : 2)
+            << (useInch ? " in" : " mm") << " [50% tool diam])\n";
+    }
     out << "(Holes: " << totalHoles
         << ", Diameters: " << holesByDiameter.size() << ")\n";
     out << "(Drill depth: -" << QString::number(totalDepth, 'f', zprec)
@@ -294,22 +360,78 @@ bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
         out << "M3 S" << static_cast<int>(toolRPM) << "\n";
         out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
 
+        // Determine if this hole diameter needs circular boring.
+        // In bore mode: bore only if the hole is larger than the tool.
+        double holeDiamMm = holeDiam / static_cast<double>(PRECISIONSCALE);
+        bool doBore = circularBore && (toolDiamMm > 0.0) && (holeDiamMm > toolDiamMm);
+
         for (const QPoint &pt : holes)
         {
-            double x = pt.x() * toUnit * xSign;
-            double y = pt.y() * toUnit;
-            out << "G0 X" << QString::number(x, 'f', prec)
-                << " Y" << QString::number(y, 'f', prec) << "\n";
+            double cx = pt.x() * toUnit * xSign;
+            double cy = pt.y() * toUnit;
+            out << "G0 X" << QString::number(cx, 'f', prec)
+                << " Y" << QString::number(cy, 'f', prec) << "\n";
 
-            // Peck drilling: plunge in steps, retract between pecks to clear chips
-            for (int peck = 1; peck <= numPecks; ++peck)
+            if (!doBore)
             {
-                double peckDepth = std::min(step * peck, totalDepth);
-                out << "G1 Z-" << QString::number(peckDepth, 'f', zprec)
-                    << " F" << QString::number(toolFeed, 'f', 1) << "\n";
-                if (peck < numPecks)
-                    out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+                // Straight peck drilling
+                for (int peck = 1; peck <= numPecks; ++peck)
+                {
+                    double peckDepth = std::min(step * peck, totalDepth);
+                    out << "G1 Z-" << QString::number(peckDepth, 'f', zprec)
+                        << " F" << QString::number(toolFeed, 'f', 1) << "\n";
+                    if (peck < numPecks)
+                        out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+                }
             }
+            else
+            {
+                // Circular bore: concentric arcs expanding from centre to hole wall.
+                // maxR = distance from hole centre to tool-centre at full bore width.
+                double maxR_mm = (holeDiamMm - toolDiamMm) / 2.0;
+                double maxR    = useInch ? maxR_mm / 25.4 : maxR_mm;
+
+                for (int peck = 1; peck <= numPecks; ++peck)
+                {
+                    double peckDepth = std::min(step * peck, totalDepth);
+
+                    // Plunge at centre
+                    out << "G1 Z-" << QString::number(peckDepth, 'f', zprec)
+                        << " F" << QString::number(toolFeed, 'f', 1) << "\n";
+                    out << "G1 F" << QString::number(toolFeed, 'f', 1) << "\n";
+
+                    // Spiral outward: one full circle per step-over increment
+                    double r = stepover;
+                    while (r < maxR - 1e-6)
+                    {
+                        out << "G1 X" << QString::number(cx + r, 'f', prec)
+                            << " Y" << QString::number(cy,      'f', prec) << "\n";
+                        out << arcDir
+                            << " X" << QString::number(cx + r, 'f', prec)
+                            << " Y" << QString::number(cy,      'f', prec)
+                            << " I" << QString::number(-r,      'f', prec)
+                            << " J0\n";
+                        r += stepover;
+                    }
+
+                    // Final finishing pass at exact wall radius
+                    out << "G1 X" << QString::number(cx + maxR, 'f', prec)
+                        << " Y" << QString::number(cy,          'f', prec) << "\n";
+                    out << arcDir
+                        << " X" << QString::number(cx + maxR, 'f', prec)
+                        << " Y" << QString::number(cy,         'f', prec)
+                        << " I" << QString::number(-maxR,      'f', prec)
+                        << " J0\n";
+
+                    // Return to centre before next peck or retract
+                    out << "G1 X" << QString::number(cx, 'f', prec)
+                        << " Y" << QString::number(cy,   'f', prec) << "\n";
+
+                    if (peck < numPecks)
+                        out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+                }
+            }
+
             out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
         }
         out << "\n";

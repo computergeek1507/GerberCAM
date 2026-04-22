@@ -28,6 +28,7 @@ SOFTWARE.
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSet>
+#include <QTimer>
 using namespace ClipperLib;
 
 #include "scale.h"
@@ -84,6 +85,25 @@ MainWindow::MainWindow(QWidget *parent) :
     //QMatrix matrix;
     //matrix.scale(1, -1);
     //ui->graphicsView->setMatrix(matrix);
+    // Remove layout margins so the splitter fills the window edge-to-edge.
+    ui->horizontalLayout->setContentsMargins(0, 0, 0, 0);
+    ui->horizontalLayout->setSpacing(0);
+
+    // Give the splitter an Expanding policy (uic leaves it at default Preferred).
+    ui->splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    ui->splitter->setHandleWidth(6);
+    ui->splitter->setStretchFactor(0, 0);
+    ui->splitter->setStretchFactor(1, 1);
+
+    // Allow both sides to shrink/grow freely.
+    ui->LayerTab1->setMinimumWidth(50);
+    ui->graphicsView->setMinimumWidth(50);
+
+    // Apply initial split after the layout has run.
+    QTimer::singleShot(0, this, [this]() {
+        ui->splitter->setSizes({ 280, ui->splitter->width() - 280 });
+    });
+
     ui->graphicsView->scale(1,-1);
     ui->graphicsView->setInteractive(true);
     //ui->graphicsView->setRenderHint(QPainter::Antialiasing, true);
@@ -262,6 +282,61 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
     //m_logger->debug("drawToolpath: item added at ({}, {}), scene items={}", point.x(), point.y(), scene->items().size());
 }
 
+void MainWindow::drawExcellonDrills(QGraphicsScene *scene)
+{
+    if (!m_excellon || !scene)
+        return;
+
+    int totalHoles = 0;
+    for (const ExcellonTool &t : m_excellon->tools)
+        totalHoles += t.holes.size();
+
+    if (totalHoles == 0)
+        return;
+
+    // Crosshair length: 2% of the scene diagonal so it is clearly
+    // visible at board-level zoom regardless of board size.
+    const QRectF bounds = scene->sceneRect();
+    double diag  = std::sqrt(bounds.width()  * bounds.width()
+                           + bounds.height() * bounds.height());
+    double crossLen = diag * 0.02;   // 2% of board diagonal
+
+    // Cosmetic pen: always 1 pixel wide on screen regardless of zoom.
+    QPen circlePen(QColor(255, 220, 0));
+    circlePen.setWidth(0);
+    QBrush circleFill(QColor(255, 220, 0, 120));
+
+    QPen crossPen(QColor(255, 220, 0));
+    crossPen.setWidth(0);
+
+    for (const ExcellonTool &tool : m_excellon->tools)
+    {
+        if (tool.diameterMm <= 0.0)
+            continue;
+
+        double r = (tool.diameterMm * PRECISIONSCALE) / 2.0;
+        // Crosshair is at least 3× the drill radius so it is legible even
+        // when zoomed in tight.
+        double arm = std::max(crossLen, r * 3.0);
+
+        for (const QPoint &hole : tool.holes)
+        {
+            double cx = hole.x(), cy = hole.y();
+
+            // Circle — placed directly in scene coordinates (no setPos).
+            auto *circle = scene->addEllipse(cx - r, cy - r, r * 2.0, r * 2.0,
+                                             circlePen, circleFill);
+            circle->setZValue(100);
+
+            // Crosshair lines — also in absolute scene coordinates.
+            auto *h = scene->addLine(cx - arm, cy, cx + arm, cy, crossPen);
+            auto *v = scene->addLine(cx, cy - arm, cx, cy + arm, crossPen);
+            h->setZValue(100);
+            v->setZValue(100);
+        }
+    }
+}
+
 void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color)
 {
     //Track tempTrack;
@@ -343,6 +418,7 @@ void MainWindow::on_actionOpen_triggered()
 
     sceneNet1 = new QGraphicsScene(this);
     drawNet(sceneNet1,*preprocessfile1,*colorBlue1,*Error1);
+    drawExcellonDrills(sceneNet1);
     ui->graphicsView->setScene(sceneNet1);
 
 
@@ -457,17 +533,21 @@ void MainWindow::on_actionAdd_layer_triggered()
 
     sceneNet1=new QGraphicsScene(this);
     drawNet(sceneNet1,*preprocessfile1,*colorRed1,*Error1);
+    drawExcellonDrills(sceneNet1);
 
     sceneNet2=new QGraphicsScene(this);
     drawNet(sceneNet2,*preprocessfile2,*colorBlue1,*Error1);
+    drawExcellonDrills(sceneNet2);
 
     sceneNet21=new QGraphicsScene(this);
     drawNet(sceneNet21,*preprocessfile1,*colorRed2,*Error2);
     drawNet(sceneNet21,*preprocessfile2,*colorBlue1,*Error1);
+    drawExcellonDrills(sceneNet21);
 
     sceneNet12=new QGraphicsScene(this);
     drawNet(sceneNet12,*preprocessfile2,*colorBlue2,*Error2);
     drawNet(sceneNet12,*preprocessfile1,*colorRed1,*Error1);
+    drawExcellonDrills(sceneNet12);
 
     if(currentLayer==1)
         ui->graphicsView->setScene(sceneNet12);
@@ -495,11 +575,15 @@ void MainWindow::on_actionToolpath_generat_triggered()
             drawNet(scenePath12,*preprocessfile2,*colorBlue2,*Error2);
             drawNet(scenePath12,*preprocessfile1,*colorRed1,*Error1);
             drawToolpath(scenePath12,*toolpath1);
+            if (gerberOutline) drawLayer(scenePath12, gerberOutline.get(), *colorOutline);
+            drawExcellonDrills(scenePath12);
 
             scenePath21=new QGraphicsScene(this);
             drawNet(scenePath21,*preprocessfile1,*colorRed2,*Error2);
             drawNet(scenePath21,*preprocessfile2,*colorBlue1,*Error1);
             drawToolpath(scenePath21,*toolpath2);
+            if (gerberOutline) drawLayer(scenePath21, gerberOutline.get(), *colorOutline);
+            drawExcellonDrills(scenePath21);
 
             QString temp = alertHtml + QString::number(toolpath1->collisionSum)+endHtml;
             ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
@@ -514,6 +598,8 @@ void MainWindow::on_actionToolpath_generat_triggered()
             scenePath1=new QGraphicsScene(this);
             drawNet(scenePath1,*preprocessfile1,*colorBlue1,*Error1);
             drawToolpath(scenePath1,*toolpath1);
+            if (gerberOutline) drawLayer(scenePath1, gerberOutline.get(), *colorOutline);
+            drawExcellonDrills(scenePath1);
           //ui->messageBrowser->append("   Preprocessing time ="+QString::number(p.time)+"ms");
             QString temp=alertHtml+QString::number(toolpath1->collisionSum)+endHtml;
             ui->messageBrowser->append("Layer1 Toolpath collision="+temp);
@@ -836,5 +922,174 @@ void MainWindow::on_actionExport_Outline_triggered()
     {
         m_logger->error("Export Outline G-Code failed: {}", errorMsg.toStdString());
         QMessageBox::critical(this, "Export Outline G-Code", errorMsg);
+    }
+}
+
+void MainWindow::on_actionOpen_Excellon_triggered()
+{
+    auto fileName = QFileDialog::getOpenFileName(
+        this, tr("Open Excellon Drill File"),
+        settingWindow->settings->lastDir(),
+        tr("Excellon Drill Files (*.drl *.exc *.xln *.ncd *.drill);;All files (*.*)"));
+
+    if (fileName.isEmpty())
+        return;
+
+    settingWindow->settings->setLastDir(fileName);
+
+    auto exc = std::make_unique<ExcellonParser>();
+    QString errorMsg;
+    if (!exc->parse(fileName, errorMsg))
+    {
+        m_logger->error("Excellon parse failed: {}", errorMsg.toStdString());
+        QMessageBox::critical(this, "Open Excellon", errorMsg);
+        return;
+    }
+
+    m_excellon = std::move(exc);
+
+    // Overlay onto every scene that already exists
+    for (QGraphicsScene *s : { sceneNet1, sceneNet2, sceneNet12, sceneNet21,
+                               scenePath1, scenePath2, scenePath12, scenePath21 })
+        drawExcellonDrills(s);
+    if (ui->graphicsView->scene())
+        ui->graphicsView->viewport()->update();
+
+    // Populate the Drills tab
+    ui->drillsTree->clear();
+    int totalHoles = 0;
+    for (const ExcellonTool &t : m_excellon->tools)
+    {
+        totalHoles += t.holes.size();
+        auto *top = new QTreeWidgetItem(ui->drillsTree);
+        top->setText(0, QString::number(t.diameterMm, 'f', 3) + " mm");
+        top->setText(1, QString::number(t.holes.size()));
+        for (const QPoint &hole : t.holes)
+        {
+            auto *child = new QTreeWidgetItem(top);
+            double xMm = hole.x() / static_cast<double>(PRECISIONSCALE);
+            double yMm = hole.y() / static_cast<double>(PRECISIONSCALE);
+            child->setText(0, QString("X%1  Y%2")
+                .arg(xMm, 0, 'f', 3)
+                .arg(yMm, 0, 'f', 3));
+        }
+    }
+    ui->drillsTree->resizeColumnToContents(0);
+    ui->drillsTree->resizeColumnToContents(1);
+    ui->LayerTab1->setCurrentWidget(ui->tabDrills);
+
+    QString fn = QFileInfo(fileName).fileName();
+    ui->messageBrowser->append("Excellon loaded: " + fn);
+    ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
+                               + ", Holes: " + QString::number(totalHoles));
+
+    m_logger->info("Excellon loaded: {} ({} tools, {} holes)",
+                   fileName.toStdString(),
+                   m_excellon->tools.size(), totalHoles);
+
+    ui->actionExport_Drills_Excellon->setEnabled(true);
+    ui->actionExport_Drills_Excellon_Bore->setEnabled(true);
+}
+
+void MainWindow::on_actionExport_Drills_Excellon_triggered()
+{
+    if (!m_excellon)
+    {
+        QMessageBox::warning(this, "Export Excellon Drill G-Code",
+                             "No Excellon file loaded. Open an Excellon drill file first.");
+        return;
+    }
+
+    // Derive a default output filename from the first Gerber (or generic name)
+    QString defaultName = gerberFileName;
+    if (!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if (dot >= 0) defaultName.truncate(dot);
+        defaultName += "_exc_drill.nc";
+    }
+    else
+    {
+        defaultName = "drill.nc";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export Excellon Drill G-Code",
+        settingWindow->settings->lastDir() + "/" + defaultName,
+        "G-Code files (*.nc *.gcode *.tap);;All files (*)");
+
+    if (filePath.isEmpty())
+        return;
+
+    settingWindow->settings->setLastDir(filePath);
+
+    QString errorMsg;
+    if (GcodeExport::writeDrills(*m_excellon, *settingWindow->settings,
+                                 filePath, errorMsg, boardFlipped))
+    {
+        int totalHoles = 0;
+        for (const ExcellonTool &t : m_excellon->tools)
+            totalHoles += t.holes.size();
+
+        ui->messageBrowser->append("Excellon Drill G-Code exported: " + QFileInfo(filePath).fileName());
+        ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
+                                   + ", Holes: " + QString::number(totalHoles));
+        m_logger->info("Excellon Drill G-Code exported: {}", filePath.toStdString());
+    }
+    else
+    {
+        m_logger->error("Export Excellon Drill G-Code failed: {}", errorMsg.toStdString());
+        QMessageBox::critical(this, "Export Excellon Drill G-Code", errorMsg);
+    }
+}
+
+void MainWindow::on_actionExport_Drills_Excellon_Bore_triggered()
+{
+    if (!m_excellon)
+    {
+        QMessageBox::warning(this, "Export Excellon Drill G-Code (Bore)",
+                             "No Excellon file loaded. Open an Excellon drill file first.");
+        return;
+    }
+
+    QString defaultName = gerberFileName;
+    if (!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if (dot >= 0) defaultName.truncate(dot);
+        defaultName += "_exc_bore.nc";
+    }
+    else
+    {
+        defaultName = "bore.nc";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export Excellon Drill G-Code (Bore)",
+        settingWindow->settings->lastDir() + "/" + defaultName,
+        "G-Code files (*.nc *.gcode *.tap);;All files (*)");
+
+    if (filePath.isEmpty())
+        return;
+
+    settingWindow->settings->setLastDir(filePath);
+
+    QString errorMsg;
+    if (GcodeExport::writeDrillsBore(*m_excellon, *settingWindow->settings,
+                                     filePath, errorMsg, boardFlipped))
+    {
+        int totalHoles = 0;
+        for (const ExcellonTool &t : m_excellon->tools)
+            totalHoles += t.holes.size();
+
+        ui->messageBrowser->append("Excellon Bore G-Code exported: " + QFileInfo(filePath).fileName());
+        ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
+                                   + ", Holes: " + QString::number(totalHoles));
+        m_logger->info("Excellon Bore G-Code exported: {}", filePath.toStdString());
+    }
+    else
+    {
+        m_logger->error("Export Excellon Bore G-Code failed: {}", errorMsg.toStdString());
+        QMessageBox::critical(this, "Export Excellon Drill G-Code (Bore)", errorMsg);
     }
 }
