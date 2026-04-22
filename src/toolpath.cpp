@@ -22,7 +22,7 @@ SOFTWARE.
 
 #define _USE_MATH_DEFINES
 
-#include "Toolpath.h"
+#include "toolpath.h"
 #include <math.h>
 
 #include "scale.h"
