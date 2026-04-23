@@ -20,3 +20,13 @@ jobs:
         bundle: gerbercam.flatpak
         manifest-path: org.flatpak.gerbercam.yaml
         cache-key: flatpak-builder-${{ github.sha }}
+
+     - name: Create prerelease
+      if: github.ref == 'refs/heads/master'
+      uses: marvinpinto/action-automatic-releases@latest
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: true
+        automatic_release_tag: "ci_flat"
+        title: "${{ steps.version.outputs.version }}"
+        files: org.flatpak.gerbercam.flatpak
