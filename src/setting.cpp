@@ -203,6 +203,7 @@ bool Setting::readSettings(QString const& appData)
             if (j.contains("lastDir")) {
                 m_lastDir = QString::fromStdString(j.value("lastDir", ""));
             }
+            openGcodeInNotepad = j.value("openGcodeInNotepad", openGcodeInNotepad);
 
             return true;
         }
@@ -223,6 +224,7 @@ void Setting::saveSettings()
         j["drillParm"] = drillParm.toJson();
         j["cutParm"] = cutParm.toJson();
         j["lastDir"] = m_lastDir.toStdString();
+        j["openGcodeInNotepad"] = openGcodeInNotepad;
 
         std::ofstream out((m_appData + "/" + JSON_SETTINGS_FILENAME).toStdString());
         out << j.dump(4);

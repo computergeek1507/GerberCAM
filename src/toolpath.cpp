@@ -718,7 +718,125 @@ Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logge
     }
 
     m_logger->debug("totalToolpath final size: {}", totalToolpath.size());
+
     time = timer.elapsed();
+}
+
+void Toolpath::generateClearingPaths(CuttingParm const& parm, Paths const& boardBoundary)
+{
+    if (totalToolpath.empty()) return;
+    clearingPaths.clear();
+
+    // Determine board polygon: use supplied boundary if valid, else fall back to
+    // isolation-path bounding box + 5 mm margin on each side.
+    Paths boardPaths;
+    if (!boardBoundary.empty())
+    {
+        boardPaths = boardBoundary;
+    }
+    else
+    {
+        qint64 xMin = totalToolpath[0][0].X, xMax = xMin;
+        qint64 yMin = totalToolpath[0][0].Y, yMax = yMin;
+        for (const auto& path : totalToolpath)
+            for (const auto& pt : path) {
+                xMin = std::min(xMin, pt.X); xMax = std::max(xMax, pt.X);
+                yMin = std::min(yMin, pt.Y); yMax = std::max(yMax, pt.Y);
+            }
+        // 5 mm fallback margin
+        const qint64 margin = 5000000;
+        xMin -= margin; xMax += margin;
+        yMin -= margin; yMax += margin;
+
+        Path boardPath;
+        boardPath << IntPoint(xMin, yMin) << IntPoint(xMax, yMin)
+                  << IntPoint(xMax, yMax) << IntPoint(xMin, yMax);
+        boardPaths.push_back(boardPath);
+    }
+
+    // Scan bounds from the board polygon
+    qint64 xMin = boardPaths[0][0].X, xMax = xMin;
+    qint64 yMin = boardPaths[0][0].Y, yMax = yMin;
+    for (const auto& bp : boardPaths)
+        for (const auto& pt : bp) {
+            xMin = std::min(xMin, pt.X); xMax = std::max(xMax, pt.X);
+            yMin = std::min(yMin, pt.Y); yMax = std::max(yMax, pt.Y);
+        }
+
+    // Use first board path as the board polygon for Clipper
+    Path boardPath = boardPaths[0];
+
+    // Expand isolation paths outward by half tool width to get the already-cleared boundary
+    Paths expandedPaths;
+    try {
+        ClipperOffset co;
+        for (const auto& ip : totalToolpath)
+            co.AddPath(ip, jtRound, etClosedPolygon);
+        co.Execute(expandedPaths, static_cast<double>(toolDiameter) / 2.0);
+    } catch (...) {
+        m_logger->warn("generateClearingPaths: ClipperOffset failed");
+        return;
+    }
+
+    // clearRegion = board rectangle minus the already-cleared area
+    Paths clearRegion;
+    try {
+        Clipper clipper;
+        clipper.AddPath(boardPath, ptSubject, true);
+        for (const auto& ep : expandedPaths)
+            clipper.AddPath(ep, ptClip, true);
+        clipper.Execute(ctDifference, clearRegion, pftNonZero, pftNonZero);
+    } catch (...) {
+        m_logger->warn("generateClearingPaths: Clipper difference failed");
+        return;
+    }
+
+    m_logger->debug("clearingPaths: expandedPaths={} clearRegion={}", expandedPaths.size(), clearRegion.size());
+    if (clearRegion.empty()) return;
+
+    // Raster fill via scanline edge intersection — no Clipper open-path clipping needed.
+    // For each horizontal scan line y, find all X coords where polygon edges cross it,
+    // sort them, and take pairs as line segments (even-odd fill rule handles holes).
+    double ov = std::min(0.99, std::max(0.0, parm.overlap));
+    qint64 step = std::max(qint64(1), static_cast<qint64>(toolDiameter * (1.0 - ov)));
+
+    bool leftToRight = true;
+    for (qint64 y = yMin; y <= yMax; y += step)
+    {
+        std::vector<qint64> xs;
+        for (const auto& poly : clearRegion)
+        {
+            int n = static_cast<int>(poly.size());
+            for (int i = 0; i < n; ++i)
+            {
+                const IntPoint& a = poly[i];
+                const IntPoint& b = poly[(i + 1) % n];
+                // Edge must strictly cross y (one endpoint below, one above)
+                if ((a.Y < y && b.Y >= y) || (b.Y < y && a.Y >= y))
+                {
+                    double t = static_cast<double>(y - a.Y) / (b.Y - a.Y);
+                    xs.push_back(static_cast<qint64>(a.X + t * (b.X - a.X)));
+                }
+            }
+        }
+
+        if (xs.size() < 2) { leftToRight = !leftToRight; continue; }
+        std::sort(xs.begin(), xs.end());
+
+        // Reverse pairs for right-to-left passes (boustrophedon)
+        if (!leftToRight) std::reverse(xs.begin(), xs.end());
+
+        for (size_t i = 0; i + 1 < xs.size(); i += 2)
+        {
+            Path seg;
+            seg << IntPoint(xs[i], y) << IntPoint(xs[i + 1], y);
+            clearingPaths.push_back(seg);
+        }
+
+        leftToRight = !leftToRight;
+    }
+
+    m_logger->debug("clearingPaths: {} segments", clearingPaths.size());
 }
 
 Toolpath::~Toolpath()

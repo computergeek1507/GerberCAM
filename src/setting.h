@@ -49,6 +49,7 @@ struct CuttingParm
     int isolationRings{ 1 };
 	double overlap{ 0.5 };
 	//double stepDown{ 0.1 };
+    bool clearEmptyArea{ false };
 	CuttingParm() = default;
 	CuttingParm(nlohmann::json const& j)
 	{
@@ -56,7 +57,7 @@ struct CuttingParm
 		depth = j.value("depth", depth);
         isolationRings = j.value("isolationRings", isolationRings);
         overlap = j.value("overlap", overlap);
-        //stepDown = j.value("stepDown", stepDown);
+        clearEmptyArea = j.value("clearEmptyArea", clearEmptyArea);
 	}
 	nlohmann::json toJson() const
 	{
@@ -65,7 +66,7 @@ struct CuttingParm
 		j["depth"] = depth;
         j["isolationRings"] = isolationRings;
 		j["overlap"] = overlap;
-		//j["stepDown"] = stepDown;
+        j["clearEmptyArea"] = clearEmptyArea;
 		return j;
 	}
 };
@@ -204,6 +205,7 @@ public:
     CuttingParm engravingParm;
     CuttingParm drillParm;
     CuttingParm cutParm;
+    bool openGcodeInNotepad{false};
 
     //Tool engravingTool;
     //Tool drillTool;

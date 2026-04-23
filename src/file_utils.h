@@ -1,8 +1,8 @@
 #pragma once
 
-#include <filesystem>
+#include <QString>
 
-namespace FileUtils
+namespace file_utils
 {
-	void openFileInNotepad(const std::filesystem::path& filePath);
+	void openFileInNotepad(const QString& filePath);
 };

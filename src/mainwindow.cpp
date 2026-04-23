@@ -23,9 +23,11 @@ SOFTWARE.
 #include "mainwindow.h"
 #include "toolpath.h"
 #include "aboutwindow.h"
+#include "file_utils.h"
 
 
 #include <QFileDialog>
+#include <QProcess>
 #include <QMessageBox>
 #include <QSet>
 #include <QTimer>
@@ -232,50 +234,28 @@ void MainWindow::drawNet(QGraphicsScene* scene, Preprocess& t, QColor color, QCo
 
 void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
 {
-    /*
-    int i;
-    for(i=0;i<t.netPathList.size();i++)
+    if (!t.totalToolpath.empty() && !t.totalToolpath.at(0).empty())
     {
-        int j;
-        QColor color(Qt::cyan);
-
-        struct NetPath np=t.netPathList.at(i);
-
-        for(j=0;j<np.pathList.size();j++)
-        {
-            QPoint point;
-
-            struct MyPath p=np.pathList.at(j);
-            QGraphicsItem *item = new DrawPCB(p, AT_TOP,color);
-
-            //Paths p=np.toolpath;
-            //QGraphicsItem *item=new drawPCB(p,AT_TOP,color);
-            //point.setX(p.at(0).at(0).X);
-            //point.setY(p.at(0).at(0).Y);
-            //item->setPos(point);
-
-            item->setPos(p.segmentList.at(0).point);
-            scene->addItem(item);
-        }
+        QColor color(255,170,32);
+        Paths p = t.totalToolpath;
+        QGraphicsItem *item = new DrawPCB(p, AT_TOP, color);
+        QPoint point;
+        point.setX(p.at(0).at(0).X);
+        point.setY(p.at(0).at(0).Y);
+        item->setPos(point);
+        scene->addItem(item);
     }
-    */
 
-    //m_logger->debug("drawToolpath: totalToolpath paths={}", t.totalToolpath.size());
-    if(t.totalToolpath.empty() || t.totalToolpath.at(0).empty())
+    if (!t.clearingPaths.empty())
     {
-        //m_logger->debug("drawToolpath: totalToolpath empty, nothing to draw");
-        return;
+        QColor clearColor(100, 200, 255);
+        QGraphicsItem *item = new DrawPCB(t.clearingPaths, AT_TOP, clearColor);
+        QPoint point;
+        point.setX(t.clearingPaths.at(0).at(0).X);
+        point.setY(t.clearingPaths.at(0).at(0).Y);
+        item->setPos(point);
+        scene->addItem(item);
     }
-    QColor color(255,170,32);
-    //color.setGreen(150);
-    Paths p=t.totalToolpath;
-    QGraphicsItem *item=new DrawPCB(p,AT_TOP,color);
-    QPoint point;
-    point.setX(p.at(0).at(0).X);
-    point.setY(p.at(0).at(0).Y);
-    item->setPos(point);
-    scene->addItem(item);
-    //m_logger->debug("drawToolpath: item added at ({}, {}), scene items={}", point.x(), point.y(), scene->items().size());
 }
 
 void MainWindow::drawExcellonDrills(QGraphicsScene* scene)
@@ -563,11 +543,37 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::on_actionToolpath_generat_triggered()
 {
-    toolpath1 = std::make_unique<Toolpath>(preprocessfile1.get(), settingWindow->settings, settingWindow->settings->engravingParm);
+    // Build board boundary from the loaded outline Gerber, or empty (fallback to auto).
+    auto buildBoardBoundary = [this]() -> Paths {
+        Paths boundary;
+        if (!gerberOutline || gerberOutline->tracksList.isEmpty()) return boundary;
+        qint64 xMin = gerberOutline->tracksList[0].pointstart.x();
+        qint64 xMax = xMin;
+        qint64 yMin = gerberOutline->tracksList[0].pointstart.y();
+        qint64 yMax = yMin;
+        for (const auto& t : gerberOutline->tracksList) {
+            xMin = std::min({xMin, (qint64)t.pointstart.x(), (qint64)t.pointend.x()});
+            xMax = std::max({xMax, (qint64)t.pointstart.x(), (qint64)t.pointend.x()});
+            yMin = std::min({yMin, (qint64)t.pointstart.y(), (qint64)t.pointend.y()});
+            yMax = std::max({yMax, (qint64)t.pointstart.y(), (qint64)t.pointend.y()});
+        }
+        Path rect;
+        rect << IntPoint(xMin, yMin) << IntPoint(xMax, yMin)
+             << IntPoint(xMax, yMax) << IntPoint(xMin, yMax);
+        boundary.push_back(rect);
+        return boundary;
+    };
+
+    const auto& parm = settingWindow->settings->engravingParm;
+    toolpath1 = std::make_unique<Toolpath>(preprocessfile1.get(), settingWindow->settings, parm);
+    if (parm.clearEmptyArea)
+        toolpath1->generateClearingPaths(parm, buildBoardBoundary());
 
     if (layerNum == 2)
     {
-        toolpath2 = std::make_unique<Toolpath>(preprocessfile2.get(), settingWindow->settings, settingWindow->settings->engravingParm);
+        toolpath2 = std::make_unique<Toolpath>(preprocessfile2.get(), settingWindow->settings, parm);
+        if (parm.clearEmptyArea)
+            toolpath2->generateClearingPaths(parm, buildBoardBoundary());
         scenePath12 = std::make_unique<QGraphicsScene>(this);
         drawNet(scenePath12.get(), *preprocessfile2, *colorBlue2, *Error2);
         drawNet(scenePath12.get(), *preprocessfile1, *colorRed1, *Error1);
@@ -583,9 +589,15 @@ void MainWindow::on_actionToolpath_generat_triggered()
 
         QString temp = alertHtml + QString::number(toolpath1->collisionSum) + endHtml;
         ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
+        ui->messageBrowser->append("   Isolation paths: " + QString::number(toolpath1->totalToolpath.size()));
+        if (!toolpath1->clearingPaths.empty())
+            ui->messageBrowser->append("   Clearing segments: " + QString::number(toolpath1->clearingPaths.size()));
         ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath1->time) + "ms");
         temp = alertHtml + QString::number(toolpath2->collisionSum) + endHtml;
         ui->messageBrowser->append("Layer2 Toolpath collision=" + temp);
+        ui->messageBrowser->append("   Isolation paths: " + QString::number(toolpath2->totalToolpath.size()));
+        if (!toolpath2->clearingPaths.empty())
+            ui->messageBrowser->append("   Clearing segments: " + QString::number(toolpath2->clearingPaths.size()));
         ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath2->time) + "ms");
     }
     else
@@ -597,6 +609,9 @@ void MainWindow::on_actionToolpath_generat_triggered()
         drawExcellonDrills(scenePath1.get());
         QString temp = alertHtml + QString::number(toolpath1->collisionSum) + endHtml;
         ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
+        ui->messageBrowser->append("   Isolation paths: " + QString::number(toolpath1->totalToolpath.size()));
+        if (!toolpath1->clearingPaths.empty())
+            ui->messageBrowser->append("   Clearing segments: " + QString::number(toolpath1->clearingPaths.size()));
         ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath1->time) + "ms");
     }
 
@@ -657,6 +672,9 @@ void MainWindow::on_actionExport_GCode_triggered()
         ui->messageBrowser->append("G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Paths: " + QString::number(tp->totalToolpath.size()));
         m_logger->info("G-Code exported: {}", filePath.toStdString());
+        if (settingWindow->settings->openGcodeInNotepad) {
+            file_utils::openFileInNotepad(filePath);
+        }
     }
     else
     {
@@ -784,6 +802,9 @@ void MainWindow::on_actionExport_Drills_triggered()
         m_logger->info("Drill G-Code exported: {}", filePath.toStdString());
         ui->messageBrowser->append("  Holes: " + QString::number(total)
                                    + ", Diameters: " + QString::number(diams.size()));
+        if (settingWindow->settings->openGcodeInNotepad) {
+            file_utils::openFileInNotepad(filePath);
+        }
     }
     else
     {
@@ -843,6 +864,9 @@ void MainWindow::on_actionExport_Drill_G_Code_Bore_triggered()
         ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
             + ", Holes: " + QString::number(total));
         m_logger->info("Drill Bore G-Code exported: {}", filePath.toStdString());
+        if (settingWindow->settings->openGcodeInNotepad) {
+            file_utils::openFileInNotepad(filePath);
+        }
     }
     else
     {
@@ -976,6 +1000,9 @@ void MainWindow::on_actionExport_Outline_triggered()
         ui->messageBrowser->append("Outline G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Segments: " + QString::number(gerberOutline->tracksList.size()));
         m_logger->info("Outline G-Code exported: {}", filePath.toStdString());
+        if (settingWindow->settings->openGcodeInNotepad) {
+            file_utils::openFileInNotepad(filePath);
+        }
     }
     else
     {
@@ -1100,6 +1127,9 @@ void MainWindow::on_actionExport_Drills_Excellon_triggered()
         ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
                                    + ", Holes: " + QString::number(totalHoles));
         m_logger->info("Excellon Drill G-Code exported: {}", filePath.toStdString());
+        if (settingWindow->settings->openGcodeInNotepad) {
+            file_utils::openFileInNotepad(filePath);
+        }
     }
     else
     {
@@ -1153,6 +1183,9 @@ void MainWindow::on_actionExport_Drills_Excellon_Bore_triggered()
         ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
                                    + ", Holes: " + QString::number(totalHoles));
         m_logger->info("Excellon Bore G-Code exported: {}", filePath.toStdString());
+        if (settingWindow->settings->openGcodeInNotepad) {
+            file_utils::openFileInNotepad(filePath);
+        }
     }
     else
     {

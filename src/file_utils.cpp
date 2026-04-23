@@ -3,12 +3,10 @@
 #include <QUrl>
 #include <QDesktopServices>
 
-namespace FileUtils
+namespace file_utils
 {
-	void openFileInNotepad(const std::filesystem::path& filePath)
+	void openFileInNotepad(const QString& filePath)
 	{
-		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(filePath.string())));
-
-
+		QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
 	}
 };

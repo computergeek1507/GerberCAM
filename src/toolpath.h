@@ -70,8 +70,12 @@ public:
     Toolpath(Preprocess *p, Setting* s, CuttingParm const& parm);
     ~Toolpath();
 
+    // boardBoundary: closed polygon for clearing extent; derived from outline Gerber or auto-computed.
+    void generateClearingPaths(CuttingParm const& parm, Paths const& boardBoundary);
+
     QList<NetPath> netPathList;
     Paths totalToolpath;
+    Paths clearingPaths;  // open raster segments for copper clearing
     // Internal units: 1 mm = 1,000,000 units
     qint64 toolDiameter = 400000;//0.4mm bit
     //qint64 toolDiameter=200000;//0.2mm bit

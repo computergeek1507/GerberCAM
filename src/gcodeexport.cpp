@@ -85,6 +85,8 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
             << (useInch ? " in" : " mm") << ", " << numPasses << " passes)\n";
     out << "(Isolation rings: " << parm.isolationRings << ")\n";
     out << "(Paths:    " << tp.totalToolpath.size() << ")\n";
+    if (!tp.clearingPaths.empty())
+        out << "(Clearing segments: " << tp.clearingPaths.size() << ")\n";
     if (flipX) out << "(Mirror:   X axis flipped)\n";
     out << "\n";
 
@@ -155,6 +157,52 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     // -------------------------------------------------------
     // Footer
     // -------------------------------------------------------
+    // -------------------------------------------------------
+    // Copper clearing raster (open segments, no polygon close)
+    // -------------------------------------------------------
+    if (!tp.clearingPaths.empty())
+    {
+        out << "(=== Copper Clearing ===)\n";
+        int clearIdx = 0;
+        for (const auto &seg : tp.clearingPaths)
+        {
+            if (seg.size() < 2) continue;
+
+            ++clearIdx;
+            out << "(--- Clear " << clearIdx << " ---)\n";
+
+            double x0 = seg.front().X * toUnit * xSign;
+            double y0 = seg.front().Y * toUnit;
+
+            out << "G0 X" << QString::number(x0, 'f', prec)
+                << " Y" << QString::number(y0, 'f', prec) << "\n";
+
+            for (int pass = 1; pass <= numPasses; ++pass)
+            {
+                double passDepth = std::min(step * pass, totalDepth);
+                if (pass > 1)
+                {
+                    out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+                    out << "G0 X" << QString::number(x0, 'f', prec)
+                        << " Y" << QString::number(y0, 'f', prec) << "\n";
+                }
+                out << "G1 Z-" << QString::number(passDepth, 'f', zprec)
+                    << " F" << QString::number(plunge, 'f', 1) << "\n";
+                out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
+                for (size_t i = 1; i < seg.size(); ++i)
+                {
+                    double x = seg.at(i).X * toUnit * xSign;
+                    double y = seg.at(i).Y * toUnit;
+                    out << "X" << QString::number(x, 'f', prec)
+                        << " Y" << QString::number(y, 'f', prec) << "\n";
+                }
+                // No polygon close — open segment
+            }
+            out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n";
+            out << "\n";
+        }
+    }
+
     out << "M5\n";   // spindle off
     out << "M30\n";  // end of program
 

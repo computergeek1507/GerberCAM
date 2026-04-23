@@ -106,6 +106,20 @@
                  </property>
                 </widget>
                </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="labelClearEmptyArea">
+                 <property name="text">
+                  <string>Clear Empty Area</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QCheckBox" name="checkBoxClearEmptyArea">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -190,6 +204,13 @@
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBoxOpenInNotepad">
+           <property name="text">
+            <string>Open G-Code in Notepad after export</string>
+           </property>
           </widget>
          </item>
          <item>

@@ -99,6 +99,8 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 	ui->lineEditEngravingDepth->setText(QString::number(settings->engravingParm.depth, 'f', 3));
     ui->spinBoxIsolationRings->setValue(settings->engravingParm.isolationRings);
 	ui->doubleSpinBoxOverlap->setValue(settings->engravingParm.overlap);
+    ui->checkBoxClearEmptyArea->setChecked(settings->engravingParm.clearEmptyArea);
+    ui->checkBoxOpenInNotepad->setChecked(settings->openGcodeInNotepad);
 
 	ui->lineEditDrillingDepth->setText(QString::number(settings->drillParm.depth, 'f', 3));
 	ui->lineEditCuttingDepth->setText(QString::number(settings->cutParm.depth, 'f', 3));
@@ -1095,6 +1097,8 @@ void Settingwindow::on_pushButtonSaveBit_clicked()
 	settings->engravingParm.depth = ui->lineEditEngravingDepth->text().toDouble();
     settings->engravingParm.isolationRings = ui->spinBoxIsolationRings->value();
     settings->engravingParm.overlap = ui->doubleSpinBoxOverlap->value();
+    settings->engravingParm.clearEmptyArea = ui->checkBoxClearEmptyArea->isChecked();
+    settings->openGcodeInNotepad = ui->checkBoxOpenInNotepad->isChecked();
 
 	settings->drillParm.toolName = ui->comboBoxDrillingTools->currentData().toString();
 	settings->drillParm.depth = ui->lineEditDrillingDepth->text().toDouble();
