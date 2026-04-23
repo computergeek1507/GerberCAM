@@ -97,6 +97,8 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
     holeDrillCheck();
 
 	ui->lineEditEngravingDepth->setText(QString::number(settings->engravingParm.depth, 'f', 3));
+    ui->spinBoxIsolationRings->setValue(settings->engravingParm.isolationRings);
+
 	ui->lineEditDrillingDepth->setText(QString::number(settings->drillParm.depth, 'f', 3));
 	ui->lineEditCuttingDepth->setText(QString::number(settings->cutParm.depth, 'f', 3));
 }
@@ -1089,6 +1091,7 @@ void Settingwindow::on_pushButtonSaveBit_clicked()
 {
 	settings->engravingParm.toolName = ui->comboBoxEngravingTool->currentData().toString();
 	settings->engravingParm.depth = ui->lineEditEngravingDepth->text().toDouble();
+    settings->engravingParm.isolationRings = ui->spinBoxIsolationRings->value();
 
 	settings->drillParm.toolName = ui->comboBoxDrillingTools->currentData().toString();
 	settings->drillParm.depth = ui->lineEditDrillingDepth->text().toDouble();
@@ -1122,22 +1125,19 @@ void Settingwindow::refreshToolCombobox()
         ui->comboBoxEngravingTool->addItem(s, QVariant::fromValue(t.name));
         ui->comboBoxCuttingTool->addItem(s, QVariant::fromValue(t.name));
     }
-    int idx = ui->comboBoxEngravingTool->findData(settings->engravingParm.toolName);
-    if (idx != -1)
     {
-        ui->comboBoxEngravingTool->setCurrentIndex(idx);
+        int idx = ui->comboBoxEngravingTool->findData(settings->engravingParm.toolName);
+        if (idx != -1) ui->comboBoxEngravingTool->setCurrentIndex(idx);
     }
 
-    idx = ui->comboBoxDrillingTools->findData(settings->drillParm.toolName);
-    if (idx != -1)
     {
-        ui->comboBoxDrillingTools->setCurrentIndex(idx);
+        int idx = ui->comboBoxDrillingTools->findData(settings->drillParm.toolName);
+        if (idx != -1) ui->comboBoxDrillingTools->setCurrentIndex(idx);
     }
 
-    idx = ui->comboBoxCuttingTool->findData(settings->cutParm.toolName);
-    if (idx != -1)
     {
-        ui->comboBoxCuttingTool->setCurrentIndex(idx);
+        int idx = ui->comboBoxCuttingTool->findData(settings->cutParm.toolName);
+        if (idx != -1) ui->comboBoxCuttingTool->setCurrentIndex(idx);
     }
 
 }

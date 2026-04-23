@@ -1,5 +1,4 @@
-#ifndef CALCULATION_H
-#define CALCULATION_H
+#pragma once
 
 #include<QPointF>
 #include<QtMath>
@@ -9,7 +8,3 @@
 
 
 
-
-
-
-#endif // CALCULATION_H

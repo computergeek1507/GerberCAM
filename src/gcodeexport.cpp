@@ -83,8 +83,9 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     if (numPasses > 1)
         out << "(Step depth:  -" << QString::number(step, 'f', zprec)
             << (useInch ? " in" : " mm") << ", " << numPasses << " passes)\n";
+    out << "(Isolation rings: " << parm.isolationRings << ")\n";
     out << "(Paths:    " << tp.totalToolpath.size() << ")\n";
-    if(flipX) out << "(Mirror:   X axis flipped)\n";
+    if (flipX) out << "(Mirror:   X axis flipped)\n";
     out << "\n";
 
     out << "G90\n";                            // absolute positioning
@@ -129,6 +130,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
             // Plunge to this pass depth
             out << "G1 Z-" << QString::number(passDepth, 'f', zprec)
                 << " F" << QString::number(plunge, 'f', 1) << "\n";
+            out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
 
             // Cut through remaining points
             out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";

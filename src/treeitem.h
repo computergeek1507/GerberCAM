@@ -60,8 +60,7 @@ SOFTWARE.
 **
 ****************************************************************************/
 
-#ifndef TREEITEM_H
-#define TREEITEM_H
+#pragma once
 
 #include <QList>
 #include <QVariant>
@@ -89,4 +88,3 @@ private:
 };
 //! [0]
 
-#endif // TREEITEM_H

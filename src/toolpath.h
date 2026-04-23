@@ -20,8 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef TOOLPATH_H
-#define TOOLPATH_H
+#pragma once
+
 #include "gerber.h"
 #include "preprocess.h"
 #include "setting.h"
@@ -59,7 +59,7 @@ struct CollisionPair{
 
 struct CollisionToolpath{
     QList<int> list;
-    QList<struct CollisionPair> pair;
+    QList<CollisionPair> pair;
 };
 
 class Toolpath//:public preprocess
@@ -67,7 +67,7 @@ class Toolpath//:public preprocess
 
 public:
 
-    Toolpath(Preprocess *p, Setting* s);
+    Toolpath(Preprocess *p, Setting* s, CuttingParm const& parm);
     ~Toolpath();
 
     QList<NetPath> netPathList;
@@ -84,6 +84,7 @@ protected:
     MyRect trackToMyRect(Track t, qint64 offset);
     BoundingRect expandBoundingRect(BoundingRect r, qint64 offset);
     MyRect rectToMyRect(Pad p1, qint64 offset);
+    Path elementToPath(Element const& e, qint64 offset);
 
     Track obroundToTrack(Pad const& o1);
     void arcToSegments(QPoint const& p1, QPoint  const& p2,Path &path);
@@ -98,5 +99,3 @@ private:
      std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 
 };
-
-#endif // TOOLPATH_H

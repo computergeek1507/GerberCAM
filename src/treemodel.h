@@ -60,8 +60,7 @@ SOFTWARE.
 **
 ****************************************************************************/
 
-#ifndef TREEMODEL_H
-#define TREEMODEL_H
+#pragma once
 
 #include <QAbstractItemModel>
 #include <QModelIndex>
@@ -106,4 +105,3 @@ private:
 };
 //! [0]
 
-#endif // TREEMODEL_H

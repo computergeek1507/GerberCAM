@@ -20,8 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef GERBER_H
-#define GERBER_H
+#pragma once
+
 #include <QString>
 #include <QFile>
 #include <QDebug>
@@ -159,4 +159,3 @@ private:
 
 };
 
-#endif // GERBER_H

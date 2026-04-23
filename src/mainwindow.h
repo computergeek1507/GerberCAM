@@ -20,8 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 #include <QGraphicsScene>
@@ -134,38 +133,33 @@ private:
     std::unique_ptr<Gerber> gerber1{ nullptr };
     std::unique_ptr<Gerber> gerber2{ nullptr };
 
-    QGraphicsScene* scene1{ nullptr };
-    QGraphicsScene* scene12{ nullptr };
-    QGraphicsScene* scene2{ nullptr };
-    QGraphicsScene* scene21{ nullptr };
-    QGraphicsScene* sceneNet1{ nullptr };
-    QGraphicsScene* sceneNet2{ nullptr };
-    QGraphicsScene* sceneNet12{ nullptr };
-    QGraphicsScene* sceneNet21{ nullptr };
-    QGraphicsScene* scenePath1{ nullptr };
-    QGraphicsScene* scenePath2{ nullptr };
-    QGraphicsScene* scenePath12{ nullptr };
-    QGraphicsScene* scenePath21{ nullptr };
-    //QColor *colorRed1=new QColor(255,0,0,230);
-    //QColor *colorRed2=new QColor(255,0,0,40);
-    QColor *colorRed1=new QColor(30,144,225,240);
-    QColor *colorRed2=new QColor(30,144,225,20);
-    //QColor *colorBlue1=new QColor(0,136,202,230);
-    //QColor *colorBlue2=new QColor(0,136,202,100);
-    QColor *colorBlue1=new QColor(30,144,225,240);
-    QColor *colorBlue2=new QColor(30,144,225,20);
-    QColor *Error1=new QColor(255,0,0,230);
-    QColor *Error2=new QColor(255,0,0,40);
-    //QColor *Error1=new QColor(0,255,64,230);
-    //QColor *Error2=new QColor(0,255,64,40);
+    std::unique_ptr<QGraphicsScene> scene1{ nullptr };
+    std::unique_ptr<QGraphicsScene> scene12{ nullptr };
+    std::unique_ptr<QGraphicsScene> scene2{ nullptr };
+    std::unique_ptr<QGraphicsScene> scene21{ nullptr };
+    std::unique_ptr<QGraphicsScene> sceneNet1{ nullptr };
+    std::unique_ptr<QGraphicsScene> sceneNet2{ nullptr };
+    std::unique_ptr<QGraphicsScene> sceneNet12{ nullptr };
+    std::unique_ptr<QGraphicsScene> sceneNet21{ nullptr };
+    std::unique_ptr<QGraphicsScene> scenePath1{ nullptr };
+    std::unique_ptr<QGraphicsScene> scenePath2{ nullptr };
+    std::unique_ptr<QGraphicsScene> scenePath12{ nullptr };
+    std::unique_ptr<QGraphicsScene> scenePath21{ nullptr };
+
+    std::unique_ptr<QColor> colorRed1 = std::make_unique<QColor>(30,144,225,240);
+    std::unique_ptr<QColor> colorRed2 = std::make_unique<QColor>(30,144,225,20);
+    std::unique_ptr<QColor> colorBlue1 = std::make_unique<QColor>(30,144,225,240);
+    std::unique_ptr<QColor> colorBlue2 = std::make_unique<QColor>(30,144,225,20);
+    std::unique_ptr<QColor> Error1 = std::make_unique<QColor>(255,0,0,230);
+    std::unique_ptr<QColor> Error2 = std::make_unique<QColor>(255,0,0,40);
 
     QLabel *coordinateLabel;
 
     std::unique_ptr <Preprocess> preprocessfile1{ nullptr };
     std::unique_ptr <Preprocess> preprocessfile2{ nullptr };
     std::unique_ptr<ExcellonParser> m_excellon{ nullptr };
-    std::unique_ptr <Toolpath> toolpath1{ nullptr };
-    std::unique_ptr <Toolpath> toolpath2{ nullptr };
+    std::unique_ptr<Toolpath> toolpath1{ nullptr };
+    std::unique_ptr<Toolpath> toolpath2{ nullptr };
 
     QString gerberFileName;
 
@@ -181,8 +175,6 @@ private:
     QString m_appdir;
 
     std::unique_ptr<Gerber> gerberOutline{ nullptr };
-    QGraphicsScene *sceneOutline{ nullptr };
-    QColor *colorOutline = new QColor(0, 200, 0, 200);
+    std::unique_ptr<QGraphicsScene> sceneOutline{ nullptr };
+    std::unique_ptr<QColor> colorOutline = std::make_unique<QColor>(0, 200, 0, 200);
 };
-
-#endif // MAINWINDOW_H

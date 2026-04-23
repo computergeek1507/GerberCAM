@@ -111,3 +111,21 @@ if(WIN32)
 	install( FILES ${installcons} DESTINATION bin )
 
 endif (WIN32)
+
+
+if(LINUX)
+    message(STATUS "APPS: ${APPS}")
+    message(STATUS "QT_PLUGINS: ${QT_PLUGINS}")
+    message(STATUS "DIRS: ${DIRS}")
+
+    install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+    #install(TARGETS ${PROJECT_NAME} ${INSTALL_TARGETS_DEFAULT_ARGS})
+
+        if(ECM_FOUND)
+                include(KDEInstallDirs)
+        
+            install(PROGRAMS org.flatpak.box_design.desktop  DESTINATION ${KDE_INSTALL_APPDIR})
+            install(FILES org.flatpak.box_design.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+            install(FILES res/org.flatpak.box_design.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
+        endif()
+endif()

@@ -20,8 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef SETTINGWINDOW_H
-#define SETTINGWINDOW_H
+#pragma once
 
 #include <QDialog>
 
@@ -131,5 +130,3 @@ private:
     bool mREEditFlag = false;
 
 };
-
-#endif // SETTINGWINDOW_H

@@ -215,7 +215,6 @@ void MainWindow::drawNet(QGraphicsScene* scene, Preprocess& t, QColor color, QCo
                 scene->addItem(item);
             }
         }
-
     }
     for(int i=0;i<t.contourList.size();i++)
     {
@@ -278,17 +277,20 @@ void MainWindow::drawToolpath(QGraphicsScene *scene,Toolpath &t)
     //m_logger->debug("drawToolpath: item added at ({}, {}), scene items={}", point.x(), point.y(), scene->items().size());
 }
 
-void MainWindow::drawExcellonDrills(QGraphicsScene *scene)
+void MainWindow::drawExcellonDrills(QGraphicsScene* scene)
 {
-    if (!m_excellon || !scene)
+    if (!m_excellon || !scene) {
         return;
+    }
 
     int totalHoles = 0;
-    for (const ExcellonTool &t : m_excellon->tools)
+    for (const ExcellonTool& t : m_excellon->tools) {
         totalHoles += t.holes.size();
+    }
 
-    if (totalHoles == 0)
+    if (totalHoles == 0) {
         return;
+    }
 
     // Crosshair length: 2% of the scene diagonal so it is clearly
     // visible at board-level zoom regardless of board size.
@@ -305,10 +307,11 @@ void MainWindow::drawExcellonDrills(QGraphicsScene *scene)
     QPen crossPen(QColor(255, 220, 0));
     crossPen.setWidth(0);
 
-    for (const ExcellonTool &tool : m_excellon->tools)
+    for (const ExcellonTool& tool : m_excellon->tools)
     {
-        if (tool.diameterMm <= 0.0)
+        if (tool.diameterMm <= 0.0) {
             continue;
+        }
 
         double r = (tool.diameterMm * PRECISIONSCALE) / 2.0;
         // Crosshair is at least 3× the drill radius so it is legible even
@@ -344,14 +347,11 @@ void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color
         scene->addItem(item);
     }
 
-    Pad tempPad;
-    double x1,y1;
-
     for(int i=0;i<gerberfile->padNum;i++)
     {
-        tempPad=gerberfile->padsList.at(i);
-        x1=tempPad.point.rx();
-        y1=tempPad.point.ry();
+        Pad tempPad=gerberfile->padsList.at(i);
+        double x1=tempPad.point.rx();
+        double y1=tempPad.point.ry();
 
         QGraphicsItem *item = new DrawPCB(tempPad, AT_TOP,color);
         item->setPos(x1,y1);
@@ -391,10 +391,10 @@ void MainWindow::on_actionOpen_triggered()
         return;
     }
 
-    scene1 = new QGraphicsScene(this);
-    drawLayer(scene1, gerber1.get(), *colorRed1);
+    scene1 = std::make_unique<QGraphicsScene>(this);
+    drawLayer(scene1.get(), gerber1.get(), *colorRed1);
 
-    ui->graphicsView->setScene(scene1);
+    ui->graphicsView->setScene(scene1.get());
     ui->graphicsView->fitInView(gerber1->borderRect, Qt::KeepAspectRatio);
     //qDebug()<<gerber1->borderRect;
 
@@ -411,10 +411,10 @@ void MainWindow::on_actionOpen_triggered()
     ui->messageBrowser->clear();
     showMessage(gerber1.get(),*preprocessfile1);
 
-    sceneNet1 = new QGraphicsScene(this);
-    drawNet(sceneNet1,*preprocessfile1,*colorBlue1,*Error1);
-    drawExcellonDrills(sceneNet1);
-    ui->graphicsView->setScene(sceneNet1);
+    sceneNet1 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet1.get(),*preprocessfile1,*colorBlue1,*Error1);
+    drawExcellonDrills(sceneNet1.get());
+    ui->graphicsView->setScene(sceneNet1.get());
 
     TreeModel *model = new TreeModel(*preprocessfile1);
 
@@ -427,97 +427,96 @@ void MainWindow::on_actionOpen_triggered()
 
 void MainWindow::on_actionAdd_layer_triggered()
 {
-    if(layerNum == 1)//no any layer2,draw a new layer2
+    if (layerNum == 1)//no any layer2,draw a new layer2
     {
-        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
-                      tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
-        if(fileName.isEmpty())
+        auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), settingWindow->settings->lastDir(),
+            tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
+        if (fileName.isEmpty())
         {
             return;
         }
         settingWindow->settings->setLastDir(fileName);
         gerberFileName = QFileInfo(fileName).fileName();
         gerber2 = std::make_unique<Gerber>(fileName);
-        if(!gerber2->readingFlag)
+        if (!gerber2->readingFlag)
         {
             m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
-            ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
-            ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
+            ui->messageBrowser->append("\"" + gerberFileName + "\"" + " read fail");
+            ui->messageBrowser->append("Failed at line=" + QString::number(gerber2->totalLine));
             return;
         }
-        preprocessfile2 = std::make_unique<Preprocess>(*gerber2,settingWindow->settings);
-
+        preprocessfile2 = std::make_unique<Preprocess>(*gerber2, settingWindow->settings);
 
         showMessage(gerber2.get(), *preprocessfile2);
 
         //ui->graphicsView->setScene(scene21);
-        layerNum=2;
-        currentLayer=2;
+        layerNum = 2;
+        currentLayer = 2;
         ui->actionLayer2->setEnabled(true);
 
-        TreeModel *model =new TreeModel(*preprocessfile2);
+        TreeModel* model = new TreeModel(*preprocessfile2);
 
         ui->treeViewlayer2->setModel(model);
-        ui->treeViewlayer2->setColumnWidth(0,200);
+        ui->treeViewlayer2->setColumnWidth(0, 200);
         ui->treeViewlayer2->show();
 
     }
-    else if(currentLayer == 2)//add to layer2
+    else if (currentLayer == 2)//add to layer2
     {
-        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
-                      tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
-        if(fileName.isEmpty())
+        auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), settingWindow->settings->lastDir(),
+            tr("Bottom Layer (*.gbl);;Top Layer(*.gtl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
+        if (fileName.isEmpty())
         {
             return;
         }
         settingWindow->settings->setLastDir(fileName);
 
         gerber2 = std::make_unique<Gerber>(fileName);
-        if(!gerber2->readingFlag)
+        if (!gerber2->readingFlag)
         {
             m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
-            ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
-            ui->messageBrowser->append("Failed at line="+QString::number(gerber2->totalLine));
+            ui->messageBrowser->append("\"" + gerberFileName + "\"" + " read fail");
+            ui->messageBrowser->append("Failed at line=" + QString::number(gerber2->totalLine));
             return;
         }
-        preprocessfile2 = std::make_unique<Preprocess>(*gerber2,settingWindow->settings);
+        preprocessfile2 = std::make_unique<Preprocess>(*gerber2, settingWindow->settings);
 
-        showMessage(gerber2.get(),*preprocessfile2);
+        showMessage(gerber2.get(), *preprocessfile2);
 
-        TreeModel *model =new TreeModel(*preprocessfile2);
+        TreeModel* model = new TreeModel(*preprocessfile2);
 
         ui->treeViewlayer2->setModel(model);
-        ui->treeViewlayer2->setColumnWidth(0,200);
+        ui->treeViewlayer2->setColumnWidth(0, 200);
         ui->treeViewlayer2->show();
 
         //ui->graphicsView->setScene(scene21);
     }
-    else if(currentLayer == 1)//add to layer1
+    else if (currentLayer == 1)//add to layer1
     {
-        auto const fileName = QFileDialog::getOpenFileName(this,tr("Open Gerber"), settingWindow->settings->lastDir(),
-                      tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
-        if(fileName.isEmpty())
+        auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Gerber"), settingWindow->settings->lastDir(),
+            tr("Top Layer(*.gtl);;Bottom Layer (*.gbl);;Gerber Files (*.gbr *.gbl *gtl);;All types (*.*)"));
+        if (fileName.isEmpty())
         {
             return;
         }
         settingWindow->settings->setLastDir(fileName);
 
         gerber1 = std::make_unique<Gerber>(fileName);
-        if(!gerber1->readingFlag)
+        if (!gerber1->readingFlag)
         {
-			m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
-            ui->messageBrowser->append("\""+gerberFileName+"\""+" read fail");
-            ui->messageBrowser->append("Failed at line="+QString::number(gerber1->totalLine));
+            m_logger->error("\"" + gerberFileName.toStdString() + "\"" + " read fail");
+            ui->messageBrowser->append("\"" + gerberFileName + "\"" + " read fail");
+            ui->messageBrowser->append("Failed at line=" + QString::number(gerber1->totalLine));
             return;
         }
         preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
 
-        showMessage(gerber1.get(),*preprocessfile1);
+        showMessage(gerber1.get(), *preprocessfile1);
 
-        TreeModel *model =new TreeModel(*preprocessfile1);
+        TreeModel* model = new TreeModel(*preprocessfile1);
 
         ui->treeViewlayer1->setModel(model);
-        ui->treeViewlayer1->setColumnWidth(0,200);
+        ui->treeViewlayer1->setColumnWidth(0, 200);
         ui->treeViewlayer1->show();
         //ui->graphicsView->setScene(scene12);
     }
@@ -525,29 +524,30 @@ void MainWindow::on_actionAdd_layer_triggered()
     preprocessfile1->clearEccentricHole(gerber2->padsList);
     preprocessfile2->clearEccentricHole(gerber1->padsList);
 
-    sceneNet1=new QGraphicsScene(this);
-    drawNet(sceneNet1,*preprocessfile1,*colorRed1,*Error1);
-    drawExcellonDrills(sceneNet1);
+    sceneNet1 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet1.get(), *preprocessfile1, *colorRed1, *Error1);
+    drawExcellonDrills(sceneNet1.get());
 
-    sceneNet2=new QGraphicsScene(this);
-    drawNet(sceneNet2,*preprocessfile2,*colorBlue1,*Error1);
-    drawExcellonDrills(sceneNet2);
+    sceneNet2 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet2.get(), *preprocessfile2, *colorBlue1, *Error1);
+    drawExcellonDrills(sceneNet2.get());
 
-    sceneNet21=new QGraphicsScene(this);
-    drawNet(sceneNet21,*preprocessfile1,*colorRed2,*Error2);
-    drawNet(sceneNet21,*preprocessfile2,*colorBlue1,*Error1);
-    drawExcellonDrills(sceneNet21);
+    sceneNet21 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet21.get(), *preprocessfile1, *colorRed2, *Error2);
+    drawNet(sceneNet21.get(), *preprocessfile2, *colorBlue1, *Error1);
+    drawExcellonDrills(sceneNet21.get());
 
-    sceneNet12=new QGraphicsScene(this);
-    drawNet(sceneNet12,*preprocessfile2,*colorBlue2,*Error2);
-    drawNet(sceneNet12,*preprocessfile1,*colorRed1,*Error1);
-    drawExcellonDrills(sceneNet12);
+    sceneNet12 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet12.get(), *preprocessfile2, *colorBlue2, *Error2);
+    drawNet(sceneNet12.get(), *preprocessfile1, *colorRed1, *Error1);
+    drawExcellonDrills(sceneNet12.get());
 
-    if(currentLayer==1)
-        ui->graphicsView->setScene(sceneNet12);
-    else if(currentLayer==2)
-        ui->graphicsView->setScene(sceneNet21);
-
+    if (currentLayer == 1) {
+        ui->graphicsView->setScene(sceneNet12.get());
+    }
+    else if (currentLayer == 2) {
+        ui->graphicsView->setScene(sceneNet21.get());
+    }
     recalculateFlag = true;
 }
 
@@ -558,70 +558,69 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::on_actionToolpath_generat_triggered()
 {
-    //if(recalculateFlag)
+    toolpath1 = std::make_unique<Toolpath>(preprocessfile1.get(), settingWindow->settings, settingWindow->settings->engravingParm);
+
+    if (layerNum == 2)
     {
-        toolpath1 = std::make_unique<Toolpath>(preprocessfile1.get(), settingWindow->settings);
+        toolpath2 = std::make_unique<Toolpath>(preprocessfile2.get(), settingWindow->settings, settingWindow->settings->engravingParm);
+        scenePath12 = std::make_unique<QGraphicsScene>(this);
+        drawNet(scenePath12.get(), *preprocessfile2, *colorBlue2, *Error2);
+        drawNet(scenePath12.get(), *preprocessfile1, *colorRed1, *Error1);
+        drawToolpath(scenePath12.get(), *toolpath1);
+        if (gerberOutline) drawLayer(scenePath12.get(), gerberOutline.get(), *colorOutline);
+        drawExcellonDrills(scenePath12.get());
+        scenePath21 = std::make_unique<QGraphicsScene>(this);
+        drawNet(scenePath21.get(), *preprocessfile1, *colorRed2, *Error2);
+        drawNet(scenePath21.get(), *preprocessfile2, *colorBlue1, *Error1);
+        drawToolpath(scenePath21.get(), *toolpath2);
+        if (gerberOutline) drawLayer(scenePath21.get(), gerberOutline.get(), *colorOutline);
+        drawExcellonDrills(scenePath21.get());
 
-        if(layerNum==2)
-        {
-            toolpath2 = std::make_unique<Toolpath>(preprocessfile2.get(), settingWindow->settings);
-            scenePath12=new QGraphicsScene(this);
-            drawNet(scenePath12,*preprocessfile2,*colorBlue2,*Error2);
-            drawNet(scenePath12,*preprocessfile1,*colorRed1,*Error1);
-            drawToolpath(scenePath12,*toolpath1);
-            if (gerberOutline) drawLayer(scenePath12, gerberOutline.get(), *colorOutline);
-            drawExcellonDrills(scenePath12);
-
-            scenePath21=new QGraphicsScene(this);
-            drawNet(scenePath21,*preprocessfile1,*colorRed2,*Error2);
-            drawNet(scenePath21,*preprocessfile2,*colorBlue1,*Error1);
-            drawToolpath(scenePath21,*toolpath2);
-            if (gerberOutline) drawLayer(scenePath21, gerberOutline.get(), *colorOutline);
-            drawExcellonDrills(scenePath21);
-
-            QString temp = alertHtml + QString::number(toolpath1->collisionSum)+endHtml;
-            ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
-          //ui->messageBrowser->append("   Preprocessing time ="+QString::number(p.time)+"ms");
-            ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath1->time) + "ms");
-            temp=alertHtml + QString::number(toolpath2->collisionSum)+endHtml;
-            ui->messageBrowser->append("Layer2 Toolpath collision="+temp);
-            ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath2->time) + "ms");
-        }
-        else
-        {
-            scenePath1=new QGraphicsScene(this);
-            drawNet(scenePath1,*preprocessfile1,*colorBlue1,*Error1);
-            drawToolpath(scenePath1,*toolpath1);
-            if (gerberOutline) drawLayer(scenePath1, gerberOutline.get(), *colorOutline);
-            drawExcellonDrills(scenePath1);
-          //ui->messageBrowser->append("   Preprocessing time ="+QString::number(p.time)+"ms");
-            QString temp=alertHtml+QString::number(toolpath1->collisionSum)+endHtml;
-            ui->messageBrowser->append("Layer1 Toolpath collision="+temp);
-            ui->messageBrowser->append("   Calculation time   ="+QString::number(toolpath1->time)+"ms");
-        }
-        recalculateFlag=false;
-        ui->actionExport_GCode->setEnabled(true);
-    }
-    if(layerNum==2)
-    {
-        if(currentLayer==1)
-            ui->graphicsView->setScene(scenePath12);
-        else
-            ui->graphicsView->setScene(scenePath21);
+        QString temp = alertHtml + QString::number(toolpath1->collisionSum) + endHtml;
+        ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
+        ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath1->time) + "ms");
+        temp = alertHtml + QString::number(toolpath2->collisionSum) + endHtml;
+        ui->messageBrowser->append("Layer2 Toolpath collision=" + temp);
+        ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath2->time) + "ms");
     }
     else
-        ui->graphicsView->setScene(scenePath1);
+    {
+        scenePath1 = std::make_unique<QGraphicsScene>(this);
+        drawNet(scenePath1.get(), *preprocessfile1, *colorBlue1, *Error1);
+        drawToolpath(scenePath1.get(), *toolpath1);
+        if (gerberOutline) drawLayer(scenePath1.get(), gerberOutline.get(), *colorOutline);
+        drawExcellonDrills(scenePath1.get());
+        QString temp = alertHtml + QString::number(toolpath1->collisionSum) + endHtml;
+        ui->messageBrowser->append("Layer1 Toolpath collision=" + temp);
+        ui->messageBrowser->append("   Calculation time   =" + QString::number(toolpath1->time) + "ms");
+    }
 
+    recalculateFlag = false;
+    ui->actionExport_GCode->setEnabled(true);
+
+    if (layerNum == 2)
+    {
+        if (currentLayer == 1) {
+            ui->graphicsView->setScene(scenePath12.get());
+        }
+        else {
+            ui->graphicsView->setScene(scenePath21.get());
+        }
+    }
+    else {
+        ui->graphicsView->setScene(scenePath1.get());
+    }
 }
 
 void MainWindow::on_actionExport_GCode_triggered()
 {
-    // Pick which toolpath to export (layer currently shown)
     Toolpath* tp = nullptr;
-    if (layerNum == 2)
+    if (layerNum == 2) {
         tp = (currentLayer == 1) ? toolpath1.get() : toolpath2.get();
-    else
+    }
+    else {
         tp = toolpath1.get();
+    }
 
     if (!tp || tp->totalToolpath.empty())
     {
@@ -633,9 +632,8 @@ void MainWindow::on_actionExport_GCode_triggered()
     QString defaultName = gerberFileName;
     if (!defaultName.isEmpty())
     {
-        // Replace gerber extension with .nc
         int dot = defaultName.lastIndexOf('.');
-        if (dot >= 0) defaultName.truncate(dot);
+        if (dot >= 0) { defaultName.truncate(dot); }
         defaultName += ".nc";
     }
 
@@ -644,17 +642,15 @@ void MainWindow::on_actionExport_GCode_triggered()
         "G-Code files (*.nc *.gcode *.tap);;All files (*)");
 
     if (filePath.isEmpty())
-    {
         return;
-    }
+
     settingWindow->settings->setLastDir(filePath);
 
     QString errorMsg;
-    if(GcodeExport::write(*tp, *settingWindow->settings, filePath, errorMsg, boardFlipped))
+    if (GcodeExport::write(*tp, *settingWindow->settings, filePath, errorMsg, boardFlipped))
     {
         ui->messageBrowser->append("G-Code exported: " + QFileInfo(filePath).fileName());
-        ui->messageBrowser->append("  Paths: " +
-            QString::number(tp->totalToolpath.size()));
+        ui->messageBrowser->append("  Paths: " + QString::number(tp->totalToolpath.size()));
         m_logger->info("G-Code exported: {}", filePath.toStdString());
     }
     else
@@ -678,40 +674,42 @@ void MainWindow::wheelEvent(QWheelEvent *event)
 {
     // not sure about this change though
     //double numDegrees = event->delta() / 8.0;
-    double numDegrees = event->angleDelta().y() / 8.0;
-    double numSteps = numDegrees / 15.0;
-    double factor =pow(1.125, numSteps);
+    double const numDegrees = event->angleDelta().y() / 8.0;
+    double const numSteps = numDegrees / 15.0;
+    double const factor = pow(1.125, numSteps);
     ui->graphicsView->scale(factor,factor);
 }
 
 void MainWindow::on_actionLayer1_triggered()
 {
     currentLayer = 1;
-    if(recalculateFlag)
-    {
-        if(layerNum==1)
-            ui->graphicsView->setScene(sceneNet1);
-        else
-            ui->graphicsView->setScene(sceneNet12);
+    if(recalculateFlag) {
+        if (layerNum == 1) {
+            ui->graphicsView->setScene(sceneNet1.get());
+        }
+        else {
+            ui->graphicsView->setScene(sceneNet12.get());
+        }
     }
-    else
-    {
-        if(layerNum==2)
-            ui->graphicsView->setScene(scenePath12);
-        else
-            ui->graphicsView->setScene(scenePath1);
+    else {
+        if (layerNum == 2) {
+            ui->graphicsView->setScene(scenePath12.get());
+        }
+        else {
+            ui->graphicsView->setScene(scenePath1.get());
+        }
     }
-
 }
 
 void MainWindow::on_actionLayer2_triggered()
 {
     currentLayer = 2;
-    if(recalculateFlag)
-        ui->graphicsView->setScene(sceneNet21);
-    else
-        ui->graphicsView->setScene(scenePath21);
-
+    if (recalculateFlag) {
+        ui->graphicsView->setScene(sceneNet21.get());
+    }
+    else {
+        ui->graphicsView->setScene(scenePath21.get());
+    }
 }
 
 void MainWindow::timerEvent(QTimerEvent *event)
@@ -856,9 +854,6 @@ void MainWindow::on_actionAbout_GerberCAM_triggered()
     aboutwindow about;
     about.setModal(true);
     about.exec();
-    //about aboutwindow;
-    //aboutwindow.setModal(true);
-    //aboutwindow.exec();
 }
 
 void  MainWindow::on_actionView_Log_triggered()
@@ -868,10 +863,11 @@ void  MainWindow::on_actionView_Log_triggered()
 
 void MainWindow::on_actionOpen_Outline_triggered()
 {
-    auto fileName = QFileDialog::getOpenFileName(this, tr("Open Edge Cut / Outline"), settingWindow->settings->lastDir(),
+    auto const fileName = QFileDialog::getOpenFileName(this, tr("Open Edge Cut / Outline"), settingWindow->settings->lastDir(),
         tr("Edge Cuts (*.gm1 *.gko *.gm);;Gerber Files (*.gbr *.ger);;All types (*.*)"));
-    if (fileName.isEmpty())
+    if (fileName.isEmpty()) {
         return;
+    }
     settingWindow->settings->setLastDir(fileName);
 
     gerberOutline = std::make_unique<Gerber>(fileName);
@@ -885,8 +881,8 @@ void MainWindow::on_actionOpen_Outline_triggered()
     // Draw the outline onto every existing copper / net scene so it
     // overlays correctly regardless of which view is active.
     QList<QGraphicsScene*> scenes;
-    for (auto* s : { sceneNet1, sceneNet2, sceneNet12, sceneNet21,
-                    scenePath1, scenePath2, scenePath12, scenePath21 })
+    for (auto* s : { sceneNet1.get(), sceneNet2.get(), sceneNet12.get(), sceneNet21.get(),
+                    scenePath1.get(), scenePath2.get(), scenePath12.get(), scenePath21.get() })
     {
         if (s)
         {
@@ -902,10 +898,11 @@ void MainWindow::on_actionOpen_Outline_triggered()
     }
 
     // Also build a standalone outline-only scene
-    if(sceneOutline)
-        delete sceneOutline;
-    sceneOutline = new QGraphicsScene(this);
-    drawLayer(sceneOutline, gerberOutline.get(), *colorOutline);
+    if (sceneOutline) {
+        sceneOutline.reset();
+    }
+    sceneOutline = std::make_unique<QGraphicsScene>(this);
+    drawLayer(sceneOutline.get(), gerberOutline.get(), *colorOutline);
 
     // Show the current scene (with outline now added) or the standalone scene
     QGraphicsScene *current = ui->graphicsView->scene();
@@ -916,7 +913,7 @@ void MainWindow::on_actionOpen_Outline_triggered()
     }
     else
     {
-        ui->graphicsView->setScene(sceneOutline);
+        ui->graphicsView->setScene(sceneOutline.get());
     }
 
     // Fit view to the outline extents
@@ -979,13 +976,14 @@ void MainWindow::on_actionExport_Outline_triggered()
 
 void MainWindow::on_actionOpen_Excellon_triggered()
 {
-    auto fileName = QFileDialog::getOpenFileName(
+    auto const fileName = QFileDialog::getOpenFileName(
         this, tr("Open Excellon Drill File"),
         settingWindow->settings->lastDir(),
         tr("Excellon Drill Files (*.drl *.exc *.xln *.ncd *.drill);;All files (*.*)"));
 
-    if (fileName.isEmpty())
+    if (fileName.isEmpty()) {
         return;
+    }
 
     settingWindow->settings->setLastDir(fileName);
 
@@ -1001,11 +999,13 @@ void MainWindow::on_actionOpen_Excellon_triggered()
     m_excellon = std::move(exc);
 
     // Overlay onto every scene that already exists
-    for (QGraphicsScene *s : { sceneNet1, sceneNet2, sceneNet12, sceneNet21,
-                               scenePath1, scenePath2, scenePath12, scenePath21 })
+    for (QGraphicsScene* s : { sceneNet1.get(), sceneNet2.get(), sceneNet12.get(), sceneNet21.get(),
+                               scenePath1.get(), scenePath2.get(), scenePath12.get(), scenePath21.get() }) {
         drawExcellonDrills(s);
-    if (ui->graphicsView->scene())
+    }
+    if (ui->graphicsView->scene()) {
         ui->graphicsView->viewport()->update();
+    }
 
     // Populate the Drills tab
     ui->drillsTree->clear();
@@ -1048,7 +1048,7 @@ void MainWindow::on_actionExport_Drills_Excellon_triggered()
     if (!m_excellon)
     {
         QMessageBox::warning(this, "Export Excellon Drill G-Code",
-                             "No Excellon file loaded. Open an Excellon drill file first.");
+            "No Excellon file loaded. Open an Excellon drill file first.");
         return;
     }
 
@@ -1057,7 +1057,7 @@ void MainWindow::on_actionExport_Drills_Excellon_triggered()
     if (!defaultName.isEmpty())
     {
         int dot = defaultName.lastIndexOf('.');
-        if (dot >= 0) defaultName.truncate(dot);
+        if (dot >= 0) { defaultName.truncate(dot); }
         defaultName += "_exc_drill.nc";
     }
     else
@@ -1070,18 +1070,20 @@ void MainWindow::on_actionExport_Drills_Excellon_triggered()
         settingWindow->settings->lastDir() + "/" + defaultName,
         "G-Code files (*.nc *.gcode *.tap);;All files (*)");
 
-    if (filePath.isEmpty())
+    if (filePath.isEmpty()) {
         return;
+    }
 
     settingWindow->settings->setLastDir(filePath);
 
     QString errorMsg;
     if (GcodeExport::writeDrills(*m_excellon, *settingWindow->settings,
-                                 filePath, errorMsg, boardFlipped))
+        filePath, errorMsg, boardFlipped))
     {
         int totalHoles = 0;
-        for (const ExcellonTool &t : m_excellon->tools)
+        for (const ExcellonTool& t : m_excellon->tools) {
             totalHoles += t.holes.size();
+        }
 
         ui->messageBrowser->append("Excellon Drill G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
@@ -1100,7 +1102,7 @@ void MainWindow::on_actionExport_Drills_Excellon_Bore_triggered()
     if (!m_excellon)
     {
         QMessageBox::warning(this, "Export Excellon Drill G-Code (Bore)",
-                             "No Excellon file loaded. Open an Excellon drill file first.");
+            "No Excellon file loaded. Open an Excellon drill file first.");
         return;
     }
 
@@ -1108,7 +1110,7 @@ void MainWindow::on_actionExport_Drills_Excellon_Bore_triggered()
     if (!defaultName.isEmpty())
     {
         int dot = defaultName.lastIndexOf('.');
-        if (dot >= 0) defaultName.truncate(dot);
+        if (dot >= 0) { defaultName.truncate(dot); }
         defaultName += "_exc_bore.nc";
     }
     else
@@ -1121,18 +1123,20 @@ void MainWindow::on_actionExport_Drills_Excellon_Bore_triggered()
         settingWindow->settings->lastDir() + "/" + defaultName,
         "G-Code files (*.nc *.gcode *.tap);;All files (*)");
 
-    if (filePath.isEmpty())
+    if (filePath.isEmpty()) {
         return;
+    }
 
     settingWindow->settings->setLastDir(filePath);
 
     QString errorMsg;
     if (GcodeExport::writeDrillsBore(*m_excellon, *settingWindow->settings,
-                                     filePath, errorMsg, boardFlipped))
+        filePath, errorMsg, boardFlipped))
     {
         int totalHoles = 0;
-        for (const ExcellonTool &t : m_excellon->tools)
+        for (const ExcellonTool& t : m_excellon->tools) {
             totalHoles += t.holes.size();
+        }
 
         ui->messageBrowser->append("Excellon Bore G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())

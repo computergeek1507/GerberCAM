@@ -36,7 +36,7 @@ MyRect Toolpath::trackToMyRect(Track t, qint64 offset)
     double k,ki;
     double angle;
 
-    t.width+=offset;
+    t.width += offset;
 
     if((t.pointend.x()-t.pointstart.x())==0)//vertical track
     {
@@ -182,6 +182,53 @@ MyRect Toolpath::rectToMyRect(Pad p1,qint64 offset)
     }
 
     return r1;
+}
+
+Path Toolpath::elementToPath(Element const& e, qint64 offset)
+{
+    Path path;
+    if (e.elementType == 'T')
+    {
+        MyRect r = trackToMyRect(e.track, offset);
+        IntPoint pt;
+        pt.X = r.p1.x(); pt.Y = r.p1.y(); path << pt;
+        arcToSegments(r.p2, r.p3, path);
+        pt.X = r.p4.x(); pt.Y = r.p4.y(); path << pt;
+        arcToSegments(r.p4, r.p1, path);
+    }
+    else
+    {
+        if (e.pad.shape == 'C')
+        {
+            QPoint pt1, pt2;
+            pt1.setX(e.pad.point.x());
+            pt1.setY(e.pad.point.y() + e.pad.parameter[0] / 2 + offset / 2);
+            pt2.setX(e.pad.point.x());
+            pt2.setY(e.pad.point.y() - e.pad.parameter[0] / 2 - offset / 2);
+            arcToSegments(pt1, pt2, path);
+            arcToSegments(pt2, pt1, path);
+        }
+        else if (e.pad.shape == 'R')
+        {
+            MyRect r = rectToMyRect(e.pad, offset);
+            IntPoint pt;
+            pt.X = r.p1.x(); pt.Y = r.p1.y(); path << pt;
+            pt.X = r.p2.x(); pt.Y = r.p2.y(); path << pt;
+            pt.X = r.p3.x(); pt.Y = r.p3.y(); path << pt;
+            pt.X = r.p4.x(); pt.Y = r.p4.y(); path << pt;
+        }
+        else if (e.pad.shape == 'O')
+        {
+            Track t = obroundToTrack(e.pad);
+            MyRect r = trackToMyRect(t, offset);
+            IntPoint pt;
+            pt.X = r.p1.x(); pt.Y = r.p1.y(); path << pt;
+            arcToSegments(r.p2, r.p3, path);
+            pt.X = r.p4.x(); pt.Y = r.p4.y(); path << pt;
+            arcToSegments(r.p4, r.p1, path);
+        }
+    }
+    return path;
 }
 
 Track Toolpath::obroundToTrack(Pad const& o1)
@@ -338,9 +385,7 @@ bool Toolpath::toolpathIntersects(QList<NetPath> const& nPList,QList<CollisionTo
                       {
                           Segment tSegment=tMyPath.segmentList.at(n);
                       }
-
                   }
-
               }
           }
         }
@@ -438,15 +483,15 @@ bool Toolpath::cToolpathIntersects(QList<NetPath> const& nPList,QList<CollisionT
     return cTList.isEmpty() == false;
 }
 
-Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAME))
+Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logger(spdlog::get(PROJECT_NAME))
 {
     QElapsedTimer timer;
     timer.start();
 
-    auto tool = s->getEngravingTool();
+    auto tool = s->getTool(parm.toolName);
     if (tool && tool->width > 0.0)
     {
-        toolDiameter = static_cast<qint64>(tool->calculateWidth(s->engravingParm.depth) * PRECISIONSCALE);
+        toolDiameter = static_cast<qint64>(tool->calculateWidth(parm.depth) * PRECISIONSCALE);
     }
 
     m_logger->debug("Toolpath: toolDiameter={} ({} mm)", toolDiameter, toolDiameter / PRECISIONSCALE);
@@ -626,6 +671,52 @@ Toolpath::Toolpath(Preprocess* p, Setting* s) : m_logger(spdlog::get(PROJECT_NAM
             }
         }
     }
+    m_logger->debug("totalToolpath ring 0 size: {}", totalToolpath.size());
+
+    // Additional isolation rings: each ring cuts a concentric path further from the traces.
+    // Ring N offset = toolDiameter + N * ringStep
+    // ringStep = 2 * toolDiameter * (1 - overlap) so adjacent rings are tangent when overlap=0.
+    int numRings = std::max(1, parm.isolationRings);
+    if (numRings > 1)
+    {
+        double overlap = tool ? std::min(0.99, std::max(0.0, tool->overlap)) : 0.0;
+        qint64 ringStep = static_cast<qint64>(2.0 * toolDiameter * (1.0 - overlap));
+        if (ringStep < 1) ringStep = toolDiameter;
+
+        for (int ring = 1; ring < numRings; ++ring)
+        {
+            qint64 ringOffset = toolDiameter + ring * ringStep;
+
+            Paths ringFirstPaths;
+            for (auto const& netPath : netPathList)
+            {
+                Paths netPaths;
+                for (auto const& myPath : netPath.pathList)
+                {
+                    Path p = elementToPath(myPath.element, ringOffset);
+                    if (!p.empty()) netPaths.push_back(p);
+                }
+
+                Paths netSimplified;
+                SimplifyPolygons(netPaths, netSimplified, pftNonZero);
+
+                if (!netSimplified.empty())
+                {
+                    ringFirstPaths.push_back(netSimplified.at(0));
+                    for (size_t k = 1; k < netSimplified.size(); ++k)
+                        totalToolpath.push_back(netSimplified.at(k));
+                }
+            }
+
+            Paths ringMerged;
+            SimplifyPolygons(ringFirstPaths, ringMerged, pftNonZero);
+            for (auto& rp : ringMerged)
+                totalToolpath.push_back(rp);
+
+            m_logger->debug("ring {} offset={} added {} paths", ring, ringOffset, ringMerged.size());
+        }
+    }
+
     m_logger->debug("totalToolpath final size: {}", totalToolpath.size());
     time = timer.elapsed();
 }

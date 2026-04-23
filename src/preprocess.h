@@ -20,8 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef PREPROCESS_H
-#define PREPROCESS_H
+#pragma once
 
 #include "gerber.h"
 #include<QPoint>
@@ -133,4 +132,3 @@ private:
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
 };
 
-#endif // PREPROCESS_H

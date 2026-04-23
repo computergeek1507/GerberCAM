@@ -20,8 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef SETTING_H
-#define SETTING_H
+#pragma once
 
 #include <QString>
 #include <QDataStream>
@@ -46,21 +45,21 @@ enum class ToolType : int { Conical, Cylindrical, Drill};
 struct CuttingParm
 {
     QString toolName;
-	//double spindleSpeed{ 18000.0 };
 	double depth{ 1.7 };
+    int isolationRings{ 1 };
 	CuttingParm() = default;
 	CuttingParm(nlohmann::json const& j)
 	{
 		toolName = QString::fromStdString(j.value("toolName", ""));
-		//spindleSpeed = j.value("spindleSpeed", spindleSpeed);
 		depth = j.value("depth", depth);
+        isolationRings = j.value("isolationRings", isolationRings);
 	}
 	nlohmann::json toJson() const
 	{
 		nlohmann::json j;
 		j["toolName"] = toolName.toStdString();
-		//j["spindleSpeed"] = spindleSpeed;
 		j["depth"] = depth;
+        j["isolationRings"] = isolationRings;
 		return j;
 	}
 };
@@ -251,5 +250,3 @@ protected:
     QString m_lastDir;
 };
 
-
-#endif // SETTING_H
