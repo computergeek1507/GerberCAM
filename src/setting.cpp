@@ -34,57 +34,6 @@ SOFTWARE.
 
 #define JSON_SETTINGS_FILENAME "settings.json"
 
-inline QDataStream &operator <<(QDataStream &out,const Tool &toolBit)
-{
-    out<<toolBit.name<<toolBit.unitType<<toolBit.toolType<<toolBit.diameter
-            <<toolBit.angle<<toolBit.width<<toolBit.overlap<<toolBit.maxPlungeSpeed
-                <<toolBit.maxStepDepth<<toolBit.spindleSpeed<<toolBit.feedrate;
-    return out;
-}
-
-inline QDataStream &operator >>(QDataStream &in,Tool &toolBit)
-{
-    in>>toolBit.name>>toolBit.unitType>>toolBit.toolType>>toolBit.diameter
-            >>toolBit.angle>>toolBit.width>>toolBit.overlap>>toolBit.maxPlungeSpeed
-                >>toolBit.maxStepDepth>>toolBit.spindleSpeed>>toolBit.feedrate;
-    return in;
-}
-
-inline QDataStream &operator <<(QDataStream &out,const HoleCondition &holeCondition)
-{
-    out<<holeCondition.condition<<holeCondition.drill<<holeCondition.value<<holeCondition.value1<<holeCondition.text;
-    return out;
-}
-
-inline QDataStream &operator >>(QDataStream &in,HoleCondition &holeCondition)
-{
-    in>>holeCondition.condition>>holeCondition.drill>>holeCondition.value>>holeCondition.value1>>holeCondition.text;
-    return in;
-}
-
-inline QDataStream &operator <<(QDataStream &out,const HoleRule &holeRule)
-{
-    out<<holeRule.name<<holeRule.ruleList.size();
-    for(int i=0;i<holeRule.ruleList.size();i++)
-    {
-        out<<holeRule.ruleList.at(i);
-    }
-    return out;
-}
-
-inline QDataStream &operator >>(QDataStream &in,HoleRule &holeRule)
-{
-    int num;
-    in>>holeRule.name>>num;
-    for(int i=0;i<num;i++)
-    {
-        HoleCondition temp;
-        in>>temp;
-        holeRule.ruleList.append(temp);
-    }
-    return in;
-}
-
 bool Setting::readTool(QString const& appData)
 {
     auto path = appData + "/" + JSON_TOOL_LIBRARY_FILENAME;
@@ -182,10 +131,6 @@ Setting::Setting(QString const& appData) : m_logger(spdlog::get(PROJECT_NAME))
 void Setting::appendTool(Tool t)
 {
     toolList.append(t);
-    //if (t.toolType == "Drill")
-    //{
-    //    drillList.append(t);
-    //}
 }
 
 void Setting::replaceTool(int index,Tool t)
@@ -194,13 +139,6 @@ void Setting::replaceTool(int index,Tool t)
 
     //toolList[index] = t;
     toolList.replace(index, t);
-    //if(t.toolType=="Drill")
-    //{
-    //    drillList.clear();
-    //    for(int i=0;i<toolList.size();i++)
-    //        if(toolList.at(i).toolType=="Drill")
-    //            drillList.append(toolList.at(i));
-    //}
 }
 
 void Setting::saveLibrary()
@@ -219,41 +157,6 @@ void Setting::saveLibrary()
     {
         m_logger->error("Error saving hole identification rule: {}", ex.what());
     }
-    /*
-    QFile file(DEFAULT_TOOL_LIBRARY_FILENAME);
-    if(!file.open(QIODevice::WriteOnly))
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Error!Cannot save library!");
-        msgBox.exec();
-        return;
-    }
-    QDataStream out(&file);
-    out.setVersion(QDataStream::Qt_5_4);
-    out<<toolList.size();
-    for(int i=0;i<toolList.size();i++)
-    {
-        Tool t=toolList.at(i);
-        if(t.toolType=="Conical")
-        out<<t;
-    }
-
-    for(int i=0;i<toolList.size();i++)
-    {
-        Tool t=toolList.at(i);
-        if(t.toolType=="Cylindrical")
-        out<<t;
-    }
-
-    for(int i=0;i<toolList.size();i++)
-    {
-        Tool t=toolList.at(i);
-        if(t.toolType=="Drill")
-        out<<t;
-    }
-    file.flush();
-    file.close();
-    */
     toolList.clear();
     readTool(m_appData);
 }
@@ -274,26 +177,6 @@ void Setting::saveHoleRule()
     {
         m_logger->error("Error saving hole identification rule: {}", ex.what());
     }
-    //QFile file(DEFAULT_HOLE_RULE_FILENAME);
-    //if(!file.open(QIODevice::WriteOnly))
-    //{
-    //    QMessageBox msgBox;
-    //    msgBox.setText("Error!Cannot save hole identification rule!");
-    //    msgBox.exec();
-    //    return;
-    //}
-    //QDataStream out(&file);
-    //out.setVersion(QDataStream::Qt_5_4);
-    //out<<holeRuleList.size();
-    //for(int i=0;i<holeRuleList.size();i++)
-    //{
-    //    HoleRule t=holeRuleList.at(i);
-    //    out<<t;
-    //}
-    //
-    //file.flush();
-    //file.close();
-    //
 }
 
 bool Setting::readSettings(QString const& appData)

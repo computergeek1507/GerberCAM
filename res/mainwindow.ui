@@ -233,12 +233,12 @@
   </action>
   <action name="actionZoom_in">
    <property name="text">
-    <string>Zoom in</string>
+    <string>Zoom In</string>
    </property>
   </action>
   <action name="actionZoom_out">
    <property name="text">
-    <string>Zoom out</string>
+    <string>Zoom Out</string>
    </property>
   </action>
   <action name="actionAdd_layer">
@@ -275,7 +275,7 @@
   </action>
   <action name="actionSetting">
    <property name="text">
-    <string>Setting</string>
+    <string>Settings...</string>
    </property>
   </action>
   <action name="actionHole_Identify">
