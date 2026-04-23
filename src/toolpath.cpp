@@ -187,7 +187,7 @@ MyRect Toolpath::rectToMyRect(Pad p1,qint64 offset)
 Path Toolpath::elementToPath(Element const& e, qint64 offset)
 {
     Path path;
-    if (e.elementType == 'T')
+    if (e.elementType == ElementType::Track)
     {
         MyRect r = trackToMyRect(e.track, offset);
         IntPoint pt;
@@ -198,7 +198,7 @@ Path Toolpath::elementToPath(Element const& e, qint64 offset)
     }
     else
     {
-        if (e.pad.shape == 'C')
+        if (e.pad.shape == PadShape::Circle)
         {
             QPoint pt1, pt2;
             pt1.setX(e.pad.point.x());
@@ -208,7 +208,7 @@ Path Toolpath::elementToPath(Element const& e, qint64 offset)
             arcToSegments(pt1, pt2, path);
             arcToSegments(pt2, pt1, path);
         }
-        else if (e.pad.shape == 'R')
+        else if (e.pad.shape == PadShape::Rectangle)
         {
             MyRect r = rectToMyRect(e.pad, offset);
             IntPoint pt;
@@ -217,7 +217,7 @@ Path Toolpath::elementToPath(Element const& e, qint64 offset)
             pt.X = r.p3.x(); pt.Y = r.p3.y(); path << pt;
             pt.X = r.p4.x(); pt.Y = r.p4.y(); path << pt;
         }
-        else if (e.pad.shape == 'O')
+        else if (e.pad.shape == PadShape::Oval)
         {
             Track t = obroundToTrack(e.pad);
             MyRect r = trackToMyRect(t, offset);
@@ -512,7 +512,7 @@ Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logge
             MyPath tempPath;
             Segment s;
             tempPath.element = e;
-            if (e.elementType == 'T')//track
+            if (e.elementType == ElementType::Track)//track
             {
                 MyRect r = trackToMyRect(e.track, toolDiameter);
 
@@ -539,7 +539,7 @@ Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logge
             }
             else//pad
             {
-                if (e.pad.shape == 'C')
+                if (e.pad.shape == PadShape::Circle)
                 {
                     QPoint point;
                     QPoint point1, point2;
@@ -559,7 +559,7 @@ Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logge
                     arcToSegments(point1, point2, tempPath.toolpath);
                     arcToSegments(point2, point1, tempPath.toolpath);
                 }
-                else if (e.pad.shape == 'R')
+                else if (e.pad.shape == PadShape::Rectangle)
                 {
                     MyRect r = rectToMyRect(e.pad, toolDiameter);
                     s.point = r.p1;
@@ -585,7 +585,7 @@ Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logge
                     point.X = r.p4.x(); point.Y = r.p4.y();
                     tempPath.toolpath << point;
                 }
-                else if (e.pad.shape == 'O')
+                else if (e.pad.shape == PadShape::Oval)
                 {
                     Track t = obroundToTrack(e.pad);
                     MyRect r = trackToMyRect(t, toolDiameter);
@@ -679,7 +679,7 @@ Toolpath::Toolpath(Preprocess* p, Setting* s, CuttingParm const& parm) : m_logge
     int numRings = std::max(1, parm.isolationRings);
     if (numRings > 1)
     {
-        double overlap = tool ? std::min(0.99, std::max(0.0, tool->overlap)) : 0.0;
+        double overlap = tool ? std::min(0.99, std::max(0.0, parm.overlap)) : 0.0;
         qint64 ringStep = static_cast<qint64>(2.0 * toolDiameter * (1.0 - overlap));
         if (ringStep < 1) ringStep = toolDiameter;
 

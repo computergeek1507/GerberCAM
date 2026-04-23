@@ -69,7 +69,7 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 
     if(settings->holeRuleList.size()>0)
     {
-        HoleRule rule=settings->holeRuleList.at(0);
+        HoleRule rule = settings->holeRuleList.at(0);
         updateMTreeView(rule);
     }
     refreshToolCombobox();
@@ -98,6 +98,7 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 
 	ui->lineEditEngravingDepth->setText(QString::number(settings->engravingParm.depth, 'f', 3));
     ui->spinBoxIsolationRings->setValue(settings->engravingParm.isolationRings);
+	ui->doubleSpinBoxOverlap->setValue(settings->engravingParm.overlap);
 
 	ui->lineEditDrillingDepth->setText(QString::number(settings->drillParm.depth, 'f', 3));
 	ui->lineEditCuttingDepth->setText(QString::number(settings->cutParm.depth, 'f', 3));
@@ -575,7 +576,6 @@ void Settingwindow::on_buttonNo_clicked()
     this->close();
 }
 
-
 void Settingwindow::updateMTreeView(HoleRule r)
 {
     hrModel =new TreeModel(r);
@@ -608,7 +608,6 @@ void Settingwindow::on_mNewButton_clicked()
     hr.ruleList.clear();
     mEditFlag=false;
     updateMTreeView(hr);
-
 }
 
 void Settingwindow::on_mDeleteButton_clicked()
@@ -752,7 +751,6 @@ void Settingwindow::on_mCancelButton_clicked()
 
 void Settingwindow::on_mREUpButton_clicked()
 {
-
     QModelIndex index=ui->mTreeView->currentIndex();
     if(index.row()<1||index.row()>hr.ruleList.size()-1)
         return;
@@ -942,7 +940,7 @@ bool Settingwindow::checkHoleRuleValue( HoleCondition &c)
             msgBox.exec();
             return false;
         }
-        c.text="Default drill : \""+c.drill.name+"  "+QString::number(c.drill.width,'f',3)+"\"";
+        c.text = "Default drill : \"" + c.drill.name + "  " + QString::number(c.drill.width,'f',3) + "\"";
     }
     return true;
 }
@@ -950,8 +948,9 @@ bool Settingwindow::checkHoleRuleValue( HoleCondition &c)
 void Settingwindow::on_mREAddButton_clicked()
 {
     HoleCondition c;
-    if(checkHoleRuleValue(c)==false)
+    if (checkHoleRuleValue(c) == false) {
         return;
+    }
     hr.name=ui->mRENameInput->text();
     hr.ruleList.append(c);
 
@@ -1050,7 +1049,7 @@ void Settingwindow::on_mRECancelButton_clicked()
     ui->mREUpButton->setEnabled(true);
     ui->mREDownButton->setEnabled(true);
 
-    mREEditFlag=false;
+    mREEditFlag = false;
 }
 
 void Settingwindow::on_tabWidget_tabBarClicked(int index)
@@ -1063,18 +1062,21 @@ void Settingwindow::on_tabWidget_tabBarClicked(int index)
 
 void Settingwindow::on_mSelectRuleComboBox_activated(int index)
 {
-    hrModel =new TreeModel(settings->holeRuleList.at(index));
+    hrModel = new TreeModel(settings->holeRuleList.at(index));
     ui->mTreeView->setModel(hrModel);
-    for(int i=0;i<6;i++)
+    for (int i = 0; i < 6; i++) {
         ui->mTreeView->resizeColumnToContents(i);
+    }
     ui->mTreeView->show();
 
-    if(settings->holeRuleList.size()==0)
+    if (settings->holeRuleList.size() == 0) {
         ui->mEditButton->setEnabled(false);
-    else
+    }
+    else {
         ui->mEditButton->setEnabled(true);
+    }
     holeDrillCheck();
-    settings->selectedRule=index;
+    settings->selectedRule = index;
 }
 
 void Settingwindow::on_mREDrillComboBox_activated(int index)
@@ -1092,6 +1094,7 @@ void Settingwindow::on_pushButtonSaveBit_clicked()
 	settings->engravingParm.toolName = ui->comboBoxEngravingTool->currentData().toString();
 	settings->engravingParm.depth = ui->lineEditEngravingDepth->text().toDouble();
     settings->engravingParm.isolationRings = ui->spinBoxIsolationRings->value();
+    settings->engravingParm.overlap = ui->doubleSpinBoxOverlap->value();
 
 	settings->drillParm.toolName = ui->comboBoxDrillingTools->currentData().toString();
 	settings->drillParm.depth = ui->lineEditDrillingDepth->text().toDouble();

@@ -118,6 +118,9 @@ private slots:
 
     void on_actionView_Log_triggered();
 
+    void on_actionSave_Project_triggered();
+    void on_actionLoad_Project_triggered();
+
 private:
     Ui::MainWindow *ui;
 
@@ -173,6 +176,16 @@ private:
 
     std::shared_ptr<spdlog::logger> m_logger{ nullptr };
     QString m_appdir;
+
+    QString m_gerber1Path;
+    QString m_gerber2Path;
+    QString m_outlinePath;
+    QString m_excellonPath;
+
+    bool loadGerber1(const QString &path);
+    bool loadGerber2(const QString &path);
+    bool loadOutline(const QString &path);
+    bool loadExcellon(const QString &path);
 
     std::unique_ptr<Gerber> gerberOutline{ nullptr };
     std::unique_ptr<QGraphicsScene> sceneOutline{ nullptr };

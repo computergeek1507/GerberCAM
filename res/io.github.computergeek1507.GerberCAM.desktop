@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=GerberCAM
+GenericName=Gerber PCB CAM
+Comment=View Gerber PCB files and generate isolation routing G-code
+Exec=GerberCAM %f
+Icon=io.github.computergeek1507.GerberCAM
+Terminal=false
+Categories=Engineering;Electronics;
+MimeType=application/x-gerber;
+Keywords=gerber;pcb;cam;gcode;cnc;isolation;routing;drill;

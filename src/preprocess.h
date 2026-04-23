@@ -37,6 +37,7 @@ struct MyRect
     QPoint p1,p2,p3,p4;//clockwise vertex
 };
 
+enum class ElementType { Pad, Track, Contour };
 
 struct Element
 {
@@ -45,7 +46,7 @@ struct Element
     qint32 block;
     qint32 netNum=0;
     QString ADNum;
-    char elementType;//P T C
+    ElementType elementType;
     BoundingRect boundingRect;
     qint32 elementNum;
 };
@@ -54,7 +55,7 @@ struct PadManage
 {
     QString ADNum;
     double angle;
-    char shape;
+    PadShape shape;
     QList<int> index;
     int parameterNum;
     int parameter[4];
@@ -104,14 +105,11 @@ protected:
     bool padCollision(Pad p1, Pad p2);
     bool elementCollision(Element e1, Element e2);
 
-
     bool elementCollision1(Element e1, Element e2);
     BoundingRect boundingRect(Pad pad);
     BoundingRect boundingRect(Track t);
 
-
     QList<ContourSegment> searchList;
-
 
     bool bondingRecIntersect(BoundingRect r1, BoundingRect r2);
     bool pointInCircle(QPoint c, qint64 diameter, QPoint p);

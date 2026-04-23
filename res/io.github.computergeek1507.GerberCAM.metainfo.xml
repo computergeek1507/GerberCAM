@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.computergeek1507.GerberCAM</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>GerberCAM</name>
+  <summary>View Gerber PCB files and generate isolation routing G-code</summary>
+
+  <description>
+	<p>
+	  GerberCAM reads RS-274X Gerber files and Excellon drill files,
+	  displays copper layers and board outlines, and generates isolation
+	  routing and drill G-code for CNC milling of printed circuit boards.
+	</p>
+	<p>Features include:</p>
+	<ul>
+	  <li>Open and overlay multiple Gerber copper layers</li>
+	  <li>Load board outline (edge cut) Gerber files</li>
+	  <li>Import Excellon drill files</li>
+	  <li>Automatic net identification and collision detection</li>
+	  <li>Toolpath generation for isolation routing</li>
+	  <li>Export G-code for engraving, drilling, boring, and outline cutting</li>
+	  <li>Configurable tool library with conical, cylindrical, and drill bits</li>
+	  <li>Save and load projects as JSON</li>
+	  <li>Board flip (mirror) support for double-sided PCBs</li>
+	</ul>
+  </description>
+
+  <url type="homepage">https://github.com/computergeek1507/GerberCAM</url>
+  <url type="bugtracker">https://github.com/computergeek1507/GerberCAM/issues</url>
+  <url type="vcs-browser">https://github.com/computergeek1507/GerberCAM</url>
+
+  <launchable type="desktop-id">io.github.computergeek1507.GerberCAM.desktop</launchable>
+
+  <provides>
+	<binary>GerberCAM</binary>
+  </provides>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+	<release version="0.8.0" date="2025-01-01">
+	  <description>
+		<p>Initial Flatpak release with outline support, Excellon drill import,
+		   project save/load, and outline G-code export.</p>
+	  </description>
+	</release>
+  </releases>
+
+  <screenshots>
+  </screenshots>
+
+  <categories>
+	<category>Engineering</category>
+	<category>Electronics</category>
+  </categories>
+</component>

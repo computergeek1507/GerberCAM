@@ -73,9 +73,9 @@ public:
     QList<NetPath> netPathList;
     Paths totalToolpath;
     // Internal units: 1 mm = 1,000,000 units
-    qint64 toolDiameter=400000;//0.4mm bit
+    qint64 toolDiameter = 400000;//0.4mm bit
     //qint64 toolDiameter=200000;//0.2mm bit
-    int collisionSum=0;
+    int collisionSum = 0;
     qint64 time;
 
     QList<CollisionToolpath> tpCollisionNum;

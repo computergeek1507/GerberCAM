@@ -35,6 +35,8 @@ SOFTWARE.
 #include "clipper.hpp"
 using namespace ClipperLib;
 
+enum class ComponentType { Pad, Track, Hole, Contour, Path, ClipperPath };
+
 class DrawPCB : public QGraphicsItem
 {
 public:
@@ -65,7 +67,8 @@ private:
 
     QColor color;
     QVector<QPointF> stuff;
-    char componentType;//p(pad) t(track) h(hole) c(contour) s(path) l(clipperPath)
+    //char componentType;//p(pad) t(track) h(hole) c(contour) s(path) l(clipperPath)
+    ComponentType componentType;
     Pad tempPad;
     Track tempTrack;
     MyPath tempPath;

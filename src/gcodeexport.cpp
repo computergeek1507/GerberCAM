@@ -162,15 +162,18 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     return true;
 }
 
-bool GcodeExport::writeDrills(const Preprocess &pp, const Setting &s,
-                              const QString &filePath, QString &errorMsg,
-                              bool flipX)
+bool GcodeExport::writeDrills(const Preprocess& pp, const Setting& s,
+    const QString& filePath, QString& errorMsg,
+    bool flipX)
 {
     QMap<qint64, QList<QPoint>> holes;
-    for (const Net &net : pp.netList)
-        for (const Element &e : net.elements)
-            if (e.elementType == 'P' && e.pad.hole > 0)
+    for (const Net& net : pp.netList) {
+        for (const Element& e : net.elements) {
+            if (e.elementType == ElementType::Pad && e.pad.hole > 0) {
                 holes[e.pad.hole].append(e.pad.point);
+            }
+        }
+    }
 
     if (holes.isEmpty())
     {
@@ -203,7 +206,7 @@ bool GcodeExport::writeDrillsBore(const Preprocess &pp, const Setting &s,
     QMap<qint64, QList<QPoint>> holes;
     for (const Net &net : pp.netList)
         for (const Element &e : net.elements)
-            if (e.elementType == 'P' && e.pad.hole > 0)
+            if (e.elementType == ElementType::Pad && e.pad.hole > 0)
                 holes[e.pad.hole].append(e.pad.point);
 
     if (holes.isEmpty())

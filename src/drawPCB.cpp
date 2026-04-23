@@ -25,8 +25,8 @@ SOFTWARE.
 DrawPCB::DrawPCB(Pad component,int layerOrder,QColor c)
 {
     Q_UNUSED(layerOrder)
-    componentType='p';
-    tempPad=component;
+    componentType = ComponentType::Pad;
+    tempPad = component;
     setZValue(AT_TOP);
     color=c;
 
@@ -46,8 +46,8 @@ DrawPCB::DrawPCB(Pad component,char hole,int layerOrder,QColor c)
 {
     Q_UNUSED(layerOrder)
     if(hole=='h')
-    componentType='h';
-    tempPad=component;
+        componentType = ComponentType::Hole;
+    tempPad = component;
     setZValue(AT_TOP);
     color=c;
 
@@ -68,15 +68,15 @@ DrawPCB::DrawPCB(Track component,char type,int layerOrder,QColor c)
 {
     Q_UNUSED(layerOrder)
     if(type=='T')
-        componentType='t';
+        componentType = ComponentType::Track;
     else if(type=='C')
-        componentType='c';
-    tempTrack=component;
+        componentType = ComponentType::Contour;
+    tempTrack = component;
     setZValue(AT_BOTTOM);
 
     color=c;
 
-    if(tempTrack.pointend.y()>tempTrack.pointstart.y())
+    if(tempTrack.pointend.y() > tempTrack.pointstart.y())
     {
         if(tempTrack.pointend.x()>tempTrack.pointstart.x())
         {
@@ -111,9 +111,6 @@ DrawPCB::DrawPCB(Track component,char type,int layerOrder,QColor c)
         }
     }
 
-
-
-
     path.addRect(area);
 
     setFlags(ItemIsSelectable);
@@ -123,8 +120,8 @@ DrawPCB::DrawPCB(Track component,char type,int layerOrder,QColor c)
 DrawPCB::DrawPCB(MyPath component, int layerOrder, QColor c)
 {
     Q_UNUSED(layerOrder)
-    componentType='s';
-    tempPath=component;
+    componentType = ComponentType::Path;
+    tempPath = component;
     setZValue(AT_BOTTOM);
 
     color=c;
@@ -136,8 +133,8 @@ DrawPCB::DrawPCB(MyPath component, int layerOrder, QColor c)
 DrawPCB::DrawPCB(Paths component, int layerOrder, QColor c)
 {
     Q_UNUSED(layerOrder)
-    componentType='l';
-    tempCPath=component;
+    componentType = ComponentType::ClipperPath;
+    tempCPath = component;
     setZValue(AT_BOTTOM);
 
     color=c;
@@ -188,14 +185,14 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     Q_UNUSED(option)
 
     //QColor fillColor = (option->state & QStyle::State_Selected) ? color.dark(135) : color;
-    QColor fillColor = (componentType=='p' ? color.darker(120) : color);
+    QColor fillColor = (componentType == ComponentType::Pad ? color.darker(120) : color);
     //QColor fillColor =color;
 
     /*
     int debugColor;
     if (option->state & QStyle::State_MouseOver)
         fillColor = fillColor.light(160);
-    if(componentType=='p')
+    if(componentType == ComponentType::Pad)
     {
         debugColor=255*tempPad.block/tempPad.totalBlock;
         fillColor.setBlue(debugColor);
@@ -214,21 +211,21 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     p1.setX(0);
     p1.setY(0);
 
-    if (componentType=='c') {
+    if (componentType == ComponentType::Contour) {
         pen.setWidthF(4000);
         painter->setPen(pen);
         p2=tempTrack.pointend-tempTrack.pointstart;
 
         painter->drawLine(p1,p2);
     }
-    else if (componentType=='t') {
+    else if (componentType == ComponentType::Track) {
         pen.setWidthF(tempTrack.width);
         painter->setPen(pen);
         p2=tempTrack.pointend-tempTrack.pointstart;
 
         painter->drawLine(p1,p2);
     }
-    else if (componentType=='h') {
+    else if (componentType == ComponentType::Hole) {
         if(tempPad.hole!=0)
         {
             QBrush brush(Qt::white);
@@ -240,7 +237,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
         }
 
     }
-    else if (componentType=='p') {
+    else if (componentType == ComponentType::Pad) {
 
         QPen pen(fillColor);
         pen.setCapStyle(Qt::RoundCap);
@@ -250,7 +247,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
         QBrush brush(fillColor);
         painter->setBrush(brush);
 
-        if(tempPad.shape=='C')
+        if(tempPad.shape == PadShape::Circle)
         {
             //area=QRectF(0,0,tempPad.parameter[0],tempPad.parameter[0]);
             QRect rectangle(-tempPad.parameter[0]/2,-tempPad.parameter[0]/2,tempPad.parameter[0],tempPad.parameter[0]);
@@ -267,7 +264,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             */
         }
 
-        else if(tempPad.shape=='O')//use line with RoundCap to replace ellipse,better shape
+        else if(tempPad.shape==PadShape::Oval)//use line with RoundCap to replace ellipse,better shape
         {
             if(tempPad.angle==0)
             {
@@ -327,7 +324,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             }
             */
         }
-        else if(tempPad.shape=='R')
+        else if(tempPad.shape==PadShape::Rectangle)
         {
             if(tempPad.angle==0)
             {
@@ -395,7 +392,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             */
 
         }
-        else if(tempPad.shape=='M')
+        else if(tempPad.shape==PadShape::Macro)
         {
             // Macro pad — draw as rectangle approximation
             if(tempPad.parameterNum >= 2)
@@ -409,11 +406,8 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
                 painter->drawEllipse(rectangle);
             }
         }
-
-
-
     }
-    else if(componentType=='s')
+    else if(componentType == ComponentType::Path)
     {
         pen.setWidth(1574);
         painter->setPen(pen);
@@ -443,7 +437,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             }
         }
     }
-    else if(componentType=='l')
+    else if(componentType == ComponentType::ClipperPath)
     {
         pen.setWidth(0); // cosmetic pen: always 1px regardless of zoom level
         painter->setPen(pen);
@@ -477,7 +471,6 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
                 painter->drawLine(p1,p2);
             }
         }
-
     }
 
     /*
@@ -492,10 +485,9 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     */
 }
 
-
 void DrawPCB::drawPie(QPainter *painter, QPoint p1, QPoint p2 )
 {
-    QPoint c=(p1+p2)/2;
+    QPoint c = (p1+p2)/2;
     double d=qSqrt(qint64(p2.x()-p1.x())*qint64(p2.x()-p1.x())+qint64(p2.y()-p1.y())*qint64(p2.y()-p1.y()));
     QRect rectangle;
     QPoint LT,RB;
@@ -554,14 +546,12 @@ void DrawPCB::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void DrawPCB::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-
     if (event->modifiers() & Qt::ShiftModifier) {
         stuff << event->pos();
         update();
         return;
     }
     QGraphicsItem::mouseMoveEvent(event);
-
 }
 
 void DrawPCB::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)

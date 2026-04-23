@@ -47,12 +47,16 @@ struct CuttingParm
     QString toolName;
 	double depth{ 1.7 };
     int isolationRings{ 1 };
+	double overlap{ 0.5 };
+	//double stepDown{ 0.1 };
 	CuttingParm() = default;
 	CuttingParm(nlohmann::json const& j)
 	{
 		toolName = QString::fromStdString(j.value("toolName", ""));
 		depth = j.value("depth", depth);
         isolationRings = j.value("isolationRings", isolationRings);
+        overlap = j.value("overlap", overlap);
+        //stepDown = j.value("stepDown", stepDown);
 	}
 	nlohmann::json toJson() const
 	{
@@ -60,6 +64,8 @@ struct CuttingParm
 		j["toolName"] = toolName.toStdString();
 		j["depth"] = depth;
         j["isolationRings"] = isolationRings;
+		j["overlap"] = overlap;
+		//j["stepDown"] = stepDown;
 		return j;
 	}
 };
@@ -189,16 +195,6 @@ struct HoleRule
         return j;
     }
 };
-
-QDataStream &operator <<(QDataStream &out,const Tool &toolBit);
-QDataStream &operator >>(QDataStream &in, Tool &toolBit);
-
-QDataStream &operator <<(QDataStream &out,const HoleCondition &holeCondition);
-QDataStream &operator >>(QDataStream &in, HoleCondition &holeCondition);
-
-QDataStream &operator <<(QDataStream &out,const HoleRule &holeRule);
-QDataStream &operator >>(QDataStream &in, HoleRule &holeRule);
-
 
 class Setting
 {

@@ -52,7 +52,6 @@ struct BoundingRect
     qint64 area;
 };
 
-
 struct Track
 {
     QPoint pointstart,pointend;
@@ -62,6 +61,14 @@ struct Track
     BoundingRect boundingRect;
 };
 
+
+//char FormatStatement;//L(Leading) T(Trailing) D
+enum class FormatType { Leading, Trailing/*, D */};
+enum class CoordinateType { Absolute, Incremental };//A(Absolute) I(Incremental)
+enum class Polarity { Positive, Negative };
+
+enum class PadShape : int { Rectangle = 1, Circle = 2, Oval = 3,  Polygon = 4, Macro = 6 };
+
 struct Pad
 {
     QPoint point;
@@ -69,14 +76,12 @@ struct Pad
     qint64 parameter[4];
     double angle;
     qint64 hole;
-    char shape;
+    PadShape shape;
     qint32 block;
     qint32 totalBlock;
     QString ADNum;
     BoundingRect boundingRect;
 };
-
-
 
 class Gerber
 {
@@ -127,15 +132,17 @@ private:
     #define SHAPE_E 5
     #define SHAPE_M 6
 
-    char FormatStatement;//L(Leading) T(Trailing) D
-    char CoordinateMode;//A(Absolute) I(Incremental)
+    FormatType FormatStatement;//L(Leading) T(Trailing) D
+    CoordinateType CoordinateMode;//A(Absolute) I(Incremental)
     qint32 XInteger,XDecimal;
     qint32 YInteger,YDecimal;
 
     double ScaleFactorX,ScaleFactorY;
     double OffsetX,OffsetY;
-    QString ImagePolarity;//POS(positive,default) NEG(negtive)
-    QString ModeofUnit;//MM(milimeter) IN(inch,default)
+
+    Polarity ImagePolarity { Polarity::Positive};//POS(positive,default) NEG(negtive)
+    QString ModeofUnit{"IN"};
+    //UnitType ModeofUnit{ UnitType::Inch };//MM(milimeter) IN(inch,default)
 
     QHash<QString, double> ADHash;//Aperture Definition
     QStringList DataList;

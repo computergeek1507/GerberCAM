@@ -392,10 +392,10 @@ void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)
         QString temp;
         switch(pM.shape)
         {
-            case'C':temp="Round";break;
-            case'R':temp="Rectangle";break;
-            case'O':temp="Obround";break;
-            case'P':temp="Poly";break;
+            case PadShape::Circle:temp="Round";break;
+            case PadShape::Rectangle:temp="Rectangle";break;
+            case PadShape::Oval:temp="Obround";break;
+            case PadShape::Polygon:temp="Poly";break;
         }
 
         columnData<<"shape"<< temp;
@@ -472,10 +472,10 @@ void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)
         //case'P':temp = "Poly"; break;
         //}
 
-        if (eM.elementType == 'P')
+        if (eM.elementType == ElementType::Pad)
         {
             Pad p = eM.pad;
-			columnData << "shape" << p.shape;
+			columnData << "shape" << magic_enum::enum_name(p.shape).data();
             parents.last()->appendChild(new TreeItem(columnData, parents.last()));
 
             columnData.clear();
@@ -496,7 +496,7 @@ void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)
 
         }
 
-        if (eM.elementType == 'T')
+        if (eM.elementType == ElementType::Track)
         {
             Track t = eM.track;
             columnData << "startx" << t.pointstart.x();

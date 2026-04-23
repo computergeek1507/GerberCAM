@@ -37,6 +37,7 @@ using namespace ClipperLib;
 #include "spdlog/sinks/rotating_file_sink.h"
 
 #include <filesystem>
+#include <fstream>
 
 
 /*
@@ -175,7 +176,7 @@ void MainWindow::drawNet(QGraphicsScene* scene, Preprocess& t, QColor color, QCo
                 c = colorError;
             }
 
-            if(t.netList.at(i).elements.at(j).elementType=='T')
+            if(t.netList.at(i).elements.at(j).elementType == ElementType::Track)
             {
                 QGraphicsItem *item = new DrawPCB(t.netList.at(i).elements.at(j).track,'T', AT_TOP,c);
                 item->setPos(t.netList.at(i).elements.at(j).track.pointstart);
@@ -189,7 +190,7 @@ void MainWindow::drawNet(QGraphicsScene* scene, Preprocess& t, QColor color, QCo
             {
                 c = colorError;
             }
-            if(t.netList.at(i).elements.at(j).elementType=='P')
+            if(t.netList.at(i).elements.at(j).elementType == ElementType::Pad)
             {
                 double x1=t.netList.at(i).elements.at(j).pad.point.x();
                 double y1=t.netList.at(i).elements.at(j).pad.point.y();
@@ -204,8 +205,8 @@ void MainWindow::drawNet(QGraphicsScene* scene, Preprocess& t, QColor color, QCo
         {
             QColor c = color;
 
-            if(t.netList.at(i).elements.at(j).elementType=='P'&&
-                    t.netList.at(i).elements.at(j).pad.hole!=0)
+            if(t.netList.at(i).elements.at(j).elementType == ElementType::Pad &&
+                    t.netList.at(i).elements.at(j).pad.hole != 0)
             {
                 double x1=t.netList.at(i).elements.at(j).pad.point.x();
                 double y1=t.netList.at(i).elements.at(j).pad.point.y();
@@ -381,6 +382,7 @@ void MainWindow::on_actionOpen_triggered()
         return;
     }
     settingWindow->settings->setLastDir(fileName);
+    m_gerber1Path = fileName;
     gerber1 = std::make_unique<Gerber>(fileName);
     gerberFileName = QFileInfo(fileName).fileName();
     if(!gerber1->readingFlag)
@@ -436,6 +438,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             return;
         }
         settingWindow->settings->setLastDir(fileName);
+        m_gerber2Path = fileName;
         gerberFileName = QFileInfo(fileName).fileName();
         gerber2 = std::make_unique<Gerber>(fileName);
         if (!gerber2->readingFlag)
@@ -470,6 +473,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             return;
         }
         settingWindow->settings->setLastDir(fileName);
+        m_gerber2Path = fileName;
 
         gerber2 = std::make_unique<Gerber>(fileName);
         if (!gerber2->readingFlag)
@@ -500,6 +504,7 @@ void MainWindow::on_actionAdd_layer_triggered()
             return;
         }
         settingWindow->settings->setLastDir(fileName);
+        m_gerber1Path = fileName;
 
         gerber1 = std::make_unique<Gerber>(fileName);
         if (!gerber1->readingFlag)
@@ -768,9 +773,12 @@ void MainWindow::on_actionExport_Drills_triggered()
         int total = 0;
         QSet<qint64> diams;
         for(const Net &n : preprocessfile1->netList)
-            for(const Element &e : n.elements)
-                if(e.elementType == 'P' && e.pad.hole > 0)
-                { ++total; diams.insert(e.pad.hole); }
+            for (const Element& e : n.elements) {
+                if (e.elementType == ElementType::Pad && e.pad.hole > 0)
+                {
+                    ++total; diams.insert(e.pad.hole);
+                }
+            }
 
         ui->messageBrowser->append("Drill G-Code exported: " + filePath);
         m_logger->info("Drill G-Code exported: {}", filePath.toStdString());
@@ -822,13 +830,14 @@ void MainWindow::on_actionExport_Drill_G_Code_Bore_triggered()
     {
         int total = 0;
         QSet<qint64> diams;
-        for (const Net& n : preprocessfile1->netList)
-            for (const Element& e : n.elements)
-                if (e.elementType == 'P' && e.pad.hole > 0)
+        for (const Net& n : preprocessfile1->netList) {
+            for (const Element& e : n.elements) {
+                if (e.elementType == ElementType::Pad && e.pad.hole > 0)
                 {
                     ++total; diams.insert(e.pad.hole);
                 }
-
+            }
+        }
 
         ui->messageBrowser->append("Drill Bore G-Code exported: " + QFileInfo(filePath).fileName());
         ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
@@ -869,6 +878,7 @@ void MainWindow::on_actionOpen_Outline_triggered()
         return;
     }
     settingWindow->settings->setLastDir(fileName);
+    m_outlinePath = fileName;
 
     gerberOutline = std::make_unique<Gerber>(fileName);
     if (!gerberOutline->readingFlag)
@@ -986,6 +996,7 @@ void MainWindow::on_actionOpen_Excellon_triggered()
     }
 
     settingWindow->settings->setLastDir(fileName);
+    m_excellonPath = fileName;
 
     auto exc = std::make_unique<ExcellonParser>();
     QString errorMsg;
@@ -1148,4 +1159,264 @@ void MainWindow::on_actionExport_Drills_Excellon_Bore_triggered()
         m_logger->error("Export Excellon Bore G-Code failed: {}", errorMsg.toStdString());
         QMessageBox::critical(this, "Export Excellon Drill G-Code (Bore)", errorMsg);
     }
+}
+
+
+bool MainWindow::loadGerber1(const QString &path)
+{
+    gerber1 = std::make_unique<Gerber>(path);
+    gerberFileName = QFileInfo(path).fileName();
+    m_gerber1Path = path;
+    if (!gerber1->readingFlag)
+    {
+        m_logger->error("\"" + gerberFileName.toStdString() + "\" read fail");
+        ui->messageBrowser->append("\"" + gerberFileName + "\" read fail");
+        return false;
+    }
+
+    scene1 = std::make_unique<QGraphicsScene>(this);
+    drawLayer(scene1.get(), gerber1.get(), *colorRed1);
+
+    layerNum = 1;
+    currentLayer = 1;
+    ui->actionLayer2->setEnabled(false);
+    ui->actionAdd_layer->setEnabled(true);
+    ui->actionToolpath_generat->setEnabled(true);
+    ui->actionExport_Drills->setEnabled(true);
+    ui->actionExport_Drill_G_Code_Bore->setEnabled(true);
+
+    preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
+    showMessage(gerber1.get(), *preprocessfile1);
+
+    sceneNet1 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet1.get(), *preprocessfile1, *colorBlue1, *Error1);
+    drawExcellonDrills(sceneNet1.get());
+    ui->graphicsView->setScene(sceneNet1.get());
+    ui->graphicsView->fitInView(gerber1->borderRect, Qt::KeepAspectRatio);
+
+    TreeModel *model = new TreeModel(*preprocessfile1);
+    ui->treeViewlayer1->setModel(model);
+    ui->treeViewlayer1->setColumnWidth(0, 200);
+    ui->treeViewlayer1->show();
+
+    recalculateFlag = true;
+    return true;
+}
+
+bool MainWindow::loadGerber2(const QString &path)
+{
+    gerber2 = std::make_unique<Gerber>(path);
+    m_gerber2Path = path;
+    gerberFileName = QFileInfo(path).fileName();
+    if (!gerber2->readingFlag)
+    {
+        m_logger->error("\"" + gerberFileName.toStdString() + "\" read fail");
+        ui->messageBrowser->append("\"" + gerberFileName + "\" read fail");
+        return false;
+    }
+
+    preprocessfile2 = std::make_unique<Preprocess>(*gerber2, settingWindow->settings);
+    showMessage(gerber2.get(), *preprocessfile2);
+
+    layerNum = 2;
+    ui->actionLayer2->setEnabled(true);
+
+    TreeModel *model = new TreeModel(*preprocessfile2);
+    ui->treeViewlayer2->setModel(model);
+    ui->treeViewlayer2->setColumnWidth(0, 200);
+    ui->treeViewlayer2->show();
+
+    return true;
+}
+
+bool MainWindow::loadOutline(const QString &path)
+{
+    gerberOutline = std::make_unique<Gerber>(path);
+    m_outlinePath = path;
+    if (!gerberOutline->readingFlag)
+    {
+        m_logger->error("Outline read fail: {}", QFileInfo(path).fileName().toStdString());
+        ui->messageBrowser->append("Outline file read fail");
+        return false;
+    }
+
+    // Draw outline onto existing scenes
+    for (auto *s : { sceneNet1.get(), sceneNet2.get(), sceneNet12.get(), sceneNet21.get(),
+                     scenePath1.get(), scenePath2.get(), scenePath12.get(), scenePath21.get() })
+    {
+        if (s)
+            drawLayer(s, gerberOutline.get(), *colorOutline);
+    }
+
+    sceneOutline = std::make_unique<QGraphicsScene>(this);
+    drawLayer(sceneOutline.get(), gerberOutline.get(), *colorOutline);
+
+    ui->outlineBrowser->clear();
+    QString fn = QFileInfo(path).fileName();
+    ui->outlineBrowser->append("Outline: " + fn);
+    ui->outlineBrowser->append("  Pads:   " + QString::number(gerberOutline->padNum));
+    ui->outlineBrowser->append("  Tracks: " + QString::number(gerberOutline->trackNum));
+    ui->messageBrowser->append("Outline loaded: " + fn);
+    ui->actionExport_Outline->setEnabled(true);
+    return true;
+}
+
+bool MainWindow::loadExcellon(const QString &path)
+{
+    auto exc = std::make_unique<ExcellonParser>();
+    QString errorMsg;
+    if (!exc->parse(path, errorMsg))
+    {
+        m_logger->error("Excellon parse failed: {}", errorMsg.toStdString());
+        ui->messageBrowser->append("Excellon parse failed: " + errorMsg);
+        return false;
+    }
+
+    m_excellon = std::move(exc);
+    m_excellonPath = path;
+
+    for (QGraphicsScene *s : { sceneNet1.get(), sceneNet2.get(), sceneNet12.get(), sceneNet21.get(),
+                               scenePath1.get(), scenePath2.get(), scenePath12.get(), scenePath21.get() })
+    {
+        drawExcellonDrills(s);
+    }
+
+    ui->drillsTree->clear();
+    int totalHoles = 0;
+    for (const ExcellonTool &t : m_excellon->tools)
+    {
+        totalHoles += t.holes.size();
+        auto *top = new QTreeWidgetItem(ui->drillsTree);
+        top->setText(0, QString::number(t.diameterMm, 'f', 3) + " mm");
+        top->setText(1, QString::number(t.holes.size()));
+        for (const QPoint &hole : t.holes)
+        {
+            auto *child = new QTreeWidgetItem(top);
+            double xMm = hole.x() / static_cast<double>(PRECISIONSCALE);
+            double yMm = hole.y() / static_cast<double>(PRECISIONSCALE);
+            child->setText(0, QString("X%1  Y%2").arg(xMm, 0, 'f', 3).arg(yMm, 0, 'f', 3));
+        }
+    }
+    ui->drillsTree->resizeColumnToContents(0);
+    ui->drillsTree->resizeColumnToContents(1);
+
+    QString fn = QFileInfo(path).fileName();
+    ui->messageBrowser->append("Excellon loaded: " + fn);
+    ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
+                               + ", Holes: " + QString::number(totalHoles));
+    ui->actionExport_Drills_Excellon->setEnabled(true);
+    ui->actionExport_Drills_Excellon_Bore->setEnabled(true);
+    return true;
+}
+
+void MainWindow::on_actionSave_Project_triggered()
+{
+    QString defaultName = gerberFileName;
+    if (!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if (dot >= 0) defaultName.truncate(dot);
+        defaultName += ".gcproj";
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Save Project", settingWindow->settings->lastDir() + "/" + defaultName,
+        "GerberCAM Project (*.gcproj);;All files (*)");
+
+    if (filePath.isEmpty())
+        return;
+    settingWindow->settings->setLastDir(filePath);
+
+    nlohmann::json j;
+    j["gerber1"] = m_gerber1Path.toStdString();
+    j["gerber2"] = m_gerber2Path.toStdString();
+    j["outline"] = m_outlinePath.toStdString();
+    j["excellon"] = m_excellonPath.toStdString();
+    j["flipBoard"] = boardFlipped;
+
+    std::ofstream out(filePath.toStdString());
+    if (!out.is_open())
+    {
+        QMessageBox::critical(this, "Save Project", "Cannot open file for writing.");
+        return;
+    }
+    out << j.dump(4);
+    out.close();
+
+    ui->messageBrowser->append("Project saved: " + QFileInfo(filePath).fileName());
+    m_logger->info("Project saved: {}", filePath.toStdString());
+}
+
+void MainWindow::on_actionLoad_Project_triggered()
+{
+    QString filePath = QFileDialog::getOpenFileName(
+        this, "Load Project", settingWindow->settings->lastDir(),
+        "GerberCAM Project (*.gcproj);;All files (*)");
+
+    if (filePath.isEmpty())
+        return;
+    settingWindow->settings->setLastDir(filePath);
+
+    std::ifstream in(filePath.toStdString());
+    if (!in.is_open())
+    {
+        QMessageBox::critical(this, "Load Project", "Cannot open project file.");
+        return;
+    }
+
+    nlohmann::json j;
+    try
+    {
+        in >> j;
+    }
+    catch (std::exception &ex)
+    {
+        QMessageBox::critical(this, "Load Project",
+            "Error parsing project file: " + QString::fromStdString(ex.what()));
+        return;
+    }
+
+    ui->messageBrowser->clear();
+    ui->messageBrowser->append("Loading project: " + QFileInfo(filePath).fileName());
+
+    // Load gerber layer 1
+    QString g1 = QString::fromStdString(j.value("gerber1", ""));
+    if (!g1.isEmpty() && QFile::exists(g1))
+    {
+        loadGerber1(g1);
+    }
+
+    // Load gerber layer 2
+    QString g2 = QString::fromStdString(j.value("gerber2", ""));
+    if (!g2.isEmpty() && QFile::exists(g2))
+    {
+        loadGerber2(g2);
+    }
+
+    // Load outline
+    QString ol = QString::fromStdString(j.value("outline", ""));
+    if (!ol.isEmpty() && QFile::exists(ol))
+    {
+        loadOutline(ol);
+    }
+
+    // Load Excellon
+    QString ex = QString::fromStdString(j.value("excellon", ""));
+    if (!ex.isEmpty() && QFile::exists(ex))
+    {
+        loadExcellon(ex);
+    }
+
+    // Restore flip setting
+    bool flip = j.value("flipBoard", false);
+    if (flip != boardFlipped)
+    {
+        boardFlipped = flip;
+        ui->actionFlip_Board->setChecked(boardFlipped);
+        if (flip)
+            ui->graphicsView->scale(-1, 1);
+    }
+
+    ui->messageBrowser->append("Project loaded successfully.");
+    m_logger->info("Project loaded: {}", filePath.toStdString());
 }

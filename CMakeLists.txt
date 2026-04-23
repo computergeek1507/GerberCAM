@@ -121,11 +121,14 @@ if(LINUX)
     install(TARGETS ${PROJECT_NAME} DESTINATION bin)
     #install(TARGETS ${PROJECT_NAME} ${INSTALL_TARGETS_DEFAULT_ARGS})
 
+    file(GLOB JSON_CONFIG_FILES res/*.json)
+    install(FILES ${JSON_CONFIG_FILES} DESTINATION share/${PROJECT_NAME})
+
         if(ECM_FOUND)
                 include(KDEInstallDirs)
         
-            install(PROGRAMS org.flatpak.box_design.desktop  DESTINATION ${KDE_INSTALL_APPDIR})
-            install(FILES org.flatpak.box_design.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
-            install(FILES res/org.flatpak.box_design.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
+            install(PROGRAMS res/io.github.computergeek1507.GerberCAM.desktop  DESTINATION ${KDE_INSTALL_APPDIR})
+            install(FILES res/io.github.computergeek1507.GerberCAM.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+            install(FILES res/io.github.computergeek1507.GerberCAM.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
         endif()
 endif()

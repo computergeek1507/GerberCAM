@@ -87,15 +87,15 @@ track types:
 */
 void Gerber::initParameters()
 {
-    FormatStatement='L';
-    CoordinateMode='A';
+    FormatStatement = FormatType::Leading;
+    CoordinateMode = CoordinateType::Absolute;
     XInteger=2;XDecimal=3;
     YInteger=2;YDecimal=3;
 
     ScaleFactorX=1;ScaleFactorY=1;
     OffsetX=0;OffsetY=0;
-    LayerName="untitle";
-    ImagePolarity="POS";
+    LayerName = "untitle";
+    ImagePolarity = Polarity::Positive;
     ModeofUnit="IN";
 
     padNum=0;
@@ -344,8 +344,8 @@ bool Gerber::process_line(QByteArray line)
          * */
         if(line.at(1)=='F')
         {
-            FormatStatement=line.at(3);
-            CoordinateMode=line.at(4);
+            FormatStatement = (line.at(3) == 'L') ? FormatType::Leading : FormatType::Trailing;
+            CoordinateMode = (line.at(4) == 'A') ? CoordinateType::Absolute : CoordinateType::Incremental;
             QByteArray number=line.mid(6,1);
             XInteger=number.toInt();
             number=line.mid(7,1);
@@ -724,7 +724,7 @@ qint64 Gerber::convertNumber(QString line,QString c,qint32 integerDigit,qint32 d
     QString temp=line.mid(start,length);
     qint64 number=temp.toLongLong();
     int scaleNum=decimalDigit+integerDigit-length;
-    if(FormatStatement=='T')
+    if(FormatStatement == FormatType::Trailing)
     {
         // Trailing zeros omitted: missing digits are on the right (low-order),
         // so we pad by multiplying.
@@ -781,7 +781,8 @@ bool Gerber::transform_data()
     int i{0};
     QString line;
     QString currentParameter;
-    char currentShape;
+    //char currentShape;
+    PadShape currentShape;
     double currentX{ 0.0 };
 	double currentY{ 0.0 };
     double lastX{ 0.0 };
@@ -845,16 +846,16 @@ bool Gerber::transform_data()
         if(line.startsWith("G54"))
         {
             currentParameter=line.mid(3,line.size()-3);
-            if(ADHash.value(currentParameter+" Shape")==SHAPE_C)
-                currentShape='C';
-            else if(ADHash.value(currentParameter+" Shape")==SHAPE_O)
-                currentShape='O';
-            else if(ADHash.value(currentParameter+" Shape")==SHAPE_R)
-                currentShape='R';
-            else if(ADHash.value(currentParameter+" Shape")==SHAPE_P)
-                currentShape='P';
-            else if(ADHash.value(currentParameter+" Shape")==SHAPE_M)
-                currentShape='M'; // aperture macro — shape resolved at flash time
+            if(ADHash.value(currentParameter + " Shape")==SHAPE_C)
+                currentShape = PadShape::Circle;
+            else if(ADHash.value(currentParameter + " Shape")==SHAPE_O)
+                currentShape = PadShape::Oval;
+            else if(ADHash.value(currentParameter + " Shape")==SHAPE_R)
+                currentShape = PadShape::Rectangle;
+            else if(ADHash.value(currentParameter + " Shape")==SHAPE_P)
+                currentShape = PadShape::Polygon;
+            else if(ADHash.value(currentParameter + " Shape")==SHAPE_M)
+                currentShape = PadShape::Macro; // aperture macro — shape resolved at flash time
             else
                 m_logger->error("G54: unknown shape for {}", currentParameter.toStdString());
             continue;
@@ -931,11 +932,15 @@ bool Gerber::transform_data()
 
             // Read hole diameter directly from aperture definition if present.
             // Gerber spec: C has optional 2nd param (hole), R/O have optional 3rd param (hole).
-            if (newPad.shape == 'C' && newPad.parameterNum >= 2)
+            if (newPad.shape == PadShape::Circle && newPad.parameterNum >= 2)
+            {
                 newPad.hole = newPad.parameter[1];
-            else if ((newPad.shape == 'R' || newPad.shape == 'O') && newPad.parameterNum >= 3)
+            }
+            else if ((newPad.shape == PadShape::Rectangle || newPad.shape == PadShape::Oval)
+                && newPad.parameterNum >= 3)
+            {
                 newPad.hole = newPad.parameter[2];
-
+            }
             newPad.ADNum = currentParameter;
             newPad.boundingRect = boundingRect(newPad);
             padsList.append(newPad);
@@ -974,14 +979,14 @@ BoundingRect Gerber::boundingRect(Pad pad)
     BoundingRect r;
     if(pad.angle==0)
     {
-        if(pad.shape=='C')
+        if(pad.shape==PadShape::Circle)
         {
             r.bottom=pad.point.y()-pad.parameter[0]/2;
             r.top=pad.point.y()+pad.parameter[0]/2;
             r.left=pad.point.x()-pad.parameter[0]/2;
             r.right=pad.point.x()+pad.parameter[0]/2;
         }
-        else if(pad.shape=='R'||pad.shape=='O')
+        else if(pad.shape==PadShape::Rectangle||pad.shape==PadShape::Oval)
         {
             r.bottom=pad.point.y()-pad.parameter[1]/2;
             r.top=pad.point.y()+pad.parameter[1]/2;
@@ -991,7 +996,7 @@ BoundingRect Gerber::boundingRect(Pad pad)
     }
     else
     {
-        if(pad.shape=='R')
+        if(pad.shape==PadShape::Rectangle)
         {
             if(pad.angle==0)
             {
@@ -1013,7 +1018,7 @@ BoundingRect Gerber::boundingRect(Pad pad)
                 r.left=pad.point.x()-x;
             }
         }
-        else if(pad.shape=='O')
+        else if(pad.shape==PadShape::Oval)
         {
             if(pad.angle==0)
             {
@@ -1034,7 +1039,7 @@ BoundingRect Gerber::boundingRect(Pad pad)
             }
 
         }
-        else if(pad.shape=='M')
+        else if(pad.shape==PadShape::Macro)
         {
             // Macro pad — use parameters like a rectangle if available
             if(pad.parameterNum >= 2)

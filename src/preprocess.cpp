@@ -40,22 +40,21 @@ void Preprocess::clearEccentricHole(QList<Pad> pads)
     for(int k=0;k<padNum;k++)
     {
         Element e=elementList.at(k);
-        bool ok=false;
-        if(e.elementType=='P')
+        bool ok = false;
+        if(e.elementType == ElementType::Pad)
         {
-            Pad p=e.pad;
-            for(int j=0;j<pads.size();j++)
+            Pad p = e.pad;
+            for(auto p1 : pads)
             {
-                Pad p1=pads.at(j);
-                if(p.point==p1.point&&p.shape==p1.shape)
+                if(p.point == p1.point && p.shape == p1.shape)
                 {
-                    ok=true;
+                    ok = true;
                     break;
                 }
             }
-            if(ok==false)
+            if(!ok)
             {
-                e.pad.hole=0;
+                e.pad.hole = 0;
                 elementList.replace(k,e);
             }
         }
@@ -83,7 +82,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
         //c.drill.width = c.drill.width* PRECISIONSCALE;
         //c.value = c.value* PRECISIONSCALE;
         //c.value1= c.value1* PRECISIONSCALE;
-        if(c.condition=="default")
+        if(c.condition == "default")
         {
             for(int j=0;j<g.padsList.size();j++)
             {
@@ -104,7 +103,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
             for(int j=0;j<g.padsList.size();j++)
             {
                 Pad p=g.padsList.at(j);
-                if(p.shape=='C')
+                if(p.shape == PadShape::Circle)
                 {
                     if(p.parameter[0]==c.value)
                     {
@@ -112,7 +111,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='R')
+                else if(p.shape==PadShape::Rectangle)
                 {
                     if(p.parameter[0]==c.value&&p.parameter[1]==c.value)
                     {
@@ -120,7 +119,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='O')
+                else if(p.shape==PadShape::Oval)
                 {
                     if(p.parameter[0]==c.value&&p.parameter[1]==c.value)
                     {
@@ -135,7 +134,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
             for(int j=0;j<g.padsList.size();j++)
             {
                 Pad p=g.padsList.at(j);
-                if(p.shape=='C')
+                if(p.shape==PadShape::Circle)
                 {
                     if(p.parameter[0]>=c.value)
                     {
@@ -143,7 +142,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='R')
+                else if(p.shape==PadShape::Rectangle)
                 {
                     qint64 temp=p.parameter[0]>p.parameter[1]?p.parameter[0]:p.parameter[1];
                     if(temp>=c.value)
@@ -152,7 +151,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='O')
+                else if(p.shape==PadShape::Oval)
                 {
                     qint64 temp=p.parameter[0]>p.parameter[1]?p.parameter[0]:p.parameter[1];
                     if(temp>=c.value)
@@ -168,7 +167,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
             for(int j=0;j<g.padsList.size();j++)
             {
                 Pad p=g.padsList.at(j);
-                if(p.shape=='C')
+                if(p.shape==PadShape::Circle)
                 {
                     if(p.parameter[0]<=c.value)
                     {
@@ -176,7 +175,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='R')
+                else if(p.shape==PadShape::Rectangle)
                 {
                     qint64 temp=p.parameter[0]<p.parameter[1]?p.parameter[0]:p.parameter[1];
                     if(temp<=c.value)
@@ -185,7 +184,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='O')
+                else if(p.shape==PadShape::Oval)
                 {
                     qint64 temp=p.parameter[0]<p.parameter[1]?p.parameter[0]:p.parameter[1];
                     if(temp<=c.value)
@@ -201,7 +200,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
             for(int j=0;j<g.padsList.size();j++)
             {
                 Pad p=g.padsList.at(j);
-                if(p.shape=='C')
+                if(p.shape==PadShape::Circle)
                 {
                     if(p.parameter[0]>=c.value&&p.parameter[0]<=c.value1)
                     {
@@ -209,7 +208,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='R')
+                else if(p.shape==PadShape::Rectangle)
                 {
                     if(p.parameter[0]>=c.value&&p.parameter[0]<=c.value1
                             &&p.parameter[1]>=c.value&&p.parameter[1]<=c.value1)
@@ -218,7 +217,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='O')
+                else if(p.shape==PadShape::Oval)
                 {
                     if(p.parameter[0]>=c.value&&p.parameter[0]<=c.value1
                             &&p.parameter[1]>=c.value&&p.parameter[1]<=c.value1)
@@ -234,7 +233,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
             for(int j=0;j<g.padsList.size();j++)
             {
                 Pad p = g.padsList.at(j);
-                if(p.shape=='R')
+                if(p.shape==PadShape::Rectangle)
                 {
                     if(p.parameter[0]==c.value&&p.parameter[1]==c.value1)
                     {
@@ -242,7 +241,7 @@ void Preprocess::padPreprocess(Gerber& g, const Setting* s)
                         g.padsList.replace(j,p);
                     }
                 }
-                else if(p.shape=='O')
+                else if(p.shape==PadShape::Oval)
                 {
                     if(p.parameter[0]==c.value&&p.parameter[1]==c.value1)
                     {
@@ -622,7 +621,7 @@ bool Preprocess::trackPadCollision(Track t1, Pad p1)
     //1.rect collision:If point in rect
     //2.rect collision:If lines intersect
     //3.circle of track:turn into point in rect problem
-    if(p1.shape=='R')
+    if(p1.shape==PadShape::Rectangle)
     {
         MyRect r1=rectToMyRect(p1);
         MyRect r2=trackToMyRect(t1);
@@ -640,7 +639,7 @@ bool Preprocess::trackPadCollision(Track t1, Pad p1)
     }
 
     //totally a point in rect&circle problem
-    if(p1.shape=='C')
+    if(p1.shape==PadShape::Circle)
     {
         MyRect r1;
         t1.width+=p1.parameter[0];
@@ -653,7 +652,7 @@ bool Preprocess::trackPadCollision(Track t1, Pad p1)
     }
 
     //turn obround to track,run tracktrackcollision
-    if(p1.shape=='O')
+    if(p1.shape==PadShape::Oval)
     {
         Track t2=obroundToTrack(p1);
         if(trackCollision(t1,t2)) return true;
@@ -661,7 +660,7 @@ bool Preprocess::trackPadCollision(Track t1, Pad p1)
     }
 
 
-    if(p1.shape=='P')
+    if(p1.shape==PadShape::Polygon)
     {
         return false;
     }
@@ -669,14 +668,14 @@ bool Preprocess::trackPadCollision(Track t1, Pad p1)
 }
 bool Preprocess::padCollision(Pad p1, Pad p2)
 {
-    if(p1.shape=='O'&&p2.shape=='O')
+    if(p1.shape==PadShape::Oval&&p2.shape==PadShape::Oval)
     {
         Track t1=obroundToTrack(p1);
         Track t2=obroundToTrack(p2);
         if(trackCollision(t1,t2)) return true;
         return false;
     }
-    if(p1.shape=='O'&&p2.shape=='R')
+    if(p1.shape==PadShape::Oval&&p2.shape==PadShape::Rectangle)
     {
         Track t1=obroundToTrack(p1);
         MyRect r1=trackToMyRect(t1);
@@ -692,7 +691,7 @@ bool Preprocess::padCollision(Pad p1, Pad p2)
             return true;
         return false;
     }
-    if(p1.shape=='R'&&p2.shape=='O')
+    if(p1.shape==PadShape::Rectangle&&p2.shape==PadShape::Oval)
     {
         Track t1=obroundToTrack(p2);
         MyRect r1=trackToMyRect(t1);
@@ -708,7 +707,7 @@ bool Preprocess::padCollision(Pad p1, Pad p2)
             return true;
         return false;
     }
-    if(p1.shape=='O'&&p2.shape=='C')
+    if(p1.shape==PadShape::Oval&&p2.shape==PadShape::Circle)
     {
         Track t1=obroundToTrack(p1);
         t1.width+=p2.parameter[0];
@@ -720,7 +719,7 @@ bool Preprocess::padCollision(Pad p1, Pad p2)
             return true;
         return false;
     }
-    if(p1.shape=='C'&&p2.shape=='O')
+    if(p1.shape==PadShape::Circle&&p2.shape==PadShape::Oval)
     {
         Track t1=obroundToTrack(p2);
         t1.width+=p1.parameter[0];
@@ -732,14 +731,14 @@ bool Preprocess::padCollision(Pad p1, Pad p2)
             return true;
         return false;
     }
-    if(p1.shape=='R'&&p2.shape=='R')
+    if(p1.shape==PadShape::Rectangle&&p2.shape==PadShape::Rectangle)
     {
         MyRect r1=rectToMyRect(p1);
         MyRect r2=rectToMyRect(p2);
         if(rectCollision(r1,r2)) return true;
         return false;
     }
-    if(p1.shape=='R'&&p2.shape=='C')
+    if(p1.shape==PadShape::Rectangle&&p2.shape==PadShape::Circle)
     {
         p1.parameter[0]+=p2.parameter[0];
         p1.parameter[1]+=p2.parameter[0];
@@ -748,7 +747,7 @@ bool Preprocess::padCollision(Pad p1, Pad p2)
             return true;
         return false;
     }
-    if(p1.shape=='C'&&p2.shape=='R')
+    if(p1.shape==PadShape::Circle&&p2.shape==PadShape::Rectangle)
     {
         p2.parameter[0]+=p1.parameter[0];
         p2.parameter[1]+=p1.parameter[0];
@@ -757,7 +756,7 @@ bool Preprocess::padCollision(Pad p1, Pad p2)
             return true;
         return false;
     }
-    if(p1.shape=='C'&&p2.shape=='C')
+    if(p1.shape==PadShape::Circle&&p2.shape==PadShape::Circle)
     {
         if(pointInCircle(p1.point,p1.parameter[0]+p2.parameter[0],p2.point))
             return true;
@@ -788,13 +787,13 @@ bool Preprocess::elementCollision(Element e1, Element e2)
 {
     if(!bondingRecIntersect(e1.boundingRect,e2.boundingRect))
         return false;
-    if(e1.elementType=='T'&&e2.elementType=='P')
+    if(e1.elementType==ElementType::Track&&e2.elementType==ElementType::Pad)
         return trackPadCollision(e1.track,e2.pad);
-    if(e1.elementType=='T'&&e2.elementType=='T')
+    if(e1.elementType==ElementType::Track&&e2.elementType==ElementType::Track)
         return trackCollision(e1.track,e2.track);
-    if(e1.elementType=='P'&&e2.elementType=='T')
+    if(e1.elementType==ElementType::Pad&&e2.elementType==ElementType::Track)
         return trackPadCollision(e2.track,e1.pad);
-    if(e1.elementType=='P'&&e2.elementType=='P')
+    if(e1.elementType==ElementType::Pad&&e2.elementType==ElementType::Pad)
         return padCollision(e1.pad,e2.pad);
     Q_ASSERT_X(false,"elementCollision","Unexpected result");
     return false;
@@ -916,7 +915,7 @@ bool Preprocess::searchContour(Net &n)
     for(int i=0;i<n.elements.size();i++)
     {
         Element e=n.elements.at(i);
-        if(e.elementType=='T')
+        if(e.elementType == ElementType::Track)
         {
             ContourSegment temp;
             temp.flag=false;
@@ -966,13 +965,13 @@ bool Preprocess::searchContour(Net &n)
                 {
                     Element e=n.elements.at(searchList.at(i).pointer);
                     temp.elements.append(e);
-                    e.elementType='C';
+                    e.elementType = ElementType::Contour;
                     n.elements.replace(searchList.at(i).pointer,e);
                 }
             contourList.append(temp);
             for(int i=0;i<n.elements.size();i++)
             {
-                if(n.elements.at(i).elementType=='C')
+                if(n.elements.at(i).elementType == ElementType::Contour)
                 {
                     n.elements.removeAt(i);
                     i--;
@@ -997,7 +996,7 @@ void Preprocess::checkSameNet(Gerber g)
     for(i=0;i<g.trackNum;i++)
     {
         e.track=g.tracksList.at(i);
-        e.elementType='T';
+        e.elementType = ElementType::Track;
         e.block=g.tracksList.at(i).block;
         e.netNum=0;
         e.boundingRect=e.track.boundingRect;
@@ -1017,7 +1016,7 @@ void Preprocess::checkSameNet(Gerber g)
     {
         Pad p=g.padsList.at(i);
         e.pad=p;
-        e.elementType='P';
+        e.elementType = ElementType::Pad;
         e.block=p.block;
         e.netNum=0;
         e.ADNum=p.ADNum;
