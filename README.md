@@ -5,13 +5,14 @@
 >  * Forked @claus007 version
 >  * Switched to cMake
 >  * Compiles with VS2022 and QT 5.15, QT 6 should works too.
->  * Update gerber parser to support macros used in kicad 9.
+>  * Update gerber parser to support macros used in Kicad 9.
 >  * Updated DrawPCB and Toolpath code to work I hope.
 >  * Add Excellon Parser.
 >  * Add Outline Gerber support.
 >  * Add Flipping for single side.
 >  * Add Gcode Export for Toolpaths, Outline, Drill Holes.
->  * Drill Hole Gcode Export with Boring support.
+>  * Add Drill Hole Gcode Export with Boring support.
+>  * Add Full Copper Clearing.
 >  * Add spdlog and nlohmann json.
 >  * Add Installer script and GitHub Action.
 
