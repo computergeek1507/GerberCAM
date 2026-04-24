@@ -53,9 +53,9 @@ protected:
 private slots:
     void on_tlAddButton_clicked();
 
-    void on_tlUnitInchRadio_clicked();
+    //void on_tlUnitInchRadio_clicked();
 
-    void on_tlUnitMMRadio_clicked();
+    //void on_tlUnitMMRadio_clicked();
 
     void on_tlTypeComboBox_currentIndexChanged(int index);
 
@@ -119,7 +119,7 @@ private:
 
     TreeModel *tlModel,*hrModel;
     HoleRule hr;
-    UnitType unitType = UnitType::Milimeter;
+    //UnitType unitType = UnitType::Milimeter;
     bool editFlag = false;
     int editIndex = 0;
 

@@ -41,10 +41,10 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
         ui->tlTypeComboBox->addItem(name.data());
     }
 
-    constexpr auto speed_units_names = magic_enum::enum_names<SpeedUnit>();
-    for (auto name : speed_units_names)
+    constexpr auto unit_type_names = magic_enum::enum_names<UnitType>();
+    for (auto name : unit_type_names)
     {
-        ui->tlSpeedUnitComboBox->addItem(name.data());
+        ui->comboBoxUnits->addItem(name.data());
     }
 
     //Tool Library setup
@@ -67,7 +67,7 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
         ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
     }
 
-    if(settings->holeRuleList.size()>0)
+    if (settings->holeRuleList.size() > 0)
     {
         HoleRule rule = settings->holeRuleList.at(0);
         updateMTreeView(rule);
@@ -76,10 +76,12 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 
     ui->mSaveButton->setEnabled(false);
     ui->mCancelButton->setEnabled(false);
-    if(settings->holeRuleList.size()==0)
+    if (settings->holeRuleList.size() == 0) {
         ui->mEditButton->setEnabled(false);
-    else
+    }
+    else{
         ui->mEditButton->setEnabled(true);
+    }
     ui->mNewButton->setEnabled(true);
 
     ui->mRENameInput->setEnabled(false);
@@ -109,49 +111,51 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 void Settingwindow::holeDrillCheck()
 {
     QString errorToolMiss,errorToolIncorrect;
-    int error=0;//0 no error,1 toolMiss,2 toolIncorrect
+    int error = 0;//0 no error,1 toolMiss,2 toolIncorrect
 	auto drills = settings->getDrillList();
-    for(int i=0;i<settings->holeRuleList.size();i++)
+    for(int i = 0;i<settings->holeRuleList.size();i++)
     {
-        HoleRule h=settings->holeRuleList.at(i);
-        for(int j=0;j<h.ruleList.size();j++)
+        HoleRule h = settings->holeRuleList.at(i);
+        for(int j = 0; j<h.ruleList.size();j++)
         {
-            HoleCondition c=h.ruleList.at(j);
-            Tool t=c.drill;
-            error=1;
-            for(int k=0;k<drills.size();k++)
+            HoleCondition c = h.ruleList.at(j);
+            Tool t = c.drill;
+            error = 1;
+            for(int k = 0;k<drills.size();k++)
             {
                 if(t.name==drills.at(k).name)
                 {
                     if(t.width!=drills.at(k).width)
                     {
-                        QString temp = "  \""+h.name+" "+"\""+t.name+" "+QString::number(t.width,'f',3)+"\n";
+                        QString const temp = "  \"" + h.name + " " + "\"" + t.name + " " + QString::number(t.width,'f',3) + "\n";
                         errorToolIncorrect.append(temp);
-                        error=2;
+                        error = 2;
                         break;
                     }
                     else
                     {
-                        error=0;
+                        error = 0;
                         break;
                     }
                 }
             }
-            if(error==1)
+            if(error == 1)
             {
-                QString temp="  \""+h.name+"\""+" "+t.name+" "+QString::number(t.width,'f',3)+"\n";
+                QString const temp = "  \"" + h.name + "\"" + " " + t.name + " " + QString::number(t.width,'f',3) + "\n";
                 errorToolMiss.append(temp);
             }
         }
     }
-    if(errorToolMiss.size()>0||errorToolIncorrect.size()>0)
+    if (errorToolMiss.size() > 0 || errorToolIncorrect.size() > 0)
     {
         QMessageBox msgBox;
-        QString temp="Hole Rule Error!\n";
-        if(errorToolIncorrect.size()>0)
-            temp+="Drills incorrect:\n"+errorToolIncorrect;
-        if(errorToolMiss.size()>0)
-            temp+="Drills can't be found:\n"+errorToolMiss;
+        QString temp = "Hole Rule Error!\n";
+        if (errorToolIncorrect.size() > 0) {
+            temp += "Drills incorrect:\n" + errorToolIncorrect;
+        }
+        if (errorToolMiss.size() > 0) {
+            temp += "Drills can't be found:\n" + errorToolMiss;
+        }
         msgBox.setText(temp);
         msgBox.exec();
     }
@@ -159,15 +163,17 @@ void Settingwindow::holeDrillCheck()
 
 void Settingwindow::updateWindow()
 {
-    if(settings->toolList.size()>0)
+    if(settings->toolList.size() > 0)
     {
-        Tool t=settings->toolList.at(0);
+        Tool t = settings->toolList.at(0);
         QString filename = ":/jpg/Conical.jpg";
         QImage imageConical(filename);
         filename = ":/jpg/Drill.jpg";
         QImage imageDrill(filename);
         filename = ":/jpg/Cylindrical.jpg";
         QImage imageCylindrical(filename);
+
+        ui->tlTypeComboBox->setCurrentText(QString::fromStdString(magic_enum::enum_name(t.toolType).data()));
 
         if(ui->tlTypeComboBox->currentIndex()==0)
         {
@@ -191,17 +197,11 @@ void Settingwindow::updateWindow()
         ui->tlToolTypeViewLabel->setScaledContents(true);
 
         ui->tlName->setText(t.name);
-        if(t.unitType==UnitType::Inch)
-            ui->tlUnitInchRadio->setChecked(true);
-        else
-            ui->tlUnitMMRadio->setChecked(true);
-        //ui->tlSpeedUnitComboBox->setItemData();
-        if(t.toolType==ToolType::Conical)
-            ui->tlTypeComboBox->setCurrentIndex(0);
-        else if(t.toolType==ToolType::Cylindrical)
-            ui->tlTypeComboBox->setCurrentIndex(1);
-        else
-            ui->tlTypeComboBox->setCurrentIndex(2);
+
+		ui->comboBoxUnits->setCurrentText(QString::fromStdString(magic_enum::enum_name(t.unitType).data()));
+
+		ui->label_feedrate->setText("Feedrate (" + QString::fromStdString(magic_enum::enum_name(t.unitType).data()) + " per min)");
+
         ui->tlDiameter->setText(QString::number(t.diameter,'f',3));
         ui->tlAngle->setText(QString::number(t.angle,'f',3));
         ui->tlWidth->setText(QString::number(t.width,'f',3));
@@ -228,7 +228,7 @@ void Settingwindow::updateWindow(Tool t)
     filename = ":/jpg/Cylindrical.jpg";
     QImage imageCylindrical(filename);
 
-    if(t.toolType==ToolType::Conical)
+    if(t.toolType == ToolType::Conical)
     {
         ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageConical));
         ui->tlAngle->setEnabled(true);
@@ -238,7 +238,7 @@ void Settingwindow::updateWindow(Tool t)
         ui->tlOverlap->setText(QString::number(t.overlap,'f',3));
 
     }
-    else if(t.toolType==ToolType::Cylindrical)
+    else if(t.toolType == ToolType::Cylindrical)
     {
         ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageCylindrical));
         ui->tlAngle->setEnabled(false);
@@ -259,24 +259,19 @@ void Settingwindow::updateWindow(Tool t)
     ui->tlToolTypeViewLabel->setScaledContents(true);
 
     ui->tlName->setText(t.name);
-    if(t.unitType==UnitType::Inch)
-        ui->tlUnitInchRadio->setChecked(true);
-    else
-        ui->tlUnitMMRadio->setChecked(true);
-    //ui->tlSpeedUnitComboBox->setItemData();
-    if(t.toolType==ToolType::Conical)
-        ui->tlTypeComboBox->setCurrentIndex(0);
-    else if(t.toolType==ToolType::Cylindrical)
-        ui->tlTypeComboBox->setCurrentIndex(1);
-    else
-        ui->tlTypeComboBox->setCurrentIndex(2);
+
+    ui->comboBoxUnits->setCurrentText(QString::fromStdString(magic_enum::enum_name(t.unitType).data()));
+
+    ui->label_feedrate->setText("Feedrate (" + QString::fromStdString(magic_enum::enum_name(t.unitType).data()) + " per min)");
+
+    ui->tlTypeComboBox->setCurrentText(QString::fromStdString(magic_enum::enum_name(t.toolType).data()));
+
     ui->tlDiameter->setText(QString::number(t.diameter,'f',3));
     ui->tlWidth->setText(QString::number(t.width,'f',3));
     ui->tlDepth->setText(QString::number(t.maxStepDepth,'f',3));
     ui->tlPlugeSpeed->setText(QString::number(t.maxPlungeSpeed,'f',3));
     ui->tlSpindleSpeed->setText(QString::number(t.spindleSpeed,'f',3));
     ui->tlFeedrate->setText(QString::number(t.feedrate,'f',3));
-
 }
 
 Settingwindow::~Settingwindow()
@@ -334,8 +329,10 @@ bool Settingwindow::checkValue(Tool& t, bool newTool)
             return false;
         }
     }
-    t.unitType = unitType;
-    t.speedUnit = magic_enum::enum_cast<SpeedUnit>(ui->tlSpeedUnitComboBox->currentText().toStdString(), magic_enum::case_insensitive).value_or(SpeedUnit::MMperSec);
+    t.unitType = magic_enum::enum_cast<UnitType>(ui->comboBoxUnits->currentText().toStdString(), magic_enum::case_insensitive).value_or(UnitType::Milimeter);
+
+    //t.unitType = unitType;
+    //t.speedUnit = magic_enum::enum_cast<SpeedUnit>(ui->tlSpeedUnitComboBox->currentText().toStdString(), magic_enum::case_insensitive).value_or(SpeedUnit::MMperSec);
     t.toolType = magic_enum::enum_cast<ToolType>(ui->tlTypeComboBox->currentText().toStdString(), magic_enum::case_insensitive).value_or(ToolType::Conical);
     bool ok;
     t.diameter = ui->tlDiameter->text().toDouble(&ok);
@@ -438,16 +435,6 @@ void Settingwindow::on_tlAddButton_clicked()
     refreshToolCombobox();
 }
 
-void Settingwindow::on_tlUnitInchRadio_clicked()
-{
-    unitType = UnitType::Inch;
-}
-
-void Settingwindow::on_tlUnitMMRadio_clicked()
-{
-    unitType = UnitType::Milimeter;
-}
-
 void Settingwindow::on_tlTypeComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index)
@@ -501,19 +488,22 @@ void Settingwindow::on_treeView_doubleClicked(const QModelIndex &index)
 
 void Settingwindow::on_tlDeleteButton_clicked()
 {
-    if(settings->toolList.size()==0)
+    if (settings->toolList.size() == 0) {
         return;
-    int index=ui->treeView->currentIndex().row();
-    if(index<0||index>=settings->toolList.size())
+    }
+    int index = ui->treeView->currentIndex().row();
+    if (index < 0 || index >= settings->toolList.size()) {
         return;
-    
+    }
+
     settings->toolList.removeAt(index);
 
     settings->saveLibrary();
     tlModel = new TreeModel(*settings);
     ui->treeView->setModel(tlModel);
-    for(int i=0;i<6;i++)
+    for (int i = 0; i < 6; i++) {
         ui->treeView->resizeColumnToContents(i);
+    }
     ui->treeView->show();
     ui->tlSaveButton->setEnabled(false);
 
@@ -535,15 +525,17 @@ void Settingwindow::on_tlEditButton_clicked()
 
 void Settingwindow::on_tlSaveButton_clicked()
 {
-    Tool t=settings->toolList.at(editIndex);
-    if(checkValue(t, false)==false)
+    Tool t = settings->toolList.at(editIndex);
+    if (checkValue(t, false) == false) {
         return;
-    settings->replaceTool(editIndex,t);
+    }
+    settings->replaceTool(editIndex, t);
     settings->saveLibrary();
-    tlModel =new TreeModel(*settings);
+    tlModel = new TreeModel(*settings);
     ui->treeView->setModel(tlModel);
-    for(int i=0;i<6;i++)
+    for (int i = 0; i < 6; i++) {
         ui->treeView->resizeColumnToContents(i);
+    }
     ui->treeView->show();
     ui->tlDeleteButton->setEnabled(true);
     ui->tlEditButton->setEnabled(true);
@@ -556,10 +548,11 @@ void Settingwindow::on_tlSaveButton_clicked()
 
 void Settingwindow::on_tlCancelButton_clicked()
 {
-    tlModel =new TreeModel(*settings);
+    tlModel = new TreeModel(*settings);
     ui->treeView->setModel(tlModel);
-    for(int i=0;i<6;i++)
+    for (int i = 0; i < 6; i++) {
         ui->treeView->resizeColumnToContents(i);
+    }
     ui->treeView->show();
     ui->tlDeleteButton->setEnabled(true);
     ui->tlEditButton->setEnabled(true);
@@ -592,7 +585,6 @@ void Settingwindow::on_mNewButton_clicked()
     ui->mSaveButton->setEnabled(true);
     ui->mCancelButton->setEnabled(true);
     ui->mEditButton->setEnabled(false);
-
 
     ui->mRENameInput->setEnabled(true);
     ui->mREDrillComboBox->setEnabled(true);
@@ -632,8 +624,8 @@ void Settingwindow::on_mDeleteButton_clicked()
     ui->mREUpButton->setEnabled(false);
     ui->mREDownButton->setEnabled(false);
 
-    int index=ui->mSelectRuleComboBox->currentIndex();
-    if(index<0||index>=settings->holeRuleList.size())
+    int index = ui->mSelectRuleComboBox->currentIndex();
+    if (index < 0 || index >= settings->holeRuleList.size())
     {
         QMessageBox msgBox;
         msgBox.setText("Select a rule first!");
@@ -644,14 +636,16 @@ void Settingwindow::on_mDeleteButton_clicked()
     settings->saveHoleRule();
 
     ui->mSelectRuleComboBox->clear();
-    for(int i=0;i<settings->holeRuleList.size();i++)
+    for (int i = 0; i < settings->holeRuleList.size(); i++)
     {
         ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
     }
-    if(settings->holeRuleList.size()==0)
+    if (settings->holeRuleList.size() == 0) {
         ui->mEditButton->setEnabled(false);
-    else
+    }
+    else {
         ui->mEditButton->setEnabled(true);
+    }
 }
 
 void Settingwindow::on_mEditButton_clicked()
@@ -678,7 +672,7 @@ void Settingwindow::on_mEditButton_clicked()
 
     mEditIndex=ui->mSelectRuleComboBox->currentIndex();
     hr=settings->holeRuleList.at(mEditIndex);
-    mEditFlag=true;
+    mEditFlag = true;
 
     updateMTreeView(hr);
 }
@@ -704,18 +698,15 @@ void Settingwindow::on_mSaveButton_clicked()
     ui->mREUpButton->setEnabled(false);
     ui->mREDownButton->setEnabled(false);
 
-    if (mEditFlag)
-    {
+    if (mEditFlag) {
         settings->holeRuleList.replace(mEditIndex, hr);
     }
-    else
-    {
+    else {
         settings->holeRuleList.append(hr);
     }
     mEditFlag = false;
     ui->mSelectRuleComboBox->clear();
-    for(int i=0;i<settings->holeRuleList.size();i++)
-    {
+    for(int i=0;i<settings->holeRuleList.size();i++) {
         ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
     }
     settings->saveHoleRule();
@@ -753,9 +744,10 @@ void Settingwindow::on_mCancelButton_clicked()
 
 void Settingwindow::on_mREUpButton_clicked()
 {
-    QModelIndex index=ui->mTreeView->currentIndex();
-    if(index.row()<1||index.row()>hr.ruleList.size()-1)
+    QModelIndex index = ui->mTreeView->currentIndex();
+    if (index.row() < 1 || index.row() > hr.ruleList.size() - 1) {
         return;
+    }
 
     hr.ruleList.swapItemsAt(index.row(),index.row()-1);
 
@@ -769,9 +761,10 @@ void Settingwindow::on_mREUpButton_clicked()
 
 void Settingwindow::on_mREDownButton_clicked()
 {
-    QModelIndex index=ui->mTreeView->currentIndex();
-    if(index.row()<0||index.row()>hr.ruleList.size()-2)
+    QModelIndex index = ui->mTreeView->currentIndex();
+    if (index.row() < 0 || index.row() > hr.ruleList.size() - 2) {
         return;
+    }
     hr.ruleList.swapItemsAt(index.row(),index.row()+1);
 
     updateMTreeView(hr);
@@ -801,23 +794,23 @@ bool Settingwindow::checkHoleRuleValue( HoleCondition &c)
     auto drills = settings->getDrillList();
     c.drill = drills.at(ui->mREDrillComboBox->currentIndex());
     c.condition = ui->mREConditionComboBox->currentText();
-    if(c.condition=="==x")
+    if(c.condition == "==x")
     {
         bool ok;
-        c.value=ui->mREValueInput->text().toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value = ui->mREValueInput->text().toDouble(&ok);
+        if(!ok || c.value < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!");
             msgBox.exec();
             return false;
         }
-        c.text="If pad size=="+QString::number(c.value,'f',3)+",use drill :  \""+
-                c.drill.name+"  "+QString::number(c.drill.width,'f',3)+"\"";
+        c.text = "If pad size==" + QString::number(c.value,'f',3) + ",use drill :  \"" +
+                c.drill.name + "  " + QString::number(c.drill.width,'f',3) + "\"";
     }
-    else if(c.condition=="x1&&x2")
+    else if(c.condition == "x1&&x2")
     {
-        QString temp=ui->mREValueInput->text();
+        QString temp = ui->mREValueInput->text();
         QStringList list1 = temp.split(",");
         if(list1.size()!=2)
         {
@@ -827,38 +820,38 @@ bool Settingwindow::checkHoleRuleValue( HoleCondition &c)
             return false;
         }
         bool ok;
-        c.value=list1.at(0).toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value = list1.at(0).toDouble(&ok);
+        if(!ok || c.value < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!");
             msgBox.exec();
             return false;
         }
-        c.value1=list1.at(1).toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value1 = list1.at(1).toDouble(&ok);
+        if(!ok || c.value1 < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!\n");
             msgBox.exec();
             return false;
         }
-        if(c.value>c.value1)
+        if(c.value > c.value1)
         {
             QMessageBox msgBox;
             msgBox.setText("Value x1 must <= x2!\n");
             msgBox.exec();
             return false;
         }
-        c.text="If pad width="+QString::number(c.value,'f',3)+"&&pad height="+QString::number(c.value1,'f',3)+
-                ",use drill : \""+c.drill.name+"  "+QString::number(c.drill.width,'f',3)+"\"";
+        c.text = "If pad width=" + QString::number(c.value,'f',3) + "&&pad height=" + QString::number(c.value1,'f',3) +
+                ",use drill : \"" + c.drill.name + "  " + QString::number(c.drill.width,'f',3) + "\"";
 
     }
-    else if(c.condition=="[x1,x2]")
+    else if(c.condition == "[x1,x2]")
     {
-        QString temp=ui->mREValueInput->text();
+        QString temp = ui->mREValueInput->text();
         QStringList list1 = temp.split(",");
-        if(list1.size()!=2)
+        if(list1.size() != 2)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!\nExample:\n 0,1\n 2.5,3.175");
@@ -866,76 +859,78 @@ bool Settingwindow::checkHoleRuleValue( HoleCondition &c)
             return false;
         }
         bool ok;
-        c.value=list1.at(0).toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value = list1.at(0).toDouble(&ok);
+        if(!ok || c.value < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!");
             msgBox.exec();
             return false;
         }
-        c.value1=list1.at(1).toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value1 = list1.at(1).toDouble(&ok);
+        if(!ok || c.value1 < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!\n");
             msgBox.exec();
             return false;
         }
-        if(c.value>c.value1)
+        if(c.value > c.value1)
         {
             QMessageBox msgBox;
             msgBox.setText("Value x1 must <= x2!\n");
             msgBox.exec();
             return false;
         }
-        c.text="If "+QString::number(c.value,'f',3)+"<=pad size<="+QString::number(c.value1,'f',3)+
-                ",use drill : \""+c.drill.name+"  "+QString::number(c.drill.width,'f',3)+"\"";
+        c.text = "If " + QString::number(c.value,'f',3) + "<=pad size<=" + QString::number(c.value1,'f',3) +
+                ",use drill : \"" + c.drill.name + "  "+QString::number(c.drill.width,'f',3) + "\"";
 
     }
-    else if(c.condition=="[x,∞)")
+    else if(c.condition == "[x,∞)")
     {
         bool ok;
-        c.value=ui->mREValueInput->text().toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value = ui->mREValueInput->text().toDouble(&ok);
+        if(!ok || c.value < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!");
             msgBox.exec();
             return false;
         }
-        c.text="If pad size>="+QString::number(c.value,'f',3)+",use drill :  \""+
-                c.drill.name+"  "+QString::number(c.drill.width,'f',3)+"\"";
+        c.text = "If pad size>=" + QString::number(c.value,'f',3) + ",use drill :  \"" +
+                c.drill.name + "  " + QString::number(c.drill.width,'f',3) + "\"";
     }
-    else if(c.condition=="[0,x]")
+    else if(c.condition == "[0,x]")
     {
         bool ok;
-        c.value=ui->mREValueInput->text().toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value = ui->mREValueInput->text().toDouble(&ok);
+        if(!ok || c.value < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!");
             msgBox.exec();
             return false;
         }
-        c.text="If pad size<="+QString::number(c.value,'f',3)+",use drill :  \""+
-                c.drill.name+"  "+QString::number(c.drill.width,'f',3)+"\"";
+        c.text = "If pad size<=" + QString::number(c.value,'f',3) + ",use drill :  \"" +
+                c.drill.name + "  " + QString::number(c.drill.width,'f',3) + "\"";
     }
-    else if(c.condition=="default")
+    else if (c.condition == "default")
     {
-        for(int i=0;i<hr.ruleList.size();i++)
-            if(i==mREEditIndex)
+        for (int i = 0; i < hr.ruleList.size(); i++) {
+            if (i == mREEditIndex) {
                 continue;
-            else if(hr.ruleList.at(i).condition=="default")
+            }
+            else if (hr.ruleList.at(i).condition == "default")
             {
                 QMessageBox msgBox;
                 msgBox.setText("Only one Default condition is allowed!");
                 msgBox.exec();
                 return false;
             }
+        }
         bool ok;
-        c.value=ui->mREValueInput->text().toDouble(&ok);
-        if(!ok||c.value<0)
+        c.value = ui->mREValueInput->text().toDouble(&ok);
+        if(!ok || c.value < 0)
         {
             QMessageBox msgBox;
             msgBox.setText("Value input error!");
@@ -1025,8 +1020,9 @@ void Settingwindow::on_mREEditButton_clicked()
 void Settingwindow::on_mRESaveButton_clicked()
 {
     HoleCondition c;
-    if(checkHoleRuleValue(c)==false)
+    if (checkHoleRuleValue(c) == false) {
         return;
+    }
     mREEditFlag=false;
     hr.name=ui->mRENameInput->text();
     hr.ruleList.replace(mREEditIndex,c);
@@ -1058,8 +1054,9 @@ void Settingwindow::on_tabWidget_tabBarClicked(int index)
 {
     Q_UNUSED(index)
     ui->mSelectRuleComboBox->clear();
-    for(int i=0;i<settings->holeRuleList.size();i++)
-     ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
+    for (int i = 0; i < settings->holeRuleList.size(); i++) {
+        ui->mSelectRuleComboBox->addItem(settings->holeRuleList.at(i).name);
+    }
 }
 
 void Settingwindow::on_mSelectRuleComboBox_activated(int index)
@@ -1146,5 +1143,4 @@ void Settingwindow::refreshToolCombobox()
         int idx = ui->comboBoxCuttingTool->findData(settings->cutParm.toolName);
         if (idx != -1) ui->comboBoxCuttingTool->setCurrentIndex(idx);
     }
-
 }

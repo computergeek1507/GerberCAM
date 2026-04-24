@@ -88,7 +88,7 @@ TreeModel::TreeModel(Setting &sFile, QObject *parent)
 {
     QList<QVariant> rootData;
     rootData << "Name" << "Type"<< "Diameter"<< "Angle"<< "Width"<< "Overlap"
-                << "Step Depth"<< "pluge Speed"<< "Spindle Speed"<< "Feedrate";
+                << "Step Depth"<< "Pluge Speed"<< "Spindle Speed"<< "Feedrate" << "Unit" << "Speed Unit" ;
     rootItem = new TreeItem(rootData);
     setupModelData(sFile, rootItem);
 }
@@ -229,16 +229,18 @@ void TreeModel::setupModelData(const Setting &sFile, TreeItem *parent)
         //    continue;
 		//auto tool_type = magic_enum::enum_name(t.toolType);
         QList<QVariant> columnData;
-        columnData<<t.name;
-        columnData<<QString(magic_enum::enum_name(t.toolType).data());
-        columnData<<QString::number(t.diameter,'f',3);
-        columnData<<QString::number(t.angle,'f',1)+"°";
-        columnData<<QString::number(t.width,'f',3);
-        columnData<<QString::number(t.overlap,'f',1)+"%";
-        columnData<<QString::number(t.maxStepDepth,'f',3);
-        columnData<<QString::number(t.maxPlungeSpeed,'f',3);
-        columnData<<QString::number(t.spindleSpeed,'f',3);
-        columnData<<QString::number(t.feedrate,'f',3);
+        columnData << t.name;
+        columnData << QString(magic_enum::enum_name(t.toolType).data());
+        columnData << QString::number(t.diameter,'f',3);
+        columnData << QString::number(t.angle,'f',1)+"°";
+        columnData << QString::number(t.width,'f',3);
+        columnData << QString::number(t.overlap,'f',1)+"%";
+        columnData << QString::number(t.maxStepDepth,'f',3);
+        columnData << QString::number(t.maxPlungeSpeed,'f',3);
+        columnData << QString::number(t.spindleSpeed,'f',3);
+        columnData << QString::number(t.feedrate,'f',3);
+        columnData << QString(magic_enum::enum_name(t.unitType).data());
+        columnData << QString(magic_enum::enum_name(t.unitType).data()) + " per min";
         parents.last()->appendChild(new TreeItem(columnData, parents.last()));
     }
     //for(int i=0;i<sFile.toolList.size();i++)
@@ -289,10 +291,10 @@ void TreeModel::setupModelData(const Preprocess &pFile, TreeItem *parent)
     int number = 0;
     int position;
     QList<QVariant> columnData;
-    columnData<<"Contour"<<QString::number(pFile.contourList.size());
+    columnData << "Contour" << QString::number(pFile.contourList.size());
     parents.last()->appendChild(new TreeItem(columnData, parents.last()));
 
-    position=1;
+    position = 1;
     while (number < pFile.contourList.size())
     {
         position=1;

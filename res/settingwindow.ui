@@ -25,7 +25,7 @@
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="tab1">
         <attribute name="title">
@@ -267,212 +267,169 @@
              <enum>Qt::Vertical</enum>
             </property>
             <widget class="QGroupBox" name="groupBox_30">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="title">
               <string>Tool Definition</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_28">
               <item>
                <widget class="QSplitter" name="splitter_2">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
                 <widget class="QWidget" name="widget" native="true">
-                 <layout class="QVBoxLayout" name="verticalLayout_21">
-                  <item>
-                   <layout class="QVBoxLayout" name="verticalLayout_23">
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_14">
-                      <item>
-                       <widget class="QLabel" name="label_17">
-                        <property name="text">
-                         <string>Name</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QLineEdit" name="tlName"/>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_16">
-                      <item>
-                       <widget class="QLabel" name="label_19">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>Unit:</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QRadioButton" name="tlUnitMMRadio">
-                        <property name="text">
-                         <string>Milimeter</string>
-                        </property>
-                        <property name="checked">
-                         <bool>true</bool>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QRadioButton" name="tlUnitInchRadio">
-                        <property name="text">
-                         <string>Inch</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_17">
-                      <item>
-                       <widget class="QLabel" name="label_20">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>Speed Unit</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QComboBox" name="tlSpeedUnitComboBox">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_15">
-                      <item>
-                       <widget class="QLabel" name="label_18">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>Type</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QComboBox" name="tlTypeComboBox">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                   </layout>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <layout class="QGridLayout" name="gridLayout_8">
+                  <item row="8" column="1">
+                   <widget class="QLineEdit" name="tlOverlap"/>
                   </item>
-                  <item>
-                   <layout class="QGridLayout" name="gridLayout_3">
-                    <item row="0" column="0">
-                     <widget class="QLabel" name="label_21">
-                      <property name="text">
-                       <string>Diameter(D)</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="4" column="2">
-                     <widget class="QLineEdit" name="tlDepth"/>
-                    </item>
-                    <item row="6" column="0">
-                     <widget class="QLabel" name="label_26">
-                      <property name="text">
-                       <string>Spindle speed</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="1" column="2">
-                     <widget class="QLineEdit" name="tlAngle"/>
-                    </item>
-                    <item row="7" column="0">
-                     <widget class="QLabel" name="label_27">
-                      <property name="text">
-                       <string>Feedrate</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="3" column="2">
-                     <widget class="QLineEdit" name="tlOverlap"/>
-                    </item>
-                    <item row="5" column="2">
-                     <widget class="QLineEdit" name="tlPlugeSpeed"/>
-                    </item>
-                    <item row="1" column="0">
-                     <widget class="QLabel" name="label_22">
-                      <property name="text">
-                       <string>Angle(A)</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="5" column="0">
-                     <widget class="QLabel" name="label_28">
-                      <property name="text">
-                       <string>Maximun plunge speed</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="6" column="2">
-                     <widget class="QLineEdit" name="tlSpindleSpeed"/>
-                    </item>
-                    <item row="0" column="2">
-                     <widget class="QLineEdit" name="tlDiameter"/>
-                    </item>
-                    <item row="2" column="0">
-                     <widget class="QLabel" name="label_23">
-                      <property name="text">
-                       <string>Width(W)</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="3" column="0">
-                     <widget class="QLabel" name="label_25">
-                      <property name="text">
-                       <string>Overlap(%)</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="4" column="0">
-                     <widget class="QLabel" name="label_24">
-                      <property name="text">
-                       <string>Maximun step depth</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="2" column="2">
-                     <widget class="QLineEdit" name="tlWidth"/>
-                    </item>
-                    <item row="7" column="2">
-                     <widget class="QLineEdit" name="tlFeedrate"/>
-                    </item>
-                   </layout>
+                  <item row="10" column="1">
+                   <widget class="QLineEdit" name="tlPlugeSpeed"/>
+                  </item>
+                  <item row="6" column="0">
+                   <widget class="QLabel" name="label_22">
+                    <property name="text">
+                     <string>Angle(A)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="11" column="1">
+                   <widget class="QLineEdit" name="tlSpindleSpeed"/>
+                  </item>
+                  <item row="4" column="0">
+                   <widget class="QLabel" name="label_18">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Type</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="10" column="0">
+                   <widget class="QLabel" name="label_28">
+                    <property name="text">
+                     <string>Maximun plunge speed</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QLabel" name="label_19">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Unit:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="6" column="1">
+                   <widget class="QLineEdit" name="tlAngle"/>
+                  </item>
+                  <item row="4" column="1">
+                   <widget class="QComboBox" name="tlTypeComboBox">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="12" column="0">
+                   <widget class="QLabel" name="label_feedrate">
+                    <property name="text">
+                     <string>Feedrate</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="9" column="0">
+                   <widget class="QLabel" name="label_24">
+                    <property name="text">
+                     <string>Maximun step depth</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="11" column="0">
+                   <widget class="QLabel" name="label_26">
+                    <property name="text">
+                     <string>Spindle speed</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="1">
+                   <widget class="QComboBox" name="comboBoxUnits"/>
+                  </item>
+                  <item row="9" column="1">
+                   <widget class="QLineEdit" name="tlDepth"/>
+                  </item>
+                  <item row="7" column="0">
+                   <widget class="QLabel" name="label_23">
+                    <property name="text">
+                     <string>Width(W)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QLineEdit" name="tlName"/>
+                  </item>
+                  <item row="12" column="1">
+                   <widget class="QLineEdit" name="tlFeedrate"/>
+                  </item>
+                  <item row="8" column="0">
+                   <widget class="QLabel" name="label_25">
+                    <property name="text">
+                     <string>Overlap(%)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="1">
+                   <widget class="QLineEdit" name="tlDiameter"/>
+                  </item>
+                  <item row="5" column="0">
+                   <widget class="QLabel" name="label_21">
+                    <property name="text">
+                     <string>Diameter(D)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="label_17">
+                    <property name="text">
+                     <string>Name</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="7" column="1">
+                   <widget class="QLineEdit" name="tlWidth"/>
                   </item>
                  </layout>
                 </widget>
                 <widget class="QLabel" name="tlToolTypeViewLabel">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -1016,11 +973,6 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>tlName</tabstop>
-  <tabstop>tlUnitMMRadio</tabstop>
-  <tabstop>tlUnitInchRadio</tabstop>
-  <tabstop>tlSpeedUnitComboBox</tabstop>
-  <tabstop>tlTypeComboBox</tabstop>
   <tabstop>tlAddButton</tabstop>
   <tabstop>tlDeleteButton</tabstop>
   <tabstop>tlEditButton</tabstop>
