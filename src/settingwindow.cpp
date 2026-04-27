@@ -106,6 +106,9 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 
 	ui->lineEditDrillingDepth->setText(QString::number(settings->drillParm.depth, 'f', 3));
 	ui->lineEditCuttingDepth->setText(QString::number(settings->cutParm.depth, 'f', 3));
+
+    ui->splitter_2->setStretchFactor(0, 1);
+    ui->splitter_2->setStretchFactor(1, 3);
 }
 
 void Settingwindow::holeDrillCheck()

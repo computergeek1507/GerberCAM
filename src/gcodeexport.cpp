@@ -94,6 +94,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
     out << (useInch ? "G20\n" : "G21\n");     // unit selection
     out << "G17\n";                            // XY plane
     out << "M3 S" << static_cast<int>(spindle) << "\n"; // spindle on CW
+    out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
     out << "G0 Z" << QString::number(safeZ, 'f', zprec) << "\n"; // safe height
     out << "\n";
 
@@ -132,7 +133,7 @@ bool GcodeExport::write(const Toolpath &tp, const Setting &s,
             // Plunge to this pass depth
             out << "G1 Z-" << QString::number(passDepth, 'f', zprec)
                 << " F" << QString::number(plunge, 'f', 1) << "\n";
-            out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
+            //out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
 
             // Cut through remaining points
             out << "G1 F" << QString::number(feedrate, 'f', 1) << "\n";
