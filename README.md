@@ -16,6 +16,7 @@
 >  * Add Project Save/Load.
 >  * Add "Open Gerber Folder" to auto-find top, bottom, outline, and drill files.
 >  * Add DXF and SVG Export (separate top copper, bottom copper, and drills/outline files).
+>  * Add command line loading and batch export (`GerberCAM <folder> --export-gcode base --quit`).
 >  * Add spdlog and nlohmann json.
 >  * Add Installer script and GitHub Action.
 >
@@ -62,6 +63,12 @@ Export:
     ● G-code: isolation toolpaths, copper clearing, outline cutting, drilling (with optional boring)  
     ● DXF: separate files for top copper, bottom copper, and drills/outline  
     ● SVG: same three files, true-scale in millimetres  
+
+Command line:  
+    ● `GerberCAM <gerber folder>` or `GerberCAM <project.gcproj>` to load on startup  
+    ● `--folder` / `--project` / `--top` / `--bottom` / `--outline` / `--drill` to load explicitly  
+    ● `--export-gcode <base>`, `--export-dxf <base>`, `--export-svg <base>` for batch export  
+    ● `--flip` to mirror X, `--quit` to exit after exporting (scripted use)  
   
 **Here are the snapshots of the current development.**
 ![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/GerberCAM_V07_Test1.png)

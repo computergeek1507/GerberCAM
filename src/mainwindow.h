@@ -64,6 +64,29 @@ namespace Ui {
 class settingwindow;
 }
 
+// Options gathered from the command line (see main.cpp).
+struct CliOptions
+{
+    QString folder;     // gerber folder to auto-detect and load
+    QString project;    // .gcproj project file to load
+    QString top;        // individual files
+    QString bottom;
+    QString outline;
+    QString drill;
+    QString gcodeBase;  // when set, export G-code to <base>*.nc
+    QString dxfBase;    // when set, export DXF to <base>*.dxf
+    QString svgBase;    // when set, export SVG to <base>*.svg
+    bool flip = false;  // mirror X (bottom-side milling)
+    bool quit = false;  // exit after processing (batch mode)
+
+    bool hasWork() const
+    {
+        return !folder.isEmpty() || !project.isEmpty() || !top.isEmpty()
+            || !bottom.isEmpty() || !outline.isEmpty() || !drill.isEmpty()
+            || !gcodeBase.isEmpty() || !dxfBase.isEmpty() || !svgBase.isEmpty();
+    }
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -71,6 +94,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+    // Load files and run exports requested on the command line.
+    void applyCommandLine(const CliOptions &opts);
 
 protected:
     void drawNet(QGraphicsScene *scene, Preprocess &t, QColor color, QColor colorError);
@@ -96,9 +122,6 @@ private slots:
 
     void on_actionZoom_out_triggered();
 
-    void on_actionLayer1_triggered();
-
-    void on_actionLayer2_triggered();
 
     void on_actionFlip_Board_triggered();
 
@@ -165,8 +188,12 @@ private:
     QLabel *coordinateLabel;
     QLabel *layerLabel;
 
-    // Sync the Layer1/Layer2 menu checkmarks and status bar with currentLayer.
+    // Sync the status bar layer indicator with currentLayer.
     void updateLayerIndicator();
+
+    // Switch the displayed layer (driven by the Layer1/Layer2 tabs).
+    void selectLayer1();
+    void selectLayer2();
 
     std::unique_ptr <Preprocess> preprocessfile1{ nullptr };
     std::unique_ptr <Preprocess> preprocessfile2{ nullptr };
@@ -192,8 +219,26 @@ private:
     QString m_outlinePath;
     QString m_excellonPath;
 
-    // Shared implementation of the DXF/SVG export actions.
+    // Shared implementation of the DXF/SVG export actions (asks for a base
+    // file name, then calls writeVectorFiles).
     void exportVectorFiles(bool asSvg);
+
+    // Write the DXF or SVG file set to <base>_top_copper/_bottom_copper/
+    // _drills_outline; appends failures to errors.
+    void writeVectorFiles(const QString &base, bool asSvg, QStringList &errors);
+
+    // Batch G-code export: <base>.nc / _bottom.nc / _drill.nc / _outline.nc.
+    void writeGcodeFiles(const QString &base, QStringList &errors);
+
+    // Scan a folder, auto-detect top/bottom/outline/drill files and load them.
+    bool openGerberFolder(const QString &dirPath);
+
+    // Unload all loaded files, scenes, and toolpaths (used before loading a
+    // new folder or project so stale layers/drills don't linger).
+    void clearLoadedFiles();
+
+    // Load a .gcproj project file.
+    bool loadProjectFile(const QString &path);
 
     // Rebuild the per-layer and combined net scenes (sceneNet1/2/12/21) after
     // both layers are loaded programmatically (folder open, project load).
@@ -206,5 +251,9 @@ private:
 
     std::unique_ptr<Gerber> gerberOutline{ nullptr };
     std::unique_ptr<QGraphicsScene> sceneOutline{ nullptr };
+
+    // Drills-only scene (drill markers over the outline) shown by the Drills tab.
+    std::unique_ptr<QGraphicsScene> sceneDrills{ nullptr };
+    void rebuildDrillScene();
     std::unique_ptr<QColor> colorOutline = std::make_unique<QColor>(0, 200, 0, 200);
 };

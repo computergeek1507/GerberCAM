@@ -23,14 +23,82 @@ SOFTWARE.
 #include "mainwindow.h"
 #include <QApplication>
 #include <QIcon>
+#include <QCommandLineParser>
+#include <QFileInfo>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     a.setWindowIcon(QIcon(":/GerberCAM.ico"));
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription(
+        "GerberCAM - PCB gerber to CNC toolpath converter.\n"
+        "Load a board from the command line and optionally export G-code, "
+        "DXF or SVG in batch.");
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.addPositionalArgument("path",
+        "Gerber folder (auto-detects layers) or .gcproj project file.", "[path]");
+
+    QCommandLineOption optFolder({ "f", "folder" }, "Gerber folder to auto-detect and load.", "dir");
+    QCommandLineOption optProject({ "p", "project" }, "GerberCAM project file (.gcproj).", "file");
+    QCommandLineOption optTop("top", "Top copper Gerber file.", "file");
+    QCommandLineOption optBottom("bottom", "Bottom copper Gerber file.", "file");
+    QCommandLineOption optOutline("outline", "Outline / edge cuts Gerber file.", "file");
+    QCommandLineOption optDrill("drill", "Excellon drill file.", "file");
+    QCommandLineOption optGcode("export-gcode", "Export G-code to <base>.nc/_bottom/_drill/_outline.", "base");
+    QCommandLineOption optDxf("export-dxf", "Export DXF to <base>_top_copper/_bottom_copper/_drills_outline.", "base");
+    QCommandLineOption optSvg("export-svg", "Export SVG to <base>_top_copper/_bottom_copper/_drills_outline.", "base");
+    QCommandLineOption optFlip("flip", "Flip the board (mirror X) before exporting.");
+    QCommandLineOption optQuit({ "q", "quit" }, "Exit after loading and exporting (batch mode).");
+    parser.addOption(optFolder);
+    parser.addOption(optProject);
+    parser.addOption(optTop);
+    parser.addOption(optBottom);
+    parser.addOption(optOutline);
+    parser.addOption(optDrill);
+    parser.addOption(optGcode);
+    parser.addOption(optDxf);
+    parser.addOption(optSvg);
+    parser.addOption(optFlip);
+    parser.addOption(optQuit);
+    parser.process(a);
+
+    CliOptions opts;
+    opts.folder    = parser.value(optFolder);
+    opts.project   = parser.value(optProject);
+    opts.top       = parser.value(optTop);
+    opts.bottom    = parser.value(optBottom);
+    opts.outline   = parser.value(optOutline);
+    opts.drill     = parser.value(optDrill);
+    opts.gcodeBase = parser.value(optGcode);
+    opts.dxfBase   = parser.value(optDxf);
+    opts.svgBase   = parser.value(optSvg);
+    opts.flip      = parser.isSet(optFlip);
+    opts.quit      = parser.isSet(optQuit);
+
+    // A bare positional argument is a folder or a project file.
+    const QStringList args = parser.positionalArguments();
+    if (!args.isEmpty())
+    {
+        QFileInfo fi(args.first());
+        if (fi.isDir())
+            opts.folder = fi.absoluteFilePath();
+        else if (fi.suffix().compare("gcproj", Qt::CaseInsensitive) == 0)
+            opts.project = fi.absoluteFilePath();
+    }
+
     MainWindow w;
     w.show();
     w.showMaximized();
+
+    if (opts.hasWork())
+    {
+        w.applyCommandLine(opts);
+        if (opts.quit)
+            return 0;
+    }
 
     return a.exec();
 }

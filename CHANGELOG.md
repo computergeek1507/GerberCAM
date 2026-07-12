@@ -20,10 +20,24 @@ Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://
   extension (`.gtl`/`.gbl`/`.gm1`/`.gko`/`.drl`/...) and by common naming
   conventions (KiCad `F_Cu`/`B_Cu`/`Edge_Cuts`, `top`/`bottom`/`outline`).
   Prefers plated (non-NPTH) drill files; skips mask/paste/silkscreen layers.
-- Layer selection indicator: the View menu Layer1/Layer2 entries now show an
-  exclusive checkmark, and the status bar shows "Viewing: Layer N".
+- Layer selection indicator in the status bar ("Viewing: Layer N").
+- Command line support: load a Gerber folder or `.gcproj` positionally, or use
+  `--folder`, `--project`, `--top`, `--bottom`, `--outline`, `--drill`; batch
+  export with `--export-gcode`, `--export-dxf`, `--export-svg <base>` plus
+  `--flip`; `--quit` exits after processing for scripted use.
+- The left side tabs now drive the view: selecting Layer1/Layer2 switches the
+  displayed layer, Outline shows the outline scene, and Drills shows the drill
+  holes over the outline. Tab order is now Layer1, Layer2, Outline, Drills,
+  Message.
+
+### Changed
+- Removed the View → Layer1/Layer2 menu entries; layer selection moved to the
+  left side tabs.
 
 ### Fixed
+- Open Gerber Folder and Load Project now unload the previously loaded board
+  first — before, files missing from the new folder (e.g. the drill file)
+  lingered from the previous one.
 - Switching layers (View → Layer1/Layer2) after loading a two-layer board via
   Open Gerber Folder or Load Project showed a blank view: the combined layer
   scenes were only built by the interactive Add layer flow. The view now also

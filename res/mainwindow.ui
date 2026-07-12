@@ -48,22 +48,6 @@
        <property name="currentIndex">
         <number>0</number>
        </property>
-       <widget class="QWidget" name="tabMessage">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <attribute name="title">
-         <string>Message</string>
-        </attribute>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QTextBrowser" name="messageBrowser"/>
-         </item>
-        </layout>
-       </widget>
        <widget class="QWidget" name="tabLayer1">
         <property name="sizePolicy">
          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -146,6 +130,22 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="tabMessage">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <attribute name="title">
+         <string>Message</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QTextBrowser" name="messageBrowser"/>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QGraphicsView" name="graphicsView">
        <property name="sizePolicy">
@@ -199,8 +199,6 @@
     </property>
     <addaction name="actionZoom_in"/>
     <addaction name="actionZoom_out"/>
-    <addaction name="actionLayer1"/>
-    <addaction name="actionLayer2"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -259,31 +257,6 @@
    </property>
    <property name="text">
     <string>Add layer</string>
-   </property>
-  </action>
-  <action name="actionLayer1">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Layer1</string>
-   </property>
-  </action>
-  <action name="actionLayer2">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Layer2</string>
    </property>
   </action>
   <action name="actionToolpath_generat">

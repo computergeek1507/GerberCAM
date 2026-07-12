@@ -31,7 +31,6 @@ SOFTWARE.
 #include <QFileDialog>
 #include <QDir>
 #include <QProcess>
-#include <QActionGroup>
 #include <QMessageBox>
 #include <QSet>
 #include <QTimer>
@@ -124,25 +123,30 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addPermanentWidget(coordinateLabel);
 
     /*
-     * Layer selection indicator: exclusive checkmarks in the View menu plus
-     * a permanent status bar label.
+     * Layer selection indicator: a permanent status bar label.
      * */
-    auto *layerGroup = new QActionGroup(this);
-    layerGroup->setExclusive(true);
-    layerGroup->addAction(ui->actionLayer1);
-    layerGroup->addAction(ui->actionLayer2);
-
     layerLabel = new QLabel(this);
     ui->statusBar->addPermanentWidget(layerLabel);
     updateLayerIndicator();
 
     /*
-     * Initialize the panel on the left side.
+     * Initialize the panel on the left side. Tab titles come from the .ui;
+     * order is Layer1, Layer2, Outline, Drills, Message.
+     * Selecting a layer tab also switches the displayed layer; the Outline
+     * tab shows the outline-only scene.
      * */
-    ui->LayerTab1->setTabText(0,"Message");
-    ui->LayerTab1->setTabText(1,"Layer1");
-    ui->LayerTab1->setTabText(2,"Layer2");
-    ui->LayerTab1->setTabText(3,"Outline");
+    connect(ui->LayerTab1, &QTabWidget::currentChanged, this, [this](int idx)
+    {
+        QWidget *w = ui->LayerTab1->widget(idx);
+        if (w == ui->tabLayer1 && layerNum >= 1)
+            selectLayer1();
+        else if (w == ui->tabLayer2 && layerNum == 2)
+            selectLayer2();
+        else if (w == ui->tabOutline && sceneOutline)
+            ui->graphicsView->setScene(sceneOutline.get());
+        else if (w == ui->tabDrills && sceneDrills)
+            ui->graphicsView->setScene(sceneDrills.get());
+    });
     //ui->LayerTab1->setFixedWidth(350);
 
 
@@ -358,11 +362,18 @@ void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color
     //scene->addRect(gerberfile->borderRect);
 }
 
+void MainWindow::rebuildDrillScene()
+{
+    if (!m_excellon)
+        return;
+    sceneDrills = std::make_unique<QGraphicsScene>(this);
+    if (gerberOutline)
+        drawLayer(sceneDrills.get(), gerberOutline.get(), *colorOutline);
+    drawExcellonDrills(sceneDrills.get());
+}
+
 void MainWindow::updateLayerIndicator()
 {
-    ui->actionLayer1->setChecked(currentLayer == 1);
-    ui->actionLayer2->setChecked(currentLayer == 2);
-
     if (layerNum == 0)
         layerLabel->setText("");
     else if (layerNum == 2)
@@ -412,7 +423,6 @@ void MainWindow::on_actionOpen_triggered()
 
     layerNum = 1;
     currentLayer = 1;
-    ui->actionLayer2->setEnabled(false);
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
@@ -454,6 +464,67 @@ void MainWindow::on_actionOpen_Folder_triggered()
         return;
     settingWindow->settings->setLastDir(dirPath + "/");
 
+    openGerberFolder(dirPath);
+}
+
+void MainWindow::clearLoadedFiles()
+{
+    // Detach the view and item models before their backing data goes away.
+    ui->graphicsView->setScene(nullptr);
+    ui->treeViewlayer1->setModel(nullptr);
+    ui->treeViewlayer2->setModel(nullptr);
+    ui->drillsTree->clear();
+    ui->outlineBrowser->clear();
+
+    scene1.reset();
+    scene12.reset();
+    scene2.reset();
+    scene21.reset();
+    sceneNet1.reset();
+    sceneNet2.reset();
+    sceneNet12.reset();
+    sceneNet21.reset();
+    scenePath1.reset();
+    scenePath2.reset();
+    scenePath12.reset();
+    scenePath21.reset();
+    sceneOutline.reset();
+    sceneDrills.reset();
+
+    toolpath1.reset();
+    toolpath2.reset();
+    preprocessfile1.reset();
+    preprocessfile2.reset();
+    gerber1.reset();
+    gerber2.reset();
+    gerberOutline.reset();
+    m_excellon.reset();
+
+    m_gerber1Path.clear();
+    m_gerber2Path.clear();
+    m_outlinePath.clear();
+    m_excellonPath.clear();
+    gerberFileName.clear();
+
+    layerNum = 0;
+    currentLayer = 1;
+    recalculateFlag = false;
+
+    ui->actionAdd_layer->setEnabled(false);
+    ui->actionToolpath_generat->setEnabled(false);
+    ui->actionExport_GCode->setEnabled(false);
+    ui->actionExport_Drills->setEnabled(false);
+    ui->actionExport_Drill_G_Code_Bore->setEnabled(false);
+    ui->actionExport_Drills_Excellon->setEnabled(false);
+    ui->actionExport_Drills_Excellon_Bore->setEnabled(false);
+    ui->actionExport_Outline->setEnabled(false);
+    ui->actionExport_DXF->setEnabled(false);
+    ui->actionExport_SVG->setEnabled(false);
+    updateLayerIndicator();
+}
+
+bool MainWindow::openGerberFolder(const QString &dirPath)
+{
     const QFileInfoList files = QDir(dirPath).entryInfoList(QDir::Files, QDir::Name);
 
     const QStringList genericGerberExts = { "gbr", "ger", "pho", "art" };
@@ -529,11 +600,15 @@ void MainWindow::on_actionOpen_Folder_triggered()
     {
         QMessageBox::warning(this, "Open Gerber Folder",
             "No Gerber or drill files recognized in this folder.");
-        return;
+        return false;
     }
     m_logger->info("Open Gerber Folder: {} (top={}, bottom={}, outline={}, drill={})",
                    dirPath.toStdString(), topPath.toStdString(), botPath.toStdString(),
                    outlinePath.toStdString(), drillPath.toStdString());
+
+    // Unload the previous board so files missing from this folder (e.g. the
+    // drill file) don't linger from the last one.
+    clearLoadedFiles();
 
     if (!topPath.isEmpty())
         loadGerber1(topPath);
@@ -549,11 +624,17 @@ void MainWindow::on_actionOpen_Folder_triggered()
     if (!drillPath.isEmpty())
         loadExcellon(drillPath);
 
-    // Fit the view to the board after everything is loaded.
-    if (gerberOutline)
-        ui->graphicsView->fitInView(gerberOutline->borderRect, Qt::KeepAspectRatio);
-    else if (gerber1)
-        ui->graphicsView->fitInView(gerber1->borderRect, Qt::KeepAspectRatio);
+    // Fit the view to the board after everything is loaded. Deferred so the
+    // window layout has settled (matters when loading from the command line).
+    QTimer::singleShot(0, this, [this]()
+    {
+        if (gerberOutline)
+            ui->graphicsView->fitInView(gerberOutline->borderRect, Qt::KeepAspectRatio);
+        else if (gerber1)
+            ui->graphicsView->fitInView(gerber1->borderRect, Qt::KeepAspectRatio);
+    });
+
+    return true;
 }
 
 void MainWindow::on_actionAdd_layer_triggered()
@@ -584,7 +665,6 @@ void MainWindow::on_actionAdd_layer_triggered()
         //ui->graphicsView->setScene(scene21);
         layerNum = 2;
         currentLayer = 2;
-        ui->actionLayer2->setEnabled(true);
         updateLayerIndicator();
 
         TreeModel* model = new TreeModel(*preprocessfile2);
@@ -853,7 +933,7 @@ void MainWindow::wheelEvent(QWheelEvent *event)
     ui->graphicsView->scale(factor,factor);
 }
 
-void MainWindow::on_actionLayer1_triggered()
+void MainWindow::selectLayer1()
 {
     currentLayer = 1;
     updateLayerIndicator();
@@ -875,7 +955,7 @@ void MainWindow::on_actionLayer1_triggered()
     }
 }
 
-void MainWindow::on_actionLayer2_triggered()
+void MainWindow::selectLayer2()
 {
     currentLayer = 2;
     updateLayerIndicator();
@@ -1089,6 +1169,7 @@ void MainWindow::on_actionOpen_Outline_triggered()
     }
     sceneOutline = std::make_unique<QGraphicsScene>(this);
     drawLayer(sceneOutline.get(), gerberOutline.get(), *colorOutline);
+    rebuildDrillScene(); // add the outline to the drills view
 
     // Show the current scene (with outline now added) or the standalone scene
     QGraphicsScene *current = ui->graphicsView->scene();
@@ -1112,7 +1193,11 @@ void MainWindow::on_actionOpen_Outline_triggered()
     ui->outlineBrowser->append("  Pads:   " + QString::number(gerberOutline->padNum));
     ui->outlineBrowser->append("  Tracks: " + QString::number(gerberOutline->trackNum));
 
-    ui->LayerTab1->setCurrentWidget(ui->tabOutline);
+    {
+        // Show the Outline info tab without re-routing the graphics view.
+        QSignalBlocker blocker(ui->LayerTab1);
+        ui->LayerTab1->setCurrentWidget(ui->tabOutline);
+    }
     ui->messageBrowser->append("Outline loaded: " + fn);
     ui->actionExport_Outline->setEnabled(true);
     ui->actionExport_DXF->setEnabled(true);
@@ -1234,6 +1319,21 @@ void MainWindow::exportVectorFiles(bool asSvg)
         base.chop(4);
 
     QStringList errors;
+    writeVectorFiles(base, asSvg, errors);
+
+    if (!errors.isEmpty())
+        QMessageBox::critical(this, "Export " + fmt, errors.join("\n"));
+}
+
+void MainWindow::writeVectorFiles(const QString &base, bool asSvg, QStringList &errors)
+{
+    const QString fmt = asSvg ? "SVG" : "DXF";
+    const QString ext = asSvg ? ".svg" : ".dxf";
+    const bool hasTop     = (gerber1 != nullptr);
+    const bool hasBottom  = (gerber2 != nullptr);
+    const bool hasOutline = (gerberOutline != nullptr && !gerberOutline->tracksList.isEmpty());
+    const bool hasDrills  = (m_excellon != nullptr) || (preprocessfile1 != nullptr);
+
     auto report = [&](const QString &path, bool ok, const QString &what,
                       const QString &errorMsg)
     {
@@ -1281,9 +1381,117 @@ void MainWindow::exportVectorFiles(bool asSvg)
                                             preprocessfile1.get(), p, errorMsg, boardFlipped);
         report(p, ok, "Drills/outline", errorMsg);
     }
+}
 
-    if (!errors.isEmpty())
-        QMessageBox::critical(this, "Export " + fmt, errors.join("\n"));
+void MainWindow::writeGcodeFiles(const QString &base, QStringList &errors)
+{
+    auto report = [&](const QString &path, bool ok, const QString &what,
+                      const QString &errorMsg)
+    {
+        if (ok)
+        {
+            ui->messageBrowser->append("G-Code exported: " + QFileInfo(path).fileName());
+            m_logger->info("G-Code exported: {}", path.toStdString());
+        }
+        else
+        {
+            errors << what + ": " + errorMsg;
+            m_logger->error("Export G-Code ({}) failed: {}", what.toStdString(),
+                            errorMsg.toStdString());
+        }
+    };
+
+    // Isolation toolpaths need to be generated first.
+    if (preprocessfile1 && !toolpath1)
+        on_actionToolpath_generat_triggered();
+
+    QString errorMsg;
+    if (toolpath1 && !toolpath1->totalToolpath.empty())
+    {
+        QString p = base + (layerNum == 2 ? "_top.nc" : ".nc");
+        report(p, GcodeExport::write(*toolpath1, *settingWindow->settings,
+                                     p, errorMsg, boardFlipped),
+               "Top isolation", errorMsg);
+    }
+    if (layerNum == 2 && toolpath2 && !toolpath2->totalToolpath.empty())
+    {
+        QString p = base + "_bottom.nc";
+        report(p, GcodeExport::write(*toolpath2, *settingWindow->settings,
+                                     p, errorMsg, boardFlipped),
+               "Bottom isolation", errorMsg);
+    }
+
+    // Drills: Excellon takes priority, else Gerber pad holes.
+    if (m_excellon && !m_excellon->tools.isEmpty())
+    {
+        QString p = base + "_drill.nc";
+        report(p, GcodeExport::writeDrills(*m_excellon, *settingWindow->settings,
+                                           p, errorMsg, boardFlipped),
+               "Drills", errorMsg);
+    }
+    else if (preprocessfile1)
+    {
+        QString p = base + "_drill.nc";
+        QString drillErr;
+        if (GcodeExport::writeDrills(*preprocessfile1, *settingWindow->settings,
+                                     p, drillErr, boardFlipped))
+            report(p, true, "Drills", drillErr);
+        // no holes found is not an error in batch mode — just skip
+    }
+
+    if (gerberOutline && !gerberOutline->tracksList.isEmpty())
+    {
+        QString p = base + "_outline.nc";
+        report(p, GcodeExport::writeOutline(*gerberOutline, *settingWindow->settings,
+                                            p, errorMsg, boardFlipped),
+               "Outline", errorMsg);
+    }
+}
+
+void MainWindow::applyCommandLine(const CliOptions &opts)
+{
+    if (opts.flip)
+    {
+        ui->actionFlip_Board->setChecked(true);
+        on_actionFlip_Board_triggered();
+    }
+
+    if (!opts.project.isEmpty())
+        loadProjectFile(opts.project);
+    if (!opts.folder.isEmpty())
+        openGerberFolder(opts.folder);
+    if (!opts.top.isEmpty())
+        loadGerber1(opts.top);
+    if (!opts.bottom.isEmpty())
+    {
+        if (!gerber1)
+            loadGerber1(opts.bottom); // no top layer given — load as layer 1
+        else if (loadGerber2(opts.bottom))
+            rebuildNetScenes();
+    }
+    if (!opts.outline.isEmpty())
+        loadOutline(opts.outline);
+    if (!opts.drill.isEmpty())
+        loadExcellon(opts.drill);
+
+    QStringList errors;
+    if (!opts.gcodeBase.isEmpty())
+        writeGcodeFiles(opts.gcodeBase, errors);
+    if (!opts.dxfBase.isEmpty())
+    {
+        QString base = opts.dxfBase;
+        if (base.endsWith(".dxf", Qt::CaseInsensitive)) base.chop(4);
+        writeVectorFiles(base, false, errors);
+    }
+    if (!opts.svgBase.isEmpty())
+    {
+        QString base = opts.svgBase;
+        if (base.endsWith(".svg", Qt::CaseInsensitive)) base.chop(4);
+        writeVectorFiles(base, true, errors);
+    }
+
+    for (const QString &e : errors)
+        m_logger->error("Command line export: {}", e.toStdString());
 }
 
 void MainWindow::on_actionOpen_Excellon_triggered()
@@ -1341,7 +1549,10 @@ void MainWindow::on_actionOpen_Excellon_triggered()
     }
     ui->drillsTree->resizeColumnToContents(0);
     ui->drillsTree->resizeColumnToContents(1);
-    ui->LayerTab1->setCurrentWidget(ui->tabDrills);
+    {
+        QSignalBlocker blocker(ui->LayerTab1);
+        ui->LayerTab1->setCurrentWidget(ui->tabDrills);
+    }
 
     QString fn = QFileInfo(fileName).fileName();
     ui->messageBrowser->append("Excellon loaded: " + fn);
@@ -1351,6 +1562,8 @@ void MainWindow::on_actionOpen_Excellon_triggered()
     m_logger->info("Excellon loaded: {} ({} tools, {} holes)",
                    fileName.toStdString(),
                    m_excellon->tools.size(), totalHoles);
+
+    rebuildDrillScene();
 
     ui->actionExport_Drills_Excellon->setEnabled(true);
     ui->actionExport_Drills_Excellon_Bore->setEnabled(true);
@@ -1489,7 +1702,6 @@ bool MainWindow::loadGerber1(const QString &path)
 
     layerNum = 1;
     currentLayer = 1;
-    ui->actionLayer2->setEnabled(false);
     ui->actionAdd_layer->setEnabled(true);
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
@@ -1583,7 +1795,6 @@ bool MainWindow::loadGerber2(const QString &path)
     showMessage(gerber2.get(), *preprocessfile2);
 
     layerNum = 2;
-    ui->actionLayer2->setEnabled(true);
     updateLayerIndicator();
 
     TreeModel *model = new TreeModel(*preprocessfile2);
@@ -1615,6 +1826,7 @@ bool MainWindow::loadOutline(const QString &path)
 
     sceneOutline = std::make_unique<QGraphicsScene>(this);
     drawLayer(sceneOutline.get(), gerberOutline.get(), *colorOutline);
+    rebuildDrillScene(); // add the outline to the drills view
 
     ui->outlineBrowser->clear();
     QString fn = QFileInfo(path).fileName();
@@ -1671,6 +1883,8 @@ bool MainWindow::loadExcellon(const QString &path)
     ui->messageBrowser->append("Excellon loaded: " + fn);
     ui->messageBrowser->append("  Tools: " + QString::number(m_excellon->tools.size())
                                + ", Holes: " + QString::number(totalHoles));
+    rebuildDrillScene();
+
     ui->actionExport_Drills_Excellon->setEnabled(true);
     ui->actionExport_Drills_Excellon_Bore->setEnabled(true);
     ui->actionExport_DXF->setEnabled(true);
@@ -1726,11 +1940,16 @@ void MainWindow::on_actionLoad_Project_triggered()
         return;
     settingWindow->settings->setLastDir(filePath);
 
+    loadProjectFile(filePath);
+}
+
+bool MainWindow::loadProjectFile(const QString &filePath)
+{
     std::ifstream in(filePath.toStdString());
     if (!in.is_open())
     {
         QMessageBox::critical(this, "Load Project", "Cannot open project file.");
-        return;
+        return false;
     }
 
     nlohmann::json j;
@@ -1742,11 +1961,14 @@ void MainWindow::on_actionLoad_Project_triggered()
     {
         QMessageBox::critical(this, "Load Project",
             "Error parsing project file: " + QString::fromStdString(ex.what()));
-        return;
+        return false;
     }
 
     ui->messageBrowser->clear();
     ui->messageBrowser->append("Loading project: " + QFileInfo(filePath).fileName());
+
+    // Unload the previous board so anything not in this project is cleared.
+    clearLoadedFiles();
 
     // Load gerber layer 1
     QString g1 = QString::fromStdString(j.value("gerber1", ""));
@@ -1789,4 +2011,5 @@ void MainWindow::on_actionLoad_Project_triggered()
 
     ui->messageBrowser->append("Project loaded successfully.");
     m_logger->info("Project loaded: {}", filePath.toStdString());
+    return true;
 }
