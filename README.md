@@ -13,8 +13,13 @@
 >  * Add Gcode Export for Toolpaths, Outline, Drill Holes.
 >  * Add Drill Hole Gcode Export with Boring support.
 >  * Add Full Copper Clearing.
+>  * Add Project Save/Load.
+>  * Add "Open Gerber Folder" to auto-find top, bottom, outline, and drill files.
+>  * Add DXF and SVG Export (separate top copper, bottom copper, and drills/outline files).
 >  * Add spdlog and nlohmann json.
 >  * Add Installer script and GitHub Action.
+>
+> See [CHANGELOG.md](CHANGELOG.md) for details.
 
 
 # GerberCAM
@@ -46,6 +51,17 @@ Pad types:
     
 Track types:  
     ● straight line  
+
+Import:  
+    ● RS-274X gerber (top/bottom copper, outline/edge cuts)  
+    ● Excellon drill files  
+    ● Open Gerber Folder (auto-detects top, bottom, outline, and drill files)  
+    ● Project save/load (.gcproj)  
+
+Export:  
+    ● G-code: isolation toolpaths, copper clearing, outline cutting, drilling (with optional boring)  
+    ● DXF: separate files for top copper, bottom copper, and drills/outline  
+    ● SVG: same three files, true-scale in millimetres  
   
 **Here are the snapshots of the current development.**
 ![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/GerberCAM_V07_Test1.png)

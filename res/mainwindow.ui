@@ -172,6 +172,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionOpen_Folder"/>
     <addaction name="actionOpen"/>
     <addaction name="actionOpen_Outline"/>
     <addaction name="actionOpen_Excellon"/>
@@ -221,6 +222,9 @@
     <addaction name="actionExport_Drills_Excellon_Bore"/>
     <addaction name="separator"/>
     <addaction name="actionExport_Outline"/>
+    <addaction name="separator"/>
+    <addaction name="actionExport_DXF"/>
+    <addaction name="actionExport_SVG"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -232,6 +236,11 @@
   <action name="actionOpen">
    <property name="text">
     <string>Open Top/Bot Cu...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Folder">
+   <property name="text">
+    <string>Open Gerber Folder...</string>
    </property>
   </action>
   <action name="actionZoom_in">
@@ -256,6 +265,12 @@
    <property name="enabled">
     <bool>true</bool>
    </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Layer1</string>
    </property>
@@ -263,6 +278,9 @@
   <action name="actionLayer2">
    <property name="enabled">
     <bool>false</bool>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Layer2</string>
@@ -375,6 +393,22 @@
    </property>
    <property name="text">
     <string>Export Drill G-Code (Bore)...</string>
+   </property>
+  </action>
+  <action name="actionExport_DXF">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export DXF...</string>
+   </property>
+  </action>
+  <action name="actionExport_SVG">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export SVG...</string>
    </property>
   </action>
  </widget>

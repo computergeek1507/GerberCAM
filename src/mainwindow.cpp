@@ -24,10 +24,14 @@ SOFTWARE.
 #include "toolpath.h"
 #include "aboutwindow.h"
 #include "file_utils.h"
+#include "dxfexport.h"
+#include "svgexport.h"
 
 
 #include <QFileDialog>
+#include <QDir>
 #include <QProcess>
+#include <QActionGroup>
 #include <QMessageBox>
 #include <QSet>
 #include <QTimer>
@@ -118,6 +122,19 @@ MainWindow::MainWindow(QWidget *parent) :
     coordinateLabel= new QLabel(this);
     //coordinateLabel->setAlignment(Qt::AlignLeft);
     ui->statusBar->addPermanentWidget(coordinateLabel);
+
+    /*
+     * Layer selection indicator: exclusive checkmarks in the View menu plus
+     * a permanent status bar label.
+     * */
+    auto *layerGroup = new QActionGroup(this);
+    layerGroup->setExclusive(true);
+    layerGroup->addAction(ui->actionLayer1);
+    layerGroup->addAction(ui->actionLayer2);
+
+    layerLabel = new QLabel(this);
+    ui->statusBar->addPermanentWidget(layerLabel);
+    updateLayerIndicator();
 
     /*
      * Initialize the panel on the left side.
@@ -341,6 +358,19 @@ void MainWindow::drawLayer(QGraphicsScene *scene,Gerber *gerberfile,QColor color
     //scene->addRect(gerberfile->borderRect);
 }
 
+void MainWindow::updateLayerIndicator()
+{
+    ui->actionLayer1->setChecked(currentLayer == 1);
+    ui->actionLayer2->setChecked(currentLayer == 2);
+
+    if (layerNum == 0)
+        layerLabel->setText("");
+    else if (layerNum == 2)
+        layerLabel->setText(tr("Viewing: Layer %1").arg(currentLayer) + "  ");
+    else
+        layerLabel->setText(tr("Viewing: Layer 1") + "  ");
+}
+
 void MainWindow::showMessage(Gerber *g,Preprocess &p)
 {
     setWindowTitle(gerberFileName + " - " + version);
@@ -387,6 +417,9 @@ void MainWindow::on_actionOpen_triggered()
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
     ui->actionExport_Drill_G_Code_Bore->setEnabled(true);
+    ui->actionExport_DXF->setEnabled(true);
+    ui->actionExport_SVG->setEnabled(true);
+    updateLayerIndicator();
 
     preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
 
@@ -405,6 +438,122 @@ void MainWindow::on_actionOpen_triggered()
     ui->treeViewlayer1->show();
 
     recalculateFlag = true;
+}
+
+/*
+ * Scan a folder and auto-load the top copper, bottom copper, outline and
+ * drill files. Detection is by dedicated extension first (.gtl/.gbl/.gm1/...)
+ * and by common naming conventions (KiCad "F_Cu"/"Edge_Cuts", etc.) for
+ * generic .gbr/.ger files.
+ * */
+void MainWindow::on_actionOpen_Folder_triggered()
+{
+    QString dirPath = QFileDialog::getExistingDirectory(
+        this, "Open Gerber Folder", settingWindow->settings->lastDir());
+    if (dirPath.isEmpty())
+        return;
+    settingWindow->settings->setLastDir(dirPath + "/");
+
+    const QFileInfoList files = QDir(dirPath).entryInfoList(QDir::Files, QDir::Name);
+
+    const QStringList genericGerberExts = { "gbr", "ger", "pho", "art" };
+
+    auto nameContains = [](const QFileInfo &fi, const QStringList &hints)
+    {
+        const QString name = fi.fileName().toLower();
+        for (const QString &h : hints)
+            if (name.contains(h))
+                return true;
+        return false;
+    };
+
+    // Dedicated extension wins; otherwise a generic Gerber whose name matches
+    // a hint. excludes keeps mask/paste/silk layers from matching "top" etc.
+    auto findLayer = [&](const QStringList &exts, const QStringList &hints,
+                         const QStringList &excludes) -> QString
+    {
+        for (const QFileInfo &fi : files)
+            if (exts.contains(fi.suffix().toLower()) && !nameContains(fi, excludes))
+                return fi.absoluteFilePath();
+        for (const QFileInfo &fi : files)
+            if (genericGerberExts.contains(fi.suffix().toLower())
+                && nameContains(fi, hints) && !nameContains(fi, excludes))
+                return fi.absoluteFilePath();
+        return {};
+    };
+
+    const QStringList copperExcludes = { "mask", "paste", "silk", "overlay", "solder" };
+
+    QString topPath = findLayer({ "gtl" },
+                                { "f_cu", "f.cu", "front", "top" }, copperExcludes);
+    QString botPath = findLayer({ "gbl" },
+                                { "b_cu", "b.cu", "bottom", "bot" }, copperExcludes);
+    QString outlinePath = findLayer({ "gm1", "gko", "gm" },
+                                    { "edge_cuts", "edge.cuts", "edge", "outline", "profile" }, {});
+
+    // Drill: dedicated extensions plus drill-named .txt; prefer plated (non-NPTH).
+    QString drillPath;
+    {
+        const QStringList drillExts = { "drl", "exc", "xln", "ncd", "drill" };
+        QStringList candidates;
+        for (const QFileInfo &fi : files)
+        {
+            const QString ext = fi.suffix().toLower();
+            if (drillExts.contains(ext)
+                || (ext == "txt" && nameContains(fi, { "drill", "drl" })))
+                candidates << fi.absoluteFilePath();
+        }
+        for (const QString &c : candidates)
+            if (!QFileInfo(c).fileName().toLower().contains("npth"))
+            {
+                drillPath = c;
+                break;
+            }
+        if (drillPath.isEmpty() && !candidates.isEmpty())
+            drillPath = candidates.first();
+    }
+
+    ui->messageBrowser->append("Scanning folder: " + dirPath);
+    auto note = [this](const QString &what, const QString &path)
+    {
+        ui->messageBrowser->append("  " + what + ": "
+            + (path.isEmpty() ? "not found" : QFileInfo(path).fileName()));
+    };
+    note("Top copper", topPath);
+    note("Bottom copper", botPath);
+    note("Outline", outlinePath);
+    note("Drill file", drillPath);
+
+    if (topPath.isEmpty() && botPath.isEmpty()
+        && outlinePath.isEmpty() && drillPath.isEmpty())
+    {
+        QMessageBox::warning(this, "Open Gerber Folder",
+            "No Gerber or drill files recognized in this folder.");
+        return;
+    }
+    m_logger->info("Open Gerber Folder: {} (top={}, bottom={}, outline={}, drill={})",
+                   dirPath.toStdString(), topPath.toStdString(), botPath.toStdString(),
+                   outlinePath.toStdString(), drillPath.toStdString());
+
+    if (!topPath.isEmpty())
+        loadGerber1(topPath);
+    if (!botPath.isEmpty())
+    {
+        if (topPath.isEmpty())
+            loadGerber1(botPath); // no top layer found — load bottom as layer 1
+        else if (loadGerber2(botPath))
+            rebuildNetScenes();   // build the combined layer views
+    }
+    if (!outlinePath.isEmpty())
+        loadOutline(outlinePath);
+    if (!drillPath.isEmpty())
+        loadExcellon(drillPath);
+
+    // Fit the view to the board after everything is loaded.
+    if (gerberOutline)
+        ui->graphicsView->fitInView(gerberOutline->borderRect, Qt::KeepAspectRatio);
+    else if (gerber1)
+        ui->graphicsView->fitInView(gerber1->borderRect, Qt::KeepAspectRatio);
 }
 
 void MainWindow::on_actionAdd_layer_triggered()
@@ -436,6 +585,7 @@ void MainWindow::on_actionAdd_layer_triggered()
         layerNum = 2;
         currentLayer = 2;
         ui->actionLayer2->setEnabled(true);
+        updateLayerIndicator();
 
         TreeModel* model = new TreeModel(*preprocessfile2);
 
@@ -706,6 +856,7 @@ void MainWindow::wheelEvent(QWheelEvent *event)
 void MainWindow::on_actionLayer1_triggered()
 {
     currentLayer = 1;
+    updateLayerIndicator();
     if(recalculateFlag) {
         if (layerNum == 1) {
             ui->graphicsView->setScene(sceneNet1.get());
@@ -727,6 +878,7 @@ void MainWindow::on_actionLayer1_triggered()
 void MainWindow::on_actionLayer2_triggered()
 {
     currentLayer = 2;
+    updateLayerIndicator();
     if (recalculateFlag) {
         ui->graphicsView->setScene(sceneNet21.get());
     }
@@ -963,6 +1115,8 @@ void MainWindow::on_actionOpen_Outline_triggered()
     ui->LayerTab1->setCurrentWidget(ui->tabOutline);
     ui->messageBrowser->append("Outline loaded: " + fn);
     ui->actionExport_Outline->setEnabled(true);
+    ui->actionExport_DXF->setEnabled(true);
+    ui->actionExport_SVG->setEnabled(true);
 }
 
 
@@ -1009,6 +1163,127 @@ void MainWindow::on_actionExport_Outline_triggered()
         m_logger->error("Export Outline G-Code failed: {}", errorMsg.toStdString());
         QMessageBox::critical(this, "Export Outline G-Code", errorMsg);
     }
+}
+
+void MainWindow::on_actionExport_DXF_triggered()
+{
+    exportVectorFiles(false);
+}
+
+void MainWindow::on_actionExport_SVG_triggered()
+{
+    exportVectorFiles(true);
+}
+
+void MainWindow::exportVectorFiles(bool asSvg)
+{
+    const QString fmt = asSvg ? "SVG" : "DXF";
+    const QString ext = asSvg ? ".svg" : ".dxf";
+    const bool hasTop    = (gerber1 != nullptr);
+    const bool hasBottom = (gerber2 != nullptr);
+    const bool hasOutline = (gerberOutline != nullptr && !gerberOutline->tracksList.isEmpty());
+
+    // Drill data exists if an Excellon file is loaded or layer 1 has pad holes.
+    bool hasDrills = (m_excellon && !m_excellon->tools.isEmpty());
+    if (!hasDrills && preprocessfile1)
+    {
+        for (const Net &n : preprocessfile1->netList)
+        {
+            for (const Element &e : n.elements)
+            {
+                if (e.elementType == ElementType::Pad && e.pad.hole > 0)
+                {
+                    hasDrills = true;
+                    break;
+                }
+            }
+            if (hasDrills) break;
+        }
+    }
+
+    if (!hasTop && !hasBottom && !hasOutline && !hasDrills)
+    {
+        QMessageBox::warning(this, "Export " + fmt,
+            "Nothing to export. Open a Gerber, outline or Excellon file first.");
+        return;
+    }
+
+    QString defaultName = gerberFileName;
+    if (!defaultName.isEmpty())
+    {
+        int dot = defaultName.lastIndexOf('.');
+        if (dot >= 0) defaultName.truncate(dot);
+    }
+    else
+    {
+        defaultName = "board";
+    }
+    defaultName += ext;
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Export " + fmt + " (base name — one file is written per layer)",
+        settingWindow->settings->lastDir() + "/" + defaultName,
+        fmt + " files (*" + ext + ");;All files (*)");
+
+    if (filePath.isEmpty())
+        return;
+    settingWindow->settings->setLastDir(filePath);
+
+    QString base = filePath;
+    if (base.endsWith(ext, Qt::CaseInsensitive))
+        base.chop(4);
+
+    QStringList errors;
+    auto report = [&](const QString &path, bool ok, const QString &what,
+                      const QString &errorMsg)
+    {
+        if (ok)
+        {
+            ui->messageBrowser->append(fmt + " exported: " + QFileInfo(path).fileName());
+            m_logger->info("{} exported: {}", fmt.toStdString(), path.toStdString());
+        }
+        else
+        {
+            errors << what + ": " + errorMsg;
+            m_logger->error("Export {} ({}) failed: {}", fmt.toStdString(),
+                            what.toStdString(), errorMsg.toStdString());
+        }
+    };
+
+    QString errorMsg;
+    if (hasTop)
+    {
+        QString p = base + "_top_copper" + ext;
+        bool ok = asSvg
+            ? SvgExport::writeCopper(*gerber1, "#c83232", p, errorMsg, boardFlipped,
+                                     gerberOutline.get())
+            : DxfExport::writeCopper(*gerber1, "TOP_COPPER", p, errorMsg, boardFlipped,
+                                     gerberOutline.get());
+        report(p, ok, "Top copper", errorMsg);
+    }
+    if (hasBottom)
+    {
+        QString p = base + "_bottom_copper" + ext;
+        bool ok = asSvg
+            ? SvgExport::writeCopper(*gerber2, "#3264c8", p, errorMsg, boardFlipped,
+                                     gerberOutline.get())
+            : DxfExport::writeCopper(*gerber2, "BOTTOM_COPPER", p, errorMsg, boardFlipped,
+                                     gerberOutline.get());
+        report(p, ok, "Bottom copper", errorMsg);
+    }
+    if (hasOutline || hasDrills)
+    {
+        QString p = base + "_drills_outline" + ext;
+        bool ok = asSvg
+            ? SvgExport::writeDrillsOutline(gerberOutline.get(), m_excellon.get(),
+                                            preprocessfile1.get(), p, errorMsg, boardFlipped)
+            : DxfExport::writeDrillsOutline(gerberOutline.get(), m_excellon.get(),
+                                            preprocessfile1.get(), p, errorMsg, boardFlipped);
+        report(p, ok, "Drills/outline", errorMsg);
+    }
+
+    if (!errors.isEmpty())
+        QMessageBox::critical(this, "Export " + fmt, errors.join("\n"));
 }
 
 void MainWindow::on_actionOpen_Excellon_triggered()
@@ -1079,6 +1354,8 @@ void MainWindow::on_actionOpen_Excellon_triggered()
 
     ui->actionExport_Drills_Excellon->setEnabled(true);
     ui->actionExport_Drills_Excellon_Bore->setEnabled(true);
+    ui->actionExport_DXF->setEnabled(true);
+    ui->actionExport_SVG->setEnabled(true);
 }
 
 void MainWindow::on_actionExport_Drills_Excellon_triggered()
@@ -1217,6 +1494,9 @@ bool MainWindow::loadGerber1(const QString &path)
     ui->actionToolpath_generat->setEnabled(true);
     ui->actionExport_Drills->setEnabled(true);
     ui->actionExport_Drill_G_Code_Bore->setEnabled(true);
+    ui->actionExport_DXF->setEnabled(true);
+    ui->actionExport_SVG->setEnabled(true);
+    updateLayerIndicator();
 
     preprocessfile1 = std::make_unique<Preprocess>(*gerber1, settingWindow->settings);
     showMessage(gerber1.get(), *preprocessfile1);
@@ -1236,6 +1516,57 @@ bool MainWindow::loadGerber1(const QString &path)
     return true;
 }
 
+void MainWindow::rebuildNetScenes()
+{
+    if (!preprocessfile1)
+        return;
+
+    if (layerNum == 2 && preprocessfile2)
+    {
+        preprocessfile1->clearEccentricHole(gerber2->padsList);
+        preprocessfile2->clearEccentricHole(gerber1->padsList);
+    }
+
+    sceneNet1 = std::make_unique<QGraphicsScene>(this);
+    drawNet(sceneNet1.get(), *preprocessfile1, *colorRed1, *Error1);
+    drawExcellonDrills(sceneNet1.get());
+
+    if (layerNum == 2 && preprocessfile2)
+    {
+        sceneNet2 = std::make_unique<QGraphicsScene>(this);
+        drawNet(sceneNet2.get(), *preprocessfile2, *colorBlue1, *Error1);
+        drawExcellonDrills(sceneNet2.get());
+
+        sceneNet21 = std::make_unique<QGraphicsScene>(this);
+        drawNet(sceneNet21.get(), *preprocessfile1, *colorRed2, *Error2);
+        drawNet(sceneNet21.get(), *preprocessfile2, *colorBlue1, *Error1);
+        drawExcellonDrills(sceneNet21.get());
+
+        sceneNet12 = std::make_unique<QGraphicsScene>(this);
+        drawNet(sceneNet12.get(), *preprocessfile2, *colorBlue2, *Error2);
+        drawNet(sceneNet12.get(), *preprocessfile1, *colorRed1, *Error1);
+        drawExcellonDrills(sceneNet12.get());
+    }
+
+    if (gerberOutline)
+    {
+        for (auto *s : { sceneNet1.get(), sceneNet2.get(),
+                         sceneNet12.get(), sceneNet21.get() })
+        {
+            if (s)
+                drawLayer(s, gerberOutline.get(), *colorOutline);
+        }
+    }
+
+    if (layerNum == 2)
+        ui->graphicsView->setScene(currentLayer == 1 ? sceneNet12.get()
+                                                     : sceneNet21.get());
+    else
+        ui->graphicsView->setScene(sceneNet1.get());
+
+    recalculateFlag = true;
+}
+
 bool MainWindow::loadGerber2(const QString &path)
 {
     gerber2 = std::make_unique<Gerber>(path);
@@ -1253,6 +1584,7 @@ bool MainWindow::loadGerber2(const QString &path)
 
     layerNum = 2;
     ui->actionLayer2->setEnabled(true);
+    updateLayerIndicator();
 
     TreeModel *model = new TreeModel(*preprocessfile2);
     ui->treeViewlayer2->setModel(model);
@@ -1291,6 +1623,8 @@ bool MainWindow::loadOutline(const QString &path)
     ui->outlineBrowser->append("  Tracks: " + QString::number(gerberOutline->trackNum));
     ui->messageBrowser->append("Outline loaded: " + fn);
     ui->actionExport_Outline->setEnabled(true);
+    ui->actionExport_DXF->setEnabled(true);
+    ui->actionExport_SVG->setEnabled(true);
     return true;
 }
 
@@ -1339,6 +1673,8 @@ bool MainWindow::loadExcellon(const QString &path)
                                + ", Holes: " + QString::number(totalHoles));
     ui->actionExport_Drills_Excellon->setEnabled(true);
     ui->actionExport_Drills_Excellon_Bore->setEnabled(true);
+    ui->actionExport_DXF->setEnabled(true);
+    ui->actionExport_SVG->setEnabled(true);
     return true;
 }
 
@@ -1423,7 +1759,8 @@ void MainWindow::on_actionLoad_Project_triggered()
     QString g2 = QString::fromStdString(j.value("gerber2", ""));
     if (!g2.isEmpty() && QFile::exists(g2))
     {
-        loadGerber2(g2);
+        if (loadGerber2(g2))
+            rebuildNetScenes(); // build the combined layer views
     }
 
     // Load outline

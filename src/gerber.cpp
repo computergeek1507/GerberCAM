@@ -672,9 +672,10 @@ bool Gerber::process_line(QByteArray line)
         }
         else if(line.at(1)=='M')
         {
+            // No trailing '\0': it would become part of the QString and break
+            // the ModeofUnit == "IN" comparisons that trigger inch→mm scaling.
             ModeofUnit=line.at(3);
             ModeofUnit+=line.at(4);
-            ModeofUnit+='\0';
         }
         // Layer Polarity (%LPD*% or %LPC*%) and other % commands — skip gracefully
         else if(line.startsWith("%LP") || line.startsWith("%LN") ||

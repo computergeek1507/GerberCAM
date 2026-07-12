@@ -80,6 +80,8 @@ protected:
 private slots:
     void on_actionOpen_triggered();
 
+    void on_actionOpen_Folder_triggered();
+
     void on_actionAdd_layer_triggered();
 
     void on_actionOpen_Outline_triggered();
@@ -113,6 +115,10 @@ private slots:
     void on_actionExport_Drills_Excellon_Bore_triggered();
 
     void on_actionExport_Outline_triggered();
+
+    void on_actionExport_DXF_triggered();
+
+    void on_actionExport_SVG_triggered();
 
     void on_actionAbout_GerberCAM_triggered();
 
@@ -157,6 +163,10 @@ private:
     std::unique_ptr<QColor> Error2 = std::make_unique<QColor>(255,0,0,40);
 
     QLabel *coordinateLabel;
+    QLabel *layerLabel;
+
+    // Sync the Layer1/Layer2 menu checkmarks and status bar with currentLayer.
+    void updateLayerIndicator();
 
     std::unique_ptr <Preprocess> preprocessfile1{ nullptr };
     std::unique_ptr <Preprocess> preprocessfile2{ nullptr };
@@ -181,6 +191,13 @@ private:
     QString m_gerber2Path;
     QString m_outlinePath;
     QString m_excellonPath;
+
+    // Shared implementation of the DXF/SVG export actions.
+    void exportVectorFiles(bool asSvg);
+
+    // Rebuild the per-layer and combined net scenes (sceneNet1/2/12/21) after
+    // both layers are loaded programmatically (folder open, project load).
+    void rebuildNetScenes();
 
     bool loadGerber1(const QString &path);
     bool loadGerber2(const QString &path);
