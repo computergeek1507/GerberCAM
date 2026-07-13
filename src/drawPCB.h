@@ -63,6 +63,12 @@ protected:
 
     void drawPie(QPainter *painter, QPoint p1, QPoint p2);
 
+    // Draw a round-capped stroke as a filled path. Qt 6's line stroker does
+    // not render the huge pen widths our nm-scale coordinates need, so wide
+    // segments (tracks, oval pads, contours) go through this instead.
+    void drawFatSegment(QPainter *painter, QPointF a, QPointF b,
+                        qreal width, const QColor &c);
+
 private:
 
     QColor color;

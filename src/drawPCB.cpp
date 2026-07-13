@@ -212,18 +212,17 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     p1.setY(0);
 
     if (componentType == ComponentType::Contour) {
-        pen.setWidthF(4000);
+        // Cosmetic pen: contour markers stay visible at any zoom.
+        pen.setWidthF(0);
         painter->setPen(pen);
         p2=tempTrack.pointend-tempTrack.pointstart;
 
         painter->drawLine(p1,p2);
     }
     else if (componentType == ComponentType::Track) {
-        pen.setWidthF(tempTrack.width);
-        painter->setPen(pen);
         p2=tempTrack.pointend-tempTrack.pointstart;
 
-        painter->drawLine(p1,p2);
+        drawFatSegment(painter, p1, p2, tempTrack.width, fillColor);
     }
     else if (componentType == ComponentType::Hole) {
         if(tempPad.hole!=0)
@@ -266,11 +265,12 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
 
         else if(tempPad.shape==PadShape::Oval)//use line with RoundCap to replace ellipse,better shape
         {
+            qreal ovalWidth = 0;
             if(tempPad.angle==0)
             {
                 if(tempPad.parameter[0]>=tempPad.parameter[1])//horizontal
                 {
-                    pen.setWidthF(tempPad.parameter[1]);
+                    ovalWidth = tempPad.parameter[1];
 
                     p1.setX(-tempPad.parameter[0]/2+tempPad.parameter[1]/2);
                     p1.setY(0);
@@ -279,7 +279,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
                 }
                 else//vertical
                 {
-                    pen.setWidthF(tempPad.parameter[0]);
+                    ovalWidth = tempPad.parameter[0];
 
                     p1.setX(0);
                     p1.setY(tempPad.parameter[1]/2-tempPad.parameter[0]/2);
@@ -289,7 +289,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
             }
             else
             {
-                pen.setWidthF(tempPad.parameter[1]);
+                ovalWidth = tempPad.parameter[1];
                 if(tempPad.angle<0)
                 {
                     p1.setX((tempPad.parameter[0]-tempPad.parameter[1])/2*qCos(tempPad.angle));
@@ -305,8 +305,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
                     p2.setY(-(tempPad.parameter[0]-tempPad.parameter[1])/2*qSin(tempPad.angle));
                 }
             }
-            painter->setPen(pen);
-            painter->drawLine(p1,p2);
+            drawFatSegment(painter, p1, p2, ovalWidth, fillColor);
 
             /*
             //painter->rotate(angle);
@@ -409,7 +408,7 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     }
     else if(componentType == ComponentType::Path)
     {
-        pen.setWidth(1574);
+        pen.setWidth(0); // cosmetic pen: always visible regardless of zoom
         painter->setPen(pen);
 
         p1.setX(0);
@@ -483,6 +482,31 @@ void DrawPCB::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, Q
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(area);
     */
+}
+
+void DrawPCB::drawFatSegment(QPainter *painter, QPointF a, QPointF b,
+                             qreal width, const QColor &c)
+{
+    if (width <= 0.0)
+        return;
+
+    if (a == b)
+    {
+        // Zero-length stroke with a round aperture is a dot.
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(c);
+        painter->drawEllipse(a, width / 2.0, width / 2.0);
+        return;
+    }
+
+    QPainterPath segment;
+    segment.moveTo(a);
+    segment.lineTo(b);
+
+    QPainterPathStroker stroker;
+    stroker.setWidth(width);
+    stroker.setCapStyle(Qt::RoundCap);
+    painter->fillPath(stroker.createStroke(segment), c);
 }
 
 void DrawPCB::drawPie(QPainter *painter, QPoint p1, QPoint p2 )

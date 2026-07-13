@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include "scale.h"
 
+#include <limits>
+
 /*
 ● support        ○ not support
 
@@ -100,6 +102,13 @@ void Gerber::initParameters()
 
     padNum=0;
     trackNum=0;
+
+    // Border tracking: start inverted so the first element sets all four.
+    // These were previously uninitialized, producing a garbage borderRect.
+    minX = std::numeric_limits<qint64>::max();
+    minY = std::numeric_limits<qint64>::max();
+    maxX = std::numeric_limits<qint64>::min();
+    maxY = std::numeric_limits<qint64>::min();
 }
 
 

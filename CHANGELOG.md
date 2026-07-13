@@ -2,7 +2,7 @@
 
 Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.9.0] - 2026-07-12
 
 ### Added
 - DXF export (Machine → Export DXF...): writes separate files for top copper
@@ -39,6 +39,13 @@ Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://
   Qt DLLs.
 
 ### Fixed
+- Tracks, oval pads, and contours were invisible in the layer preview when
+  built with Qt 6: its line stroker doesn't render the huge pen widths our
+  nanometre-scale scene needs. Wide segments are now drawn as filled stroke
+  paths instead.
+- `Gerber::borderRect` was computed from uninitialized min/max members,
+  producing a garbage rectangle — zoom-to-fit after loading went to a random
+  spot.
 - Open Gerber Folder and Load Project now unload the previously loaded board
   first — before, files missing from the new folder (e.g. the drill file)
   lingered from the previous one.

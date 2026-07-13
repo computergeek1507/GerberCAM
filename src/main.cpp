@@ -30,6 +30,9 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     a.setWindowIcon(QIcon(":/GerberCAM.ico"));
+    // Set before the parser runs so --version reports correctly.
+    QCoreApplication::setApplicationName(PROJECT_NAME);
+    QCoreApplication::setApplicationVersion(PROJECT_VER);
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
