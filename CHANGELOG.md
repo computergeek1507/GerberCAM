@@ -6,15 +6,16 @@ Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://
 
 ### Added
 - DXF export (Machine → Export DXF...): writes separate files for top copper
-  (`*_top_copper.dxf`), bottom copper (`*_bottom_copper.dxf`), and
-  drills/outline (`*_drills_outline.dxf`). Output is DXF R12 in millimetres;
-  tracks and oval pads are polylines carrying the trace width, circle pads and
-  drill holes are circles, rectangle pads are closed polylines. The board
-  outline is included as an `OUTLINE` layer in every file.
-- SVG export (Machine → Export SVG...): same three files as the DXF export,
+  (`*_top_copper.dxf`), bottom copper (`*_bottom_copper.dxf`), outline
+  (`*_outline.dxf`), and drill holes (`*_drills.dxf`). Output is DXF R2000
+  (AC1015) in millimetres; tracks and oval pads are `LWPOLYLINE`s carrying the
+  trace width (chosen over R12 `POLYLINE`, which many viewers don't render),
+  circle pads and drill holes are circles, rectangle pads are closed
+  polylines. The copper files include the board outline as an `OUTLINE` layer.
+- SVG export (Machine → Export SVG...): same file set as the DXF export,
   rendered at true scale in millimetres. Tracks and oval pads are round-capped
   strokes, pads and drills are filled shapes; top copper red, bottom copper
-  blue, outline green. The board outline is included in every file.
+  blue, outline green.
 - Open Gerber Folder (File → Open Gerber Folder...): scans a folder and
   auto-detects the top copper, bottom copper, outline, and drill files by
   extension (`.gtl`/`.gbl`/`.gm1`/`.gko`/`.drl`/...) and by common naming
@@ -33,6 +34,9 @@ Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://
 ### Changed
 - Removed the View → Layer1/Layer2 menu entries; layer selection moved to the
   left side tabs.
+- Default build is now Qt 6 (6.6.3 in CI and `VS2022.bat`); Qt 5 still works.
+  `windeployqt` runs for Qt 6 Windows builds too, so installers include the
+  Qt DLLs.
 
 ### Fixed
 - Open Gerber Folder and Load Project now unload the previously loaded board

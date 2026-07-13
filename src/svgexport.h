@@ -16,13 +16,18 @@ public:
                             const QString &filePath, QString &errorMsg,
                             bool flipX = false, const Gerber *outline = nullptr);
 
-    // Write drill holes (filled circles) and the board outline (lines) into a
-    // single SVG file. Any source may be null; drills come from the Excellon
-    // file when loaded, otherwise from the Gerber pad holes in preprocess.
+    // Write the board outline (green lines) to an SVG file.
     // Returns true on success, sets errorMsg on failure.
-    static bool writeDrillsOutline(const Gerber *outline,
-                                   const ExcellonParser *excellon,
-                                   const Preprocess *preprocess,
-                                   const QString &filePath, QString &errorMsg,
-                                   bool flipX = false);
+    static bool writeOutline(const Gerber &outline,
+                             const QString &filePath, QString &errorMsg,
+                             bool flipX = false);
+
+    // Write drill holes (filled circles) to an SVG file. Either source may
+    // be null; drills come from the Excellon file when loaded, otherwise
+    // from the Gerber pad holes in preprocess.
+    // Returns true on success, sets errorMsg on failure.
+    static bool writeDrills(const ExcellonParser *excellon,
+                            const Preprocess *preprocess,
+                            const QString &filePath, QString &errorMsg,
+                            bool flipX = false);
 };

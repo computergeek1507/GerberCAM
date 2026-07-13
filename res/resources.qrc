@@ -4,6 +4,8 @@
         <file>jpg/Cylindrical.jpg</file>
         <file>jpg/Drill.jpg</file>
             <file>GerberCAM.ico</file>
+        <file>dxf_skeleton_prefix.txt</file>
+        <file>dxf_skeleton_suffix.txt</file>
     </qresource>
 </RCC>
 

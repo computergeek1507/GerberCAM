@@ -97,10 +97,10 @@ source_group(res FILES ${BASE_RES})
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${PROJECT_NAME})
- else()   
-    if(WIN32)
-        windeployqt(${PROJECT_NAME})
-    endif()
+endif()
+
+if(WIN32)
+    windeployqt(${PROJECT_NAME})
 endif()
 
 if(WIN32)

@@ -6,28 +6,32 @@
 #include "scale.h"
 
 /*
- * Minimal DXF R12 (AC1009) ASCII writer.
+ * DXF R2000 (AC1015) ASCII writer.
+ * The header/tables/blocks skeleton and the trailing OBJECTS section come
+ * from res/dxf_skeleton_{prefix,suffix}.txt (generated with ezdxf, layers
+ * TOP_COPPER/BOTTOM_COPPER/OUTLINE/DRILLS predefined, $HANDSEED patched
+ * high); this writer only emits the ENTITIES section between them.
+ * Traces and oval pads are LWPOLYLINEs with constant width — unlike the old
+ * R12 POLYLINE encoding, these render in every common viewer/importer.
+ * Circle pads and drills are CIRCLEs, rectangle pads closed LWPOLYLINEs;
+ * polygon and macro pads use the same approximations as the on-screen
+ * renderer (circle / rectangle).
  * All coordinates are output in millimetres (internal units / PRECISIONSCALE).
- * Tracks and oval pads are written as 2-vertex POLYLINEs carrying the trace
- * width; circle pads and drills as CIRCLEs; rectangle pads as closed
- * POLYLINEs. Polygon and macro pads use the same approximations as the
- * on-screen renderer (circle / rectangle).
  */
 
 namespace {
 
 constexpr int kPrec = 6; // 1 internal unit = 1 nm, so 6 decimals is exact in mm
 
+// Entity owner: the *Model_Space BLOCK_RECORD handle in the skeleton.
+const char *kOwnerHandle = "17";
+// First entity handle; the skeleton uses < 0x40 and $HANDSEED is 0xFFFFFF.
+constexpr quint64 kFirstHandle = 0x100000;
+
 QString num(double v)
 {
     return QString::number(v, 'f', kPrec);
 }
-
-struct DxfLayer
-{
-    QString name;
-    int color; // AutoCAD color index
-};
 
 class DxfWriter
 {
@@ -35,45 +39,40 @@ public:
     DxfWriter(QFile *file, bool flipX)
         : m_out(file), m_xSign(flipX ? -1.0 : 1.0) {}
 
-    void begin(const QList<DxfLayer> &layers)
+    bool begin(QString &errorMsg)
     {
-        // HEADER
-        m_out << "0\nSECTION\n2\nHEADER\n";
-        m_out << "9\n$ACADVER\n1\nAC1009\n";
-        m_out << "9\n$INSUNITS\n70\n4\n"; // 4 = millimetres
-        m_out << "0\nENDSEC\n";
-
-        // TABLES: layer definitions
-        m_out << "0\nSECTION\n2\nTABLES\n";
-        m_out << "0\nTABLE\n2\nLAYER\n70\n" << layers.size() << "\n";
-        for (const DxfLayer &l : layers)
+        QFile prefix(":/dxf_skeleton_prefix.txt");
+        if (!prefix.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            m_out << "0\nLAYER\n2\n" << l.name << "\n70\n0\n"
-                  << "62\n" << l.color << "\n6\nCONTINUOUS\n";
+            errorMsg = "DXF skeleton resource missing.";
+            return false;
         }
-        m_out << "0\nENDTAB\n0\nENDSEC\n";
-
-        m_out << "0\nSECTION\n2\nENTITIES\n";
+        m_out << prefix.readAll();
+        return true;
     }
 
     void end()
     {
-        m_out << "0\nENDSEC\n0\nEOF\n";
+        QFile suffix(":/dxf_skeleton_suffix.txt");
+        if (suffix.open(QIODevice::ReadOnly | QIODevice::Text))
+            m_out << suffix.readAll();
     }
 
     // All positions below are in internal units (nm); widths/radii too.
     void line(const QString &layer, double x1, double y1, double x2, double y2)
     {
-        m_out << "0\nLINE\n8\n" << layer << "\n"
-              << "10\n" << num(mmX(x1)) << "\n20\n" << num(mmY(y1)) << "\n"
-              << "11\n" << num(mmX(x2)) << "\n21\n" << num(mmY(y2)) << "\n";
+        entityHead("LINE", layer);
+        m_out << "100\nAcDbLine\n"
+              << " 10\n" << num(mmX(x1)) << "\n 20\n" << num(mmY(y1)) << "\n 30\n0.0\n"
+              << " 11\n" << num(mmX(x2)) << "\n 21\n" << num(mmY(y2)) << "\n 31\n0.0\n";
     }
 
     void circle(const QString &layer, double cx, double cy, double r)
     {
-        m_out << "0\nCIRCLE\n8\n" << layer << "\n"
-              << "10\n" << num(mmX(cx)) << "\n20\n" << num(mmY(cy)) << "\n"
-              << "40\n" << num(r / PRECISIONSCALE) << "\n";
+        entityHead("CIRCLE", layer);
+        m_out << "100\nAcDbCircle\n"
+              << " 10\n" << num(mmX(cx)) << "\n 20\n" << num(mmY(cy)) << "\n 30\n0.0\n"
+              << " 40\n" << num(r / PRECISIONSCALE) << "\n";
     }
 
     // A stroked segment with constant width (track, oval pad).
@@ -88,27 +87,31 @@ public:
             return;
         }
 
-        double w = width / PRECISIONSCALE;
-        m_out << "0\nPOLYLINE\n8\n" << layer << "\n66\n1\n70\n0\n"
-              << "40\n" << num(w) << "\n41\n" << num(w) << "\n";
-        vertex(layer, x1, y1);
-        vertex(layer, x2, y2);
-        m_out << "0\nSEQEND\n";
+        entityHead("LWPOLYLINE", layer);
+        m_out << "100\nAcDbPolyline\n"
+              << " 90\n2\n 70\n0\n"
+              << " 43\n" << num(width / PRECISIONSCALE) << "\n"
+              << " 10\n" << num(mmX(x1)) << "\n 20\n" << num(mmY(y1)) << "\n"
+              << " 10\n" << num(mmX(x2)) << "\n 20\n" << num(mmY(y2)) << "\n";
     }
 
     void closedPolyline(const QString &layer, const QList<QPointF> &pts)
     {
-        m_out << "0\nPOLYLINE\n8\n" << layer << "\n66\n1\n70\n1\n";
+        entityHead("LWPOLYLINE", layer);
+        m_out << "100\nAcDbPolyline\n"
+              << " 90\n" << pts.size() << "\n 70\n1\n";
         for (const QPointF &p : pts)
-            vertex(layer, p.x(), p.y());
-        m_out << "0\nSEQEND\n";
+            m_out << " 10\n" << num(mmX(p.x())) << "\n 20\n" << num(mmY(p.y())) << "\n";
     }
 
 private:
-    void vertex(const QString &layer, double x, double y)
+    void entityHead(const char *type, const QString &layer)
     {
-        m_out << "0\nVERTEX\n8\n" << layer << "\n"
-              << "10\n" << num(mmX(x)) << "\n20\n" << num(mmY(y)) << "\n";
+        m_out << "  0\n" << type << "\n"
+              << "  5\n" << QString::number(m_handle++, 16).toUpper() << "\n"
+              << "330\n" << kOwnerHandle << "\n"
+              << "100\nAcDbEntity\n"
+              << "  8\n" << layer << "\n";
     }
 
     double mmX(double x) const { return x * m_xSign / PRECISIONSCALE; }
@@ -116,6 +119,7 @@ private:
 
     QTextStream m_out;
     double m_xSign;
+    quint64 m_handle = kFirstHandle;
 };
 
 void writePad(DxfWriter &dxf, const QString &layer, const Pad &pad)
@@ -212,13 +216,9 @@ bool DxfExport::writeCopper(const Gerber &g, const QString &layerName,
         return false;
     }
 
-    bool hasOutline = outline && !outline->tracksList.isEmpty();
-
     DxfWriter dxf(&file, flipX);
-    QList<DxfLayer> layers { { layerName, 1 } };
-    if (hasOutline)
-        layers << DxfLayer{ "OUTLINE", 3 };
-    dxf.begin(layers);
+    if (!dxf.begin(errorMsg))
+        return false;
 
     for (const Track &t : g.tracksList)
         dxf.wideSegment(layerName, t.pointstart.x(), t.pointstart.y(),
@@ -227,7 +227,7 @@ bool DxfExport::writeCopper(const Gerber &g, const QString &layerName,
     for (const Pad &p : g.padsList)
         writePad(dxf, layerName, p);
 
-    if (hasOutline)
+    if (outline && !outline->tracksList.isEmpty())
     {
         for (const Track &t : outline->tracksList)
             dxf.line("OUTLINE", t.pointstart.x(), t.pointstart.y(),
@@ -239,17 +239,41 @@ bool DxfExport::writeCopper(const Gerber &g, const QString &layerName,
     return true;
 }
 
-bool DxfExport::writeDrillsOutline(const Gerber *outline,
-                                   const ExcellonParser *excellon,
-                                   const Preprocess *preprocess,
-                                   const QString &filePath, QString &errorMsg,
-                                   bool flipX)
+bool DxfExport::writeOutline(const Gerber &outline,
+                             const QString &filePath, QString &errorMsg,
+                             bool flipX)
 {
-    const QString kOutlineLayer = "OUTLINE";
-    const QString kDrillsLayer  = "DRILLS";
+    if (outline.tracksList.isEmpty())
+    {
+        errorMsg = "No outline tracks to export.";
+        return false;
+    }
 
-    bool hasOutline = outline && !outline->tracksList.isEmpty();
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        errorMsg = "Cannot open file for writing: " + file.errorString();
+        return false;
+    }
 
+    DxfWriter dxf(&file, flipX);
+    if (!dxf.begin(errorMsg))
+        return false;
+
+    for (const Track &t : outline.tracksList)
+        dxf.line("OUTLINE", t.pointstart.x(), t.pointstart.y(),
+                 t.pointend.x(), t.pointend.y());
+
+    dxf.end();
+    file.close();
+    return true;
+}
+
+bool DxfExport::writeDrills(const ExcellonParser *excellon,
+                            const Preprocess *preprocess,
+                            const QString &filePath, QString &errorMsg,
+                            bool flipX)
+{
     // Drill source: Excellon takes priority, else Gerber pad holes.
     QMap<qint64, QList<QPoint>> holes;
     if (excellon)
@@ -262,9 +286,9 @@ bool DxfExport::writeDrillsOutline(const Gerber *outline,
                     holes[e.pad.hole].append(e.pad.point);
     }
 
-    if (!hasOutline && holes.isEmpty())
+    if (holes.isEmpty())
     {
-        errorMsg = "No outline or drill data to export.";
+        errorMsg = "No drill data to export.";
         return false;
     }
 
@@ -276,20 +300,14 @@ bool DxfExport::writeDrillsOutline(const Gerber *outline,
     }
 
     DxfWriter dxf(&file, flipX);
-    dxf.begin({ { kOutlineLayer, 3 }, { kDrillsLayer, 2 } });
-
-    if (hasOutline)
-    {
-        for (const Track &t : outline->tracksList)
-            dxf.line(kOutlineLayer, t.pointstart.x(), t.pointstart.y(),
-                     t.pointend.x(), t.pointend.y());
-    }
+    if (!dxf.begin(errorMsg))
+        return false;
 
     for (auto it = holes.cbegin(); it != holes.cend(); ++it)
     {
         double r = it.key() / 2.0;
         for (const QPoint &pt : it.value())
-            dxf.circle(kDrillsLayer, pt.x(), pt.y(), r);
+            dxf.circle("DRILLS", pt.x(), pt.y(), r);
     }
 
     dxf.end();

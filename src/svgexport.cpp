@@ -240,14 +240,26 @@ bool SvgExport::writeCopper(const Gerber &g, const QString &color,
     return svg.save(filePath, errorMsg);
 }
 
-bool SvgExport::writeDrillsOutline(const Gerber *outline,
-                                   const ExcellonParser *excellon,
-                                   const Preprocess *preprocess,
-                                   const QString &filePath, QString &errorMsg,
-                                   bool flipX)
+bool SvgExport::writeOutline(const Gerber &outline,
+                             const QString &filePath, QString &errorMsg,
+                             bool flipX)
 {
-    bool hasOutline = outline && !outline->tracksList.isEmpty();
+    if (outline.tracksList.isEmpty())
+    {
+        errorMsg = "No outline tracks to export.";
+        return false;
+    }
 
+    SvgWriter svg(flipX);
+    writeOutlineTracks(svg, outline);
+    return svg.save(filePath, errorMsg);
+}
+
+bool SvgExport::writeDrills(const ExcellonParser *excellon,
+                            const Preprocess *preprocess,
+                            const QString &filePath, QString &errorMsg,
+                            bool flipX)
+{
     // Drill source: Excellon takes priority, else Gerber pad holes.
     QMap<qint64, QList<QPoint>> holes;
     if (excellon)
@@ -260,17 +272,13 @@ bool SvgExport::writeDrillsOutline(const Gerber *outline,
                     holes[e.pad.hole].append(e.pad.point);
     }
 
-    if (!hasOutline && holes.isEmpty())
+    if (holes.isEmpty())
     {
-        errorMsg = "No outline or drill data to export.";
+        errorMsg = "No drill data to export.";
         return false;
     }
 
     SvgWriter svg(flipX);
-
-    if (hasOutline)
-        writeOutlineTracks(svg, *outline);
-
     for (auto it = holes.cbegin(); it != holes.cend(); ++it)
     {
         double r = it.key() / 2.0;

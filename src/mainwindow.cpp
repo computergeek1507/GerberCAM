@@ -1332,7 +1332,24 @@ void MainWindow::writeVectorFiles(const QString &base, bool asSvg, QStringList &
     const bool hasTop     = (gerber1 != nullptr);
     const bool hasBottom  = (gerber2 != nullptr);
     const bool hasOutline = (gerberOutline != nullptr && !gerberOutline->tracksList.isEmpty());
-    const bool hasDrills  = (m_excellon != nullptr) || (preprocessfile1 != nullptr);
+
+    // Only export a drills file when there is actual hole data.
+    bool hasDrills = (m_excellon && !m_excellon->tools.isEmpty());
+    if (!hasDrills && preprocessfile1)
+    {
+        for (const Net &n : preprocessfile1->netList)
+        {
+            for (const Element &e : n.elements)
+            {
+                if (e.elementType == ElementType::Pad && e.pad.hole > 0)
+                {
+                    hasDrills = true;
+                    break;
+                }
+            }
+            if (hasDrills) break;
+        }
+    }
 
     auto report = [&](const QString &path, bool ok, const QString &what,
                       const QString &errorMsg)
@@ -1371,15 +1388,23 @@ void MainWindow::writeVectorFiles(const QString &base, bool asSvg, QStringList &
                                      gerberOutline.get());
         report(p, ok, "Bottom copper", errorMsg);
     }
-    if (hasOutline || hasDrills)
+    if (hasOutline)
     {
-        QString p = base + "_drills_outline" + ext;
+        QString p = base + "_outline" + ext;
         bool ok = asSvg
-            ? SvgExport::writeDrillsOutline(gerberOutline.get(), m_excellon.get(),
-                                            preprocessfile1.get(), p, errorMsg, boardFlipped)
-            : DxfExport::writeDrillsOutline(gerberOutline.get(), m_excellon.get(),
-                                            preprocessfile1.get(), p, errorMsg, boardFlipped);
-        report(p, ok, "Drills/outline", errorMsg);
+            ? SvgExport::writeOutline(*gerberOutline, p, errorMsg, boardFlipped)
+            : DxfExport::writeOutline(*gerberOutline, p, errorMsg, boardFlipped);
+        report(p, ok, "Outline", errorMsg);
+    }
+    if (hasDrills)
+    {
+        QString p = base + "_drills" + ext;
+        bool ok = asSvg
+            ? SvgExport::writeDrills(m_excellon.get(), preprocessfile1.get(),
+                                     p, errorMsg, boardFlipped)
+            : DxfExport::writeDrills(m_excellon.get(), preprocessfile1.get(),
+                                     p, errorMsg, boardFlipped);
+        report(p, ok, "Drills", errorMsg);
     }
 }
 

@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
     QCommandLineOption optOutline("outline", "Outline / edge cuts Gerber file.", "file");
     QCommandLineOption optDrill("drill", "Excellon drill file.", "file");
     QCommandLineOption optGcode("export-gcode", "Export G-code to <base>.nc/_bottom/_drill/_outline.", "base");
-    QCommandLineOption optDxf("export-dxf", "Export DXF to <base>_top_copper/_bottom_copper/_drills_outline.", "base");
-    QCommandLineOption optSvg("export-svg", "Export SVG to <base>_top_copper/_bottom_copper/_drills_outline.", "base");
+    QCommandLineOption optDxf("export-dxf", "Export DXF to <base>_top_copper/_bottom_copper/_outline/_drills.", "base");
+    QCommandLineOption optSvg("export-svg", "Export SVG to <base>_top_copper/_bottom_copper/_outline/_drills.", "base");
     QCommandLineOption optFlip("flip", "Flip the board (mirror X) before exporting.");
     QCommandLineOption optQuit({ "q", "quit" }, "Exit after loading and exporting (batch mode).");
     parser.addOption(optFolder);

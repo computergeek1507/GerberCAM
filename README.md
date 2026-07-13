@@ -4,7 +4,7 @@
 > Current State:
 >  * Forked @claus007 version
 >  * Switched to cMake
->  * Compiles with VS2022 and QT 5.15, QT 6 should works too.
+>  * Compiles with VS2022 and QT 6.6 (QT 5.15 still works too).
 >  * Update gerber parser to support macros used in Kicad 9.
 >  * Updated DrawPCB and Toolpath code to work I hope.
 >  * Add Excellon Parser.
@@ -15,7 +15,7 @@
 >  * Add Full Copper Clearing.
 >  * Add Project Save/Load.
 >  * Add "Open Gerber Folder" to auto-find top, bottom, outline, and drill files.
->  * Add DXF and SVG Export (separate top copper, bottom copper, and drills/outline files).
+>  * Add DXF and SVG Export (separate top copper, bottom copper, outline, and drill files).
 >  * Add command line loading and batch export (`GerberCAM <folder> --export-gcode base --quit`).
 >  * Add spdlog and nlohmann json.
 >  * Add Installer script and GitHub Action.
@@ -61,8 +61,8 @@ Import:
 
 Export:  
     ● G-code: isolation toolpaths, copper clearing, outline cutting, drilling (with optional boring)  
-    ● DXF: separate files for top copper, bottom copper, and drills/outline  
-    ● SVG: same three files, true-scale in millimetres  
+    ● DXF: separate files for top copper, bottom copper, outline, and drills  
+    ● SVG: same file set, true-scale in millimetres  
 
 Command line:  
     ● `GerberCAM <gerber folder>` or `GerberCAM <project.gcproj>` to load on startup  
