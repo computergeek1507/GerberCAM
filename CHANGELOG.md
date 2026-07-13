@@ -2,6 +2,15 @@
 
 Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Convert Gerber to DXF/SVG dialog (Machine menu): converts a single gerber
+  file — copper, silkscreen, or solder mask, with an optional outline
+  overlay — to a DXF or SVG file, independent of the loaded board. The layer
+  type (which sets the DXF layer name and SVG color) is auto-guessed from the
+  file name; output can be mirrored for bottom-side layers.
+
 ## [0.9.0] - 2026-07-12
 
 ### Added

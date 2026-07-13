@@ -223,6 +223,8 @@
     <addaction name="separator"/>
     <addaction name="actionExport_DXF"/>
     <addaction name="actionExport_SVG"/>
+    <addaction name="separator"/>
+    <addaction name="actionConvert_Gerber"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -382,6 +384,11 @@
    </property>
    <property name="text">
     <string>Export SVG...</string>
+   </property>
+  </action>
+  <action name="actionConvert_Gerber">
+   <property name="text">
+    <string>Convert Gerber to DXF/SVG...</string>
    </property>
   </action>
  </widget>

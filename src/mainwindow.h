@@ -143,6 +143,8 @@ private slots:
 
     void on_actionExport_SVG_triggered();
 
+    void on_actionConvert_Gerber_triggered();
+
     void on_actionAbout_GerberCAM_triggered();
 
     void on_actionView_Log_triggered();

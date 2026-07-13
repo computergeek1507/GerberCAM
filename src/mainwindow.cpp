@@ -26,6 +26,7 @@ SOFTWARE.
 #include "file_utils.h"
 #include "dxfexport.h"
 #include "svgexport.h"
+#include "convertdialog.h"
 
 
 #include <QFileDialog>
@@ -1258,6 +1259,12 @@ void MainWindow::on_actionExport_DXF_triggered()
 void MainWindow::on_actionExport_SVG_triggered()
 {
     exportVectorFiles(true);
+}
+
+void MainWindow::on_actionConvert_Gerber_triggered()
+{
+    ConvertDialog dialog(settingWindow->settings, this);
+    dialog.exec();
 }
 
 void MainWindow::exportVectorFiles(bool asSvg)
