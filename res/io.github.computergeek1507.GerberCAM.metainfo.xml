@@ -40,6 +40,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+	<release version="0.10.0" date="2026-07-13">
+	  <description>
+		<p>Convert Gerber to DXF/SVG dialog with silkscreen and solder mask
+		   support, merged-contour DXF copper export matching KiCad's plots,
+		   and fixes for the Settings dialog sizing.</p>
+	  </description>
+	</release>
 	<release version="0.9.0" date="2026-07-12">
 	  <description>
 		<p>DXF and SVG export (separate copper, outline, and drill files),
