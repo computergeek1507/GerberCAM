@@ -25,6 +25,8 @@ SOFTWARE.
 #include "ui_settingwindow.h"
 
 #include <QRegularExpression>
+#include <QScreen>
+#include <QGuiApplication>
 
 Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
     QDialog(parent),
@@ -109,6 +111,11 @@ Settingwindow::Settingwindow(QString const& appData, QWidget* parent) :
 
     ui->splitter_2->setStretchFactor(0, 1);
     ui->splitter_2->setStretchFactor(1, 3);
+
+    // Open at a sensible size, clamped to the available screen.
+    setSizeGripEnabled(true);
+    const QRect avail = QGuiApplication::primaryScreen()->availableGeometry();
+    resize(qMin(1205, avail.width() - 80), qMin(720, avail.height() - 80));
 }
 
 void Settingwindow::holeDrillCheck()
@@ -164,40 +171,41 @@ void Settingwindow::holeDrillCheck()
     }
 }
 
+void Settingwindow::setToolImage(const QString &resource)
+{
+    QPixmap pm(resource);
+    ui->tlToolTypeViewLabel->setScaledContents(false);
+    ui->tlToolTypeViewLabel->setPixmap(
+        pm.scaledToHeight(220, Qt::SmoothTransformation));
+}
+
 void Settingwindow::updateWindow()
 {
     if(settings->toolList.size() > 0)
     {
         Tool t = settings->toolList.at(0);
-        QString filename = ":/jpg/Conical.jpg";
-        QImage imageConical(filename);
-        filename = ":/jpg/Drill.jpg";
-        QImage imageDrill(filename);
-        filename = ":/jpg/Cylindrical.jpg";
-        QImage imageCylindrical(filename);
 
         ui->tlTypeComboBox->setCurrentText(QString::fromStdString(magic_enum::enum_name(t.toolType).data()));
 
         if(ui->tlTypeComboBox->currentIndex()==0)
         {
-            ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageConical));
+            setToolImage(":/jpg/Conical.jpg");
             ui->tlAngle->setEnabled(true);
             ui->tlOverlap->setEnabled(true);
 
         }
         else if(ui->tlTypeComboBox->currentIndex()==1)
         {
-            ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageCylindrical));
+            setToolImage(":/jpg/Cylindrical.jpg");
             ui->tlAngle->setEnabled(false);
             ui->tlOverlap->setEnabled(true);
         }
         else
         {
-            ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageDrill));
+            setToolImage(":/jpg/Drill.jpg");
             ui->tlAngle->setEnabled(false);
             ui->tlOverlap->setEnabled(false);
         }
-        ui->tlToolTypeViewLabel->setScaledContents(true);
 
         ui->tlName->setText(t.name);
 
@@ -216,24 +224,15 @@ void Settingwindow::updateWindow()
     }
     else
     {
-        QString filename = ":/jpg/Conical.jpg";
-        QImage imageConical(filename);
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageConical));
+        setToolImage(":/jpg/Conical.jpg");
     }
 }
 
 void Settingwindow::updateWindow(Tool t)
 {
-    QString filename = ":/jpg/Conical.jpg";
-    QImage imageConical(filename);
-    filename = ":/jpg/Drill.jpg";
-    QImage imageDrill(filename);
-    filename = ":/jpg/Cylindrical.jpg";
-    QImage imageCylindrical(filename);
-
     if(t.toolType == ToolType::Conical)
     {
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageConical));
+        setToolImage(":/jpg/Conical.jpg");
         ui->tlAngle->setEnabled(true);
         ui->tlOverlap->setEnabled(true);
 
@@ -243,7 +242,7 @@ void Settingwindow::updateWindow(Tool t)
     }
     else if(t.toolType == ToolType::Cylindrical)
     {
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageCylindrical));
+        setToolImage(":/jpg/Cylindrical.jpg");
         ui->tlAngle->setEnabled(false);
         ui->tlOverlap->setEnabled(true);
 
@@ -252,14 +251,13 @@ void Settingwindow::updateWindow(Tool t)
     }
     else
     {
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageDrill));
+        setToolImage(":/jpg/Drill.jpg");
         ui->tlAngle->setEnabled(false);
         ui->tlOverlap->setEnabled(false);
 
         ui->tlAngle->setText("");
         ui->tlOverlap->setText("");
     }
-    ui->tlToolTypeViewLabel->setScaledContents(true);
 
     ui->tlName->setText(t.name);
 
@@ -446,33 +444,25 @@ void Settingwindow::on_tlTypeComboBox_currentIndexChanged(int index)
 void Settingwindow::on_tlTypeComboBox_activated(int index)
 {
     Q_UNUSED(index)
-    QString filename = ":/jpg/Conical.jpg";
-    QImage imageConical(filename);
-    filename = ":/jpg/Drill.jpg";
-    QImage imageDrill(filename);
-    filename = ":/jpg/Cylindrical.jpg";
-    QImage imageCylindrical(filename);
-
     if(ui->tlTypeComboBox->currentIndex()==0)
     {
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageConical));
+        setToolImage(":/jpg/Conical.jpg");
         ui->tlAngle->setEnabled(true);
         ui->tlOverlap->setEnabled(true);
 
     }
     else if(ui->tlTypeComboBox->currentIndex()==1)
     {
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageCylindrical));
+        setToolImage(":/jpg/Cylindrical.jpg");
         ui->tlAngle->setEnabled(false);
         ui->tlOverlap->setEnabled(true);
     }
     else
     {
-        ui->tlToolTypeViewLabel->setPixmap(QPixmap::fromImage(imageDrill));
+        setToolImage(":/jpg/Drill.jpg");
         ui->tlAngle->setEnabled(false);
         ui->tlOverlap->setEnabled(false);
     }
-    ui->tlToolTypeViewLabel->setScaledContents(true);
 }
 
 void Settingwindow::on_treeView_clicked(const QModelIndex &index)

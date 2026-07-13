@@ -46,6 +46,9 @@ public:
 protected:
     void updateWindow(Tool t);
     void updateWindow();
+    // Show a tool drawing scaled down; the raw images are 234x962 and would
+    // otherwise define the label's (and dialog's) minimum size.
+    void setToolImage(const QString &resource);
     bool checkValue(Tool &t, bool newTool);
     bool checkHoleRuleValue(HoleCondition &c);
     void updateMTreeView(HoleRule r);

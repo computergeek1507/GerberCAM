@@ -26,7 +26,7 @@
 # GerberCAM
 **What is GerberCAM?**  
 GerberCAM is an opensource software to convert a PCB gerber file to a CNC machine manufacture file(G-code).The following picture shows GerberCAM’s role in PCB prototyping process.
-![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/explain.jpg)
+![alt tag](snapshot/explain.jpg)
 
 **What are the features of GerberCAM?**  
 GerberCAM currently support following features.  
@@ -63,6 +63,7 @@ Export:
     ● G-code: isolation toolpaths, copper clearing, outline cutting, drilling (with optional boring)  
     ● DXF: separate files for top copper, bottom copper, outline, and drills  
     ● SVG: same file set, true-scale in millimetres  
+    ● Convert Gerber to DXF/SVG dialog for single files (copper, silkscreen, or solder mask, with optional outline)  
 
 Command line:  
     ● `GerberCAM <gerber folder>` or `GerberCAM <project.gcproj>` to load on startup  
@@ -71,10 +72,18 @@ Command line:
     ● `--flip` to mirror X, `--quit` to exit after exporting (scripted use)  
   
 **Here are the snapshots of the current development.**
-![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/GerberCAM_V07_Test1.png)
-![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/GerberCAM_V07_Test2.png)
-![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/GerberCAM_V07_Setting.png)
-![alt tag](https://github.com/malichao/GerberCAM/blob/master/snapshot/GerberCAM_V07_Tool_Library.png)
+
+Board view (two copper layers, outline, and drills):
+![Board view](snapshot/GerberCAM_V09_Board.png)
+
+Generated isolation toolpaths:
+![Toolpath view](snapshot/GerberCAM_V09_Toolpath.png)
+
+Gerber to DXF/SVG converter:
+![Convert dialog](snapshot/GerberCAM_V09_Convert.png)
+
+Settings:
+![Settings](snapshot/GerberCAM_V09_Settings.png)
 
 GerberCAM is still a prototype.After three months of heavy development and testing it’s suspended.It has a fast generation time comparing to CopperCAM 2012,which is the CAM software I’ve been using to generate G-code for PCB prototyping for years.It can also handle some PCBs which can’t be supported by CopperCAM.  
 

@@ -4,6 +4,18 @@ Notable changes to GerberCAM. The format is based on [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Changed
+- DXF copper export now writes merged outline contours (round-capped stroke
+  outlines unioned with Clipper), the same representation KiCad's DXF plots
+  use. The previous width-attributed polylines rendered inconsistently across
+  viewers; outline geometry draws identically everywhere.
+
+### Fixed
+- The Settings dialog could open taller than the screen and snap back when
+  resized: the tool drawing images (234x962) were setting the dialog's
+  minimum size — they are now scaled for display, the dialog opens clamped
+  to the available screen, and it is freely resizable.
+
 ### Added
 - Convert Gerber to DXF/SVG dialog (Machine menu): converts a single gerber
   file — copper, silkscreen, or solder mask, with an optional outline
