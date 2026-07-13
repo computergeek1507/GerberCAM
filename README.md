@@ -85,7 +85,5 @@ Gerber to DXF/SVG converter:
 Settings:
 ![Settings](snapshot/GerberCAM_V09_Settings.png)
 
-GerberCAM is still a prototype. After three months of heavy development and testing it’s suspended. It has a fast generation time comparing to CopperCAM 2012, which is the CAM software I’ve been using to generate G-code for PCB prototyping for years. It can also handle some PCBs which can’t be supported by CopperCAM.  
 
-However, since I don’t have a CNC machine to test the software anymore so I didn’t continue to work on this project. I’ve been using hundreds of gerber files and thousands of times to test all current functions. There are still a lot of testing and verification work to do in the future. If anyone is interested in this project, feel free to fork it. There are several opensource CAM software projects out there and I hope my works could contribute any help.  
 
